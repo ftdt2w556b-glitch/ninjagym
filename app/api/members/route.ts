@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendMemberConfirmation } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -69,6 +70,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Send confirmation email (fire-and-forget, don't block response)
+    if (email) {
+      sendMemberConfirmation({
+        to: email,
+        name,
+        membershipType: membership_type,
+        memberId: data.id,
+        paymentMethod: payment_method,
+      }).catch((e) => console.error("Email send failed:", e));
+    }
 
     return NextResponse.json({ id: data.id });
   } catch (err: unknown) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendEventConfirmation } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,6 +86,20 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Send confirmation email (fire-and-forget)
+    if (email) {
+      sendEventConfirmation({
+        to: email,
+        name,
+        eventDate: event_date,
+        timeSlot: time_slot,
+        numHours: num_hours,
+        numKids: num_kids,
+        totalAmount: amount_paid ?? 0,
+        bookingId: data.id,
+      }).catch((e) => console.error("Email send failed:", e));
+    }
 
     return NextResponse.json({ id: data.id });
   } catch (err: unknown) {
