@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const slip_status =
       payment_method === "cash"
         ? "cash_pending"
-        : slip_image
-        ? "pending_review"
+        : payment_method === "stripe"
+        ? "pending_review" // webhook will approve after successful payment
         : "pending_review";
 
     const { data, error } = await admin

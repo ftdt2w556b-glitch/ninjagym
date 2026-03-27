@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import QRCode from "react-qr-code";
 import Link from "next/link";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
+import ShareButton from "@/components/public/ShareButton";
 
 export default async function QrCardPage({
   params,
@@ -111,7 +112,12 @@ export default async function QrCardPage({
         </div>
       </div>
 
-      <div className="mt-6 text-center">
+      <ShareButton
+        url={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/qr/card/${member.id}`}
+        title={`${member.name} — NinjaGym QR Card`}
+      />
+
+      <div className="mt-4 text-center">
         <p className="text-white/60 text-xs">Save this page to your phone home screen for quick access</p>
       </div>
     </div>

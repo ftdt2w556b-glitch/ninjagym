@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { SHOP_CATALOG } from "@/lib/shop";
 import { formatTHB } from "@/lib/pricing";
+
+const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 interface CartItem {
   catalogId: string;
@@ -21,15 +23,17 @@ export default function ShopPage() {
   const t = translations[lang];
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({ name: "", phone: "", email: "", payment_method: "promptpay" });
+  const [form, setForm] = useState({ name: "", phone: "", payment_method: "promptpay" });
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Stripe two-step state
+  const [stripeStep, setStripeStep] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
-    // init selections
     const init: Record<string, string> = {};
     SHOP_CATALOG.forEach((item) => { init[item.id] = item.options.values[0]; });
     setSelections(init);
@@ -40,7 +44,6 @@ export default function ShopPage() {
   function addToCart(catalogId: string) {
     const item = SHOP_CATALOG.find((i) => i.id === catalogId)!;
     const option = selections[catalogId] ?? item.options.values[0];
-    const key = `${catalogId}__${option}`;
     setCart((prev) => {
       const existing = prev.find((c) => c.catalogId === catalogId && c.option === option);
       if (existing) {
@@ -66,23 +69,57 @@ export default function ShopPage() {
       const body = new FormData();
       body.append("name", form.name);
       body.append("phone", form.phone);
-      body.append("email", form.email);
       body.append("payment_method", form.payment_method);
       body.append("total_amount", String(total));
       body.append("items", JSON.stringify(
         cart.map((c) => ({ id: c.catalogId, name: c.name, qty: c.qty, size_or_flavor: c.option, unit_price: c.unit_price }))
       ));
-      if (slip) body.append("slip", slip);
+      if (slip && form.payment_method === "promptpay") body.append("slip", slip);
 
       const res = await fetch("/api/shop-orders", { method: "POST", body });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submission failed");
 
-      router.push("/shop/submitted");
+      if (form.payment_method === "stripe") {
+        setPendingOrderId(data.id);
+        setStripeStep(true);
+        setSubmitting(false);
+      } else {
+        router.push("/shop/submitted");
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);
     }
+  }
+
+  // Stripe payment screen
+  if (stripeStep && pendingOrderId) {
+    return (
+      <div className="px-4 py-6">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => setStripeStep(false)} className="text-white/70 hover:text-white text-2xl leading-none">←</button>
+          <h1 className="font-fredoka text-3xl text-white drop-shadow">Card Payment</h1>
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <span className="text-gray-600 text-sm">{cart.length} item{cart.length !== 1 ? "s" : ""}</span>
+            <span className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(total)}</span>
+          </div>
+          <Suspense fallback={<p className="text-gray-400 text-sm text-center py-4 animate-pulse">Loading...</p>}>
+            <StripePayment
+              amount={total}
+              description="NinjaGym shop order"
+              referenceId={pendingOrderId}
+              referenceType="shop"
+              onSuccess={() => router.push("/shop/submitted")}
+              onError={(msg) => setError(msg)}
+            />
+          </Suspense>
+          {error && <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm mt-3">{error}</div>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -188,6 +225,7 @@ export default function ShopPage() {
             {[
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
               { value: "cash", label: `💵 ${t.cashOption}` },
+              { value: "stripe", label: "💳 Credit / Debit Card" },
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
@@ -217,7 +255,11 @@ export default function ShopPage() {
 
         <button type="submit" disabled={submitting}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50">
-          {submitting ? t.submitting : t.checkout}
+          {submitting
+            ? t.submitting
+            : form.payment_method === "stripe"
+            ? "Order & Pay by Card →"
+            : t.checkout}
         </button>
       </form>
     </div>

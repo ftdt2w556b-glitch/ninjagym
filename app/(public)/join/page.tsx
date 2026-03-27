@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { MEMBERSHIP_TYPES, getPriceForType, formatTHB } from "@/lib/pricing";
+
+const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 export default function JoinPage() {
   const router = useRouter();
@@ -24,6 +26,9 @@ export default function JoinPage() {
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  // Stripe two-step state
+  const [stripeStep, setStripeStep] = useState(false);
+  const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -35,7 +40,6 @@ export default function JoinPage() {
     localStorage.setItem("ng_lang", l);
   }
 
-  const selectedType = MEMBERSHIP_TYPES.find((m) => m.id === form.membership_type);
   const price = getPriceForType(form.membership_type, form.kids_count);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,18 +51,60 @@ export default function JoinPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(price));
-      if (slip) body.append("slip", slip);
+      if (slip && form.payment_method === "promptpay") body.append("slip", slip);
 
       const res = await fetch("/api/members", { method: "POST", body });
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error || "Submission failed");
 
-      router.push(`/qr/card/${data.id}`);
+      if (form.payment_method === "stripe") {
+        setPendingMemberId(data.id);
+        setStripeStep(true);
+        setSubmitting(false);
+      } else {
+        router.push(`/qr/card/${data.id}`);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);
     }
+  }
+
+  // Stripe two-step payment screen
+  if (stripeStep && pendingMemberId) {
+    return (
+      <div className="px-4 py-6">
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => setStripeStep(false)}
+            className="text-white/70 hover:text-white text-2xl leading-none"
+          >
+            ←
+          </button>
+          <h1 className="font-fredoka text-3xl text-white drop-shadow">Card Payment</h1>
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <span className="text-gray-600 text-sm">{form.name}</span>
+            <span className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</span>
+          </div>
+          <Suspense fallback={<p className="text-gray-400 text-sm text-center py-4 animate-pulse">Loading...</p>}>
+            <StripePayment
+              amount={price}
+              description={`NinjaGym membership — ${form.membership_type}`}
+              referenceId={pendingMemberId}
+              referenceType="member"
+              onSuccess={() => router.push(`/qr/card/${pendingMemberId}`)}
+              onError={(msg) => setError(msg)}
+            />
+          </Suspense>
+          {error && (
+            <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm mt-3">{error}</div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -205,6 +251,19 @@ export default function JoinPage() {
               />
               <span className="text-sm font-medium">💵 {t.cashOption}</span>
             </label>
+            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
+              form.payment_method === "stripe" ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
+            }`}>
+              <input
+                type="radio"
+                name="payment_method"
+                value="stripe"
+                checked={form.payment_method === "stripe"}
+                onChange={() => setForm({ ...form, payment_method: "stripe" })}
+                className="accent-[#1a56db]"
+              />
+              <span className="text-sm font-medium">💳 Credit / Debit Card</span>
+            </label>
           </div>
         </div>
 
@@ -234,7 +293,11 @@ export default function JoinPage() {
           disabled={submitting}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? t.submitting : t.submitBtn}
+          {submitting
+            ? t.submitting
+            : form.payment_method === "stripe"
+            ? "Register & Pay by Card →"
+            : t.submitBtn}
         </button>
       </form>
     </div>

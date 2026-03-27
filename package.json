@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@serwist/next": "^9.5.7",
+    "@stripe/react-stripe-js": "^6.0.0",
+    "@stripe/stripe-js": "^9.0.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.1",
     "bcryptjs": "^3.0.3",
@@ -19,7 +21,8 @@
     "react-dom": "19.2.4",
     "react-qr-code": "^2.0.18",
     "resend": "^6.9.4",
-    "serwist": "^9.5.7"
+    "serwist": "^9.5.7",
+    "stripe": "^21.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
