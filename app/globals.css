@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --font-nunito: "Nunito", sans-serif;
+  --font-fredoka: "Fredoka One", cursive;
+  --font-bangers: "Bangers", cursive;
+  --ninja-blue: #1a56db;
+  --ninja-blue-light: #2563eb;
+  --ninja-yellow: #ffe033;
+  --ninja-green: #22c55e;
+}
+
+@theme inline {
+  --font-sans: var(--font-nunito);
+  --color-ninja-blue: var(--ninja-blue);
+  --color-ninja-yellow: var(--ninja-yellow);
+  --color-ninja-green: var(--ninja-green);
+}
+
+body {
+  font-family: var(--font-nunito);
+}
+
+/* iOS Safari date input fix */
+input[type="date"] {
+  -webkit-appearance: none;
+  min-height: 50px;
+}
+
+/* Font utility classes */
+.font-fredoka {
+  font-family: var(--font-fredoka);
+}
+
+.font-bangers {
+  font-family: var(--font-bangers);
+}
+
+/* Public layout gradient background */
+.public-bg {
+  background: linear-gradient(135deg, #1a56db 0%, #2563eb 100%);
+  min-height: 100dvh;
+}
