@@ -11,7 +11,7 @@ const PRICE_SECTIONS = [
       { key: "price_climb_unguided",   label: "Unguided Climb Zone (20 min)" },
       { key: "price_session_group",    label: "Group Guide Session" },
       { key: "price_session_1to1",     label: "1-to-1 Private Session" },
-      { key: "price_day_camp",         label: "Day Camp (10am–2pm) — per kid" },
+      { key: "price_day_camp",         label: "Day Camp (10am to 2pm) per kid" },
       { key: "price_combo_game_train", label: "Combo Game & Train (2 hrs)" },
       { key: "price_all_day",          label: "All Day (max 8 hrs)" },
     ],
@@ -19,8 +19,8 @@ const PRICE_SECTIONS = [
   {
     title: "Monthly Memberships",
     keys: [
-      { key: "price_monthly_2hr", label: "Monthly Flex — 2 Hrs Any Day" },
-      { key: "price_monthly_5hr", label: "Monthly Flex — 5 Hrs Any Day" },
+      { key: "price_monthly_2hr", label: "Monthly Flex: 2 Hrs Any Day" },
+      { key: "price_monthly_5hr", label: "Monthly Flex: 5 Hrs Any Day" },
     ],
   },
   {

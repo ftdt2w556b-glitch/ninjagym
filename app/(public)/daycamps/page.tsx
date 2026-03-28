@@ -68,19 +68,19 @@ export default function DayCampsPage() {
       </div>
 
       <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">Ninja Day Camp</h1>
-      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">5-HOUR SESSIONS — DROP-IN BEFORE 3PM</p>
+      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">10AM TO 2PM, DROP-IN BEFORE 2PM</p>
 
       {/* What's included */}
       <div className="bg-[#1a56db] rounded-2xl p-4 shadow mb-5">
         <h2 className="font-bold text-white text-sm uppercase tracking-wide mb-3">What&apos;s Included</h2>
         <ul className="flex flex-col gap-1.5 text-sm text-white/90">
           {[
-            "5-hour supervised ninja training session",
+            "4-hour supervised ninja training session (10am to 2pm)",
             "Climbing, parkour, obstacle courses",
             "Jump & roll fundamentals",
-            "Active guides — not just supervisors",
+            "Active Guides, not just supervisors",
             "Suitable for kids aged 3 and up",
-            "Drop-in before 3pm",
+            "Drop-in before 2pm",
           ].map(item => (
             <li key={item} className="flex items-start gap-2"><span>🥷</span><span>{item}</span></li>
           ))}

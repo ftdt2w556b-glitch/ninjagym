@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         slip_image,
         slip_status,
         slip_uploaded_at,
-        notes: `DAY CAMP — ${notes || ""}`,
+        notes: `DAY CAMP: ${notes || ""}`,
         photographer_requested: false,
         photographer_fee: 0,
       })

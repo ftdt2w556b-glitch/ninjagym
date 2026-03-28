@@ -44,7 +44,7 @@ export async function sendMemberConfirmation({
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h1 style="color:#1a56db;font-size:28px;margin-bottom:4px">Welcome, ${name}!</h1>
-        <p style="color:#555;margin-top:0">You're registered at <strong>NinjaGym — Rick Tew's Dojo, Koh Samui</strong>.</p>
+        <p style="color:#555;margin-top:0">You're registered at <strong>NinjaGym, Rick Tew's Dojo, Koh Samui</strong>.</p>
 
         <div style="background:#f0f4ff;border-radius:12px;padding:16px;margin:20px 0">
           <p style="margin:0 0 6px;color:#333"><strong>Membership:</strong> ${label}</p>
@@ -96,7 +96,7 @@ export async function sendEventConfirmation({
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `Birthday Booking Confirmed — ${eventDate}`,
+    subject: `Birthday Booking Confirmed: ${eventDate}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h1 style="color:#1a56db;font-size:28px;margin-bottom:4px">Booking Received!</h1>
@@ -157,7 +157,7 @@ export async function sendShopConfirmation({
   await resend.emails.send({
     from: FROM,
     to,
-    subject: `NinjaGym Store — Order #${orderId} Received`,
+    subject: `NinjaGym Store: Order #${orderId} Received`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h1 style="color:#1a56db;font-size:28px;margin-bottom:4px">Order Received!</h1>

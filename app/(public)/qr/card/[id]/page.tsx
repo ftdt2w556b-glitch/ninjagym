@@ -60,7 +60,7 @@ export default async function QrCardPage({
         {/* Blue header */}
         <div className="bg-[#1a56db] px-4 py-3 text-center">
           <p className="font-bangers text-[#ffe033] tracking-widest text-sm">
-            CHECK-IN QR CODE — NOT A PAYMENT CODE
+            CHECK-IN QR CODE, NOT A PAYMENT CODE
           </p>
         </div>
 
@@ -117,14 +117,14 @@ export default async function QrCardPage({
 
         {/* Footer */}
         <div className="bg-gray-50 px-5 py-3 text-center border-t border-gray-100">
-          <p className="text-xs text-gray-400">NinjaGym — Rick Tew&apos;s Dojo, Koh Samui</p>
+          <p className="text-xs text-gray-400">NinjaGym, Rick Tew&apos;s Dojo, Koh Samui</p>
           <p className="text-xs text-gray-400">Show this QR code at the front desk to check in</p>
         </div>
       </div>
 
       <ShareButton
         url={`${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/qr/card/${member.id}`}
-        title={`${member.name} — NinjaGym QR Card`}
+        title={`${member.name}: NinjaGym QR Card`}
       />
 
       <div className="mt-4 text-center">

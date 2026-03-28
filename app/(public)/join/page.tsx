@@ -67,7 +67,7 @@ const WAIVER_RULES = [
   { icon: "🚧", text: "Inform your kids to **NOT MOVE** or disrupt our equipment." },
   { icon: "🚪", text: "Please **depart shortly after** a session. No children playing in entry areas." },
   { icon: "🍔", text: "**No outside food or drink** in the center. Please clean up after yourself." },
-  { icon: "🎓", text: "Sessions are **\"learn by doing\"** with a relaxed, fun environment — not a strict martial arts class." },
+  { icon: "🎓", text: "Sessions are **\"learn by doing\"** with a relaxed, fun environment. Not a strict martial arts class." },
   { icon: "📷", text: "By registering you **consent to photos/video** being taken during sessions for marketing use." },
   { icon: "💰", text: "**No Refunds**. All sales are final once the session has begun." },
 ];
@@ -187,7 +187,7 @@ export default function JoinPage() {
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
       <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.joinTitle}</h1>
-      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">RICK TEW&apos;S DOJO — KOH SAMUI</p>
+      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">RICK TEW&apos;S DOJO, KOH SAMUI</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Name */}
@@ -475,7 +475,7 @@ export default function JoinPage() {
                 onClick={() => { setAgreedToPolicy(true); setShowWaiver(false); }}
                 className="w-full bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
               >
-                I Understand — Close
+                I Understand - Close
               </button>
             </div>
           </div>

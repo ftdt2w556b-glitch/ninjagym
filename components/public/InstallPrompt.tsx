@@ -66,7 +66,7 @@ export default function InstallPrompt() {
               </p>
             ) : (
               <p className="text-xs text-white/80 mt-0.5">
-                Install for quick QR check-in access — works offline too.
+                Install for quick QR check-in access. Works offline too.
               </p>
             )}
           </div>

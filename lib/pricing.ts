@@ -9,8 +9,8 @@ export const MEMBERSHIP_TYPES: MembershipType[] = [
   { id: "combo_game_train", label: "Combo Game & Train (2 hrs)",    perKid: true,  note: "2-hour session combining a guided training session with game room access." },
   { id: "all_day",          label: "All Day (max 8 hrs)",           perKid: true,  note: "Full day access up to 8 hours. Best value for a full day of ninja training." },
   // Monthly
-  { id: "monthly_2hr",      label: "Monthly Flex — 2 Hrs Any Day", perKid: false, note: "Monthly membership: 2 hours of access any day. Ideal for regular visitors." },
-  { id: "monthly_5hr",      label: "Monthly Flex — 5 Hrs Any Day", perKid: false, note: "Monthly membership: 5 hours of access any day. Best value for frequent visitors." },
+  { id: "monthly_2hr",      label: "Monthly Flex: 2 Hrs Any Day", perKid: false, note: "Monthly membership: 2 hours of access any day. Ideal for regular visitors." },
+  { id: "monthly_5hr",      label: "Monthly Flex: 5 Hrs Any Day", perKid: false, note: "Monthly membership: 5 hours of access any day. Best value for frequent visitors." },
   // Group Session Cards
   { id: "sessions_4",       label: "Group 4-Card (5% off)",        perKid: false, note: "4 group sessions shared across your kids. 5% discount applied." },
   { id: "sessions_8",       label: "Group 8-Card (10% off)",       perKid: false, note: "8 group sessions shared across your kids. 10% discount applied." },
