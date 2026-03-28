@@ -2,11 +2,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
 const BELT_CONFIG = [
-  { level: 1, color: "yellow",  label: "Yellow Belt",  bg: "bg-yellow-50",  border: "border-yellow-300",  badge: "bg-yellow-400 text-yellow-900",  dot: "bg-yellow-400" },
-  { level: 2, color: "orange",  label: "Orange Belt",  bg: "bg-orange-50",  border: "border-orange-300",  badge: "bg-orange-400 text-white",         dot: "bg-orange-400" },
-  { level: 3, color: "green",   label: "Green Belt",   bg: "bg-green-50",   border: "border-green-300",   badge: "bg-green-500 text-white",           dot: "bg-green-500" },
-  { level: 4, color: "blue",    label: "Blue Belt",    bg: "bg-blue-50",    border: "border-blue-300",    badge: "bg-blue-500 text-white",            dot: "bg-blue-500" },
-  { level: 5, color: "red",     label: "Red Belt",     bg: "bg-red-50",     border: "border-red-300",     badge: "bg-red-500 text-white",             dot: "bg-red-500" },
+  { level: 1, color: "yellow", label: "Yellow Belt", category: "Stances",  bg: "bg-yellow-50",  border: "border-yellow-300", badge: "bg-yellow-400 text-yellow-900", dot: "bg-yellow-400" },
+  { level: 2, color: "orange", label: "Orange Belt", category: "Rolls",    bg: "bg-orange-50",  border: "border-orange-300", badge: "bg-orange-400 text-white",      dot: "bg-orange-400" },
+  { level: 3, color: "green",  label: "Green Belt",  category: "Falls",    bg: "bg-green-50",   border: "border-green-300",  badge: "bg-green-500 text-white",       dot: "bg-green-500"  },
+  { level: 4, color: "blue",   label: "Blue Belt",   category: "Strikes",  bg: "bg-blue-50",    border: "border-blue-300",   badge: "bg-blue-500 text-white",        dot: "bg-blue-500"   },
+  { level: 5, color: "red",    label: "Red Belt",    category: "Kicks",    bg: "bg-red-50",     border: "border-red-300",    badge: "bg-red-500 text-white",         dot: "bg-red-500"    },
 ];
 
 export default async function TechniquesPage() {
@@ -38,7 +38,10 @@ export default async function TechniquesPage() {
               <span className={`px-3 py-1 rounded-full text-xs font-bold ${belt.badge}`}>
                 Level {belt.level}
               </span>
-              <span className="font-bold text-gray-800 text-base">{belt.label}</span>
+              <div>
+                <span className="font-bold text-gray-800 text-base">{belt.label}</span>
+                <span className="ml-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">{belt.category}</span>
+              </div>
               <span className="ml-auto text-xs text-gray-400">{belt.techniques.length} techniques</span>
             </div>
 
