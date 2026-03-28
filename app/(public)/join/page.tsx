@@ -13,7 +13,7 @@ const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 // Session types that benefit from a focus selection
 const SESSION_TYPES_WITH_FOCUS = new Set([
-  "session_group", "session_1to1", "day_camp", "combo_game_train", "all_day", "climb_unguided",
+  "session_1to1", "day_camp", "all_day",
 ]);
 
 const SESSION_FOCUS_GROUPS = [
@@ -360,20 +360,52 @@ export default function JoinPage() {
           </div>
         </div>
 
-        {/* Slip upload (PromptPay only) */}
+        {/* PromptPay panel — QR + account details + slip upload */}
         {form.payment_method === "promptpay" && (
-          <div className="bg-white rounded-2xl p-4 shadow">
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
-            <p className="text-xs text-gray-500 mb-3">{t.slipInstructions}</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
-              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold"
-            />
-            {slip && (
-              <p className="text-xs text-green-600 mt-2">Selected: {slip.name}</p>
-            )}
+          <div className="bg-white rounded-2xl p-4 shadow flex flex-col gap-4">
+            {/* QR + account */}
+            <div className="bg-blue-50 rounded-xl px-4 py-4 text-center">
+              <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-3">Scan to Pay</p>
+              <Image
+                src="/images/promptpay-qr-small.png"
+                alt="PromptPay QR Code"
+                width={160}
+                height={160}
+                className="mx-auto mb-3 rounded-xl"
+              />
+              <p className="text-xs text-gray-500 mb-0.5">PromptPay Number</p>
+              <p className="font-fredoka text-2xl text-[#1a56db] tracking-widest">086-294-4374</p>
+              <p className="text-sm text-gray-600 mt-0.5 font-semibold">Rick Tew Co., Ltd.</p>
+              <div className="mt-2 pt-2 border-t border-blue-200">
+                <p className="text-xs text-gray-500 mb-0.5">Bangkok Bank Account</p>
+                <p className="font-fredoka text-lg text-[#1a56db] tracking-widest">451-7-17573-5</p>
+              </div>
+            </div>
+            {/* Amount reminder */}
+            <div className="bg-[#ffe033] rounded-xl px-4 py-3 text-center">
+              <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">Amount to Transfer</p>
+              <p className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</p>
+            </div>
+            {/* Steps */}
+            <ol className="flex flex-col gap-2 text-sm text-gray-600">
+              <li className="flex items-start gap-2"><span className="bg-[#1a56db] text-white font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">1</span>Open any Thai banking app and scan the QR above, or transfer to the PromptPay number.</li>
+              <li className="flex items-start gap-2"><span className="bg-[#1a56db] text-white font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">2</span>Transfer the exact amount shown above.</li>
+              <li className="flex items-start gap-2"><span className="bg-[#1a56db] text-white font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">3</span>Screenshot the confirmation screen showing the amount, recipient name, and transaction reference.</li>
+              <li className="flex items-start gap-2"><span className="bg-[#1a56db] text-white font-bold text-xs w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5">4</span>Upload the screenshot below. Staff will approve within minutes.</li>
+            </ol>
+            {/* Slip upload */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold"
+              />
+              {slip && (
+                <p className="text-xs text-green-600 mt-2">Selected: {slip.name}</p>
+              )}
+            </div>
           </div>
         )}
 

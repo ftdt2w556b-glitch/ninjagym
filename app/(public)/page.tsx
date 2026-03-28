@@ -119,20 +119,12 @@ export default function HomePage() {
         </div>
 
         {/* Bottom utility links */}
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            href="/promptpay"
-            className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
-          >
-            📱 PromptPay
-          </Link>
-          <Link
-            href="/contact"
-            className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
-          >
-            ✉️ Contact Us
-          </Link>
-        </div>
+        <Link
+          href="/contact"
+          className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
+        >
+          ✉️ Contact Us
+        </Link>
       </div>
 
       {/* Staff login */}
