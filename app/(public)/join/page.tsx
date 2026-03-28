@@ -90,6 +90,7 @@ export default function JoinPage() {
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [existingMember, setExistingMember] = useState<{ id: number; name: string } | null>(null);
   const [expandedNote, setExpandedNote] = useState<string | null>(null);
   const [sessionFocus, setSessionFocus] = useState("");
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
@@ -213,10 +214,36 @@ export default function JoinPage() {
           <input
             type="tel"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => { setForm({ ...form, phone: e.target.value }); setExistingMember(null); }}
+            onBlur={async (e) => {
+              const phone = e.target.value.trim();
+              if (phone.length < 6) return;
+              const res = await fetch(`/api/check-phone?phone=${encodeURIComponent(phone)}`);
+              const data = await res.json();
+              if (data.found) setExistingMember({ id: data.id, name: data.name });
+            }}
             className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             placeholder="+66 80 000 0000"
           />
+          {existingMember && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <p className="text-amber-800 font-bold text-sm">
+                📱 We found an existing account for {existingMember.name}!
+              </p>
+              <p className="text-amber-700 text-xs mt-1">
+                No need to register again. You can top up or add sessions directly from your member card.
+              </p>
+              <a
+                href={`/qr/card/${existingMember.id}`}
+                className="inline-block mt-2 bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                Go to My Card →
+              </a>
+              <p className="text-amber-600 text-xs mt-2">
+                Registering for a <em>different</em> program? Continue below.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Email */}

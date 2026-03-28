@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import ShareButton from "@/components/public/ShareButton";
+import TopUpSection from "@/components/public/TopUpSection";
 
 export default async function QrCardPage({
   params,
@@ -20,18 +21,26 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at")
+    .select("id, name, phone, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at")
     .eq("id", id)
     .single();
 
   if (!member) notFound();
 
-  const { data: photos } = await admin
-    .from("marketing_photos")
-    .select("id, file_path, caption, tags")
-    .eq("member_id", Number(id))
-    .eq("approved", true)
-    .order("created_at", { ascending: false });
+  const [{ data: photos }, { data: checkIns }] = await Promise.all([
+    admin
+      .from("marketing_photos")
+      .select("id, file_path, caption, tags")
+      .eq("member_id", Number(id))
+      .eq("approved", true)
+      .order("created_at", { ascending: false }),
+    admin
+      .from("attendance_logs")
+      .select("id, check_in_at, notes")
+      .eq("member_id", Number(id))
+      .order("check_in_at", { ascending: false })
+      .limit(8),
+  ]);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
@@ -186,6 +195,18 @@ export default async function QrCardPage({
         url={`${siteUrl}/qr/card/${member.id}`}
         title={`${member.name}: NinjaGym QR Card`}
       />
+
+      {/* Top-up / Continue Training / Recent Check-ins */}
+      {isApproved && (
+        <TopUpSection
+          memberId={member.id}
+          memberName={member.name}
+          memberPhone={member.phone ?? null}
+          currentType={member.membership_type}
+          defaultKids={member.kids_count ?? 1}
+          recentCheckIns={checkIns ?? []}
+        />
+      )}
 
       {/* Approved marketing photos for this member */}
       {photos && photos.length > 0 && (
