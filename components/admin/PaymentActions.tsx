@@ -23,15 +23,20 @@ export default function PaymentActions({
   recordType,
   initialStatus,
   qrHref,
+  memberName,
 }: {
   id: number;
   recordType: "member" | "event" | "shop";
   initialStatus: SlipStatus;
   qrHref?: string;
+  memberName?: string;
 }) {
-  const [status, setStatus] = useState<SlipStatus>(initialStatus);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [status, setStatus]         = useState<SlipStatus>(initialStatus);
+  const [busy, setBusy]             = useState<string | null>(null);
+  const [err, setErr]               = useState<string | null>(null);
+  const [justApproved, setJustApproved] = useState(false);
+  const [checkInDone, setCheckInDone]   = useState(false);
+  const [checkInBusy, setCheckInBusy]   = useState(false);
 
   async function doAction(action: string, nextStatus: SlipStatus) {
     setBusy(action);
@@ -50,11 +55,33 @@ export default function PaymentActions({
         body: fd,
       });
       if (!res.ok) throw new Error(await res.text());
+      // Show check-in prompt only for member approvals
+      if (action === "approve" && recordType === "member") {
+        setJustApproved(true);
+      }
     } catch (e) {
       setStatus(prev); // revert
       setErr("Action failed — please try again.");
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function handleCheckInNow() {
+    setCheckInBusy(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ member_id: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setCheckInDone(true);
+    } catch (e) {
+      setErr("Check-in failed — try from the scanner.");
+    } finally {
+      setCheckInBusy(false);
     }
   }
 
@@ -77,9 +104,7 @@ export default function PaymentActions({
         </span>
       </div>
 
-      {err && (
-        <p className="text-xs text-red-500 mb-2">{err}</p>
-      )}
+      {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
 
       <div className="flex gap-2 flex-wrap">
         {isPending && (
@@ -103,7 +128,7 @@ export default function PaymentActions({
 
         {(isApproved || isRejected) && (
           <button
-            onClick={() => doAction("restore", "pending_review")}
+            onClick={() => { doAction("restore", "pending_review"); setJustApproved(false); setCheckInDone(false); }}
             disabled={!!busy}
             className="bg-yellow-100 text-yellow-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-yellow-200 disabled:opacity-50 transition-colors"
           >
@@ -120,6 +145,32 @@ export default function PaymentActions({
           </a>
         )}
       </div>
+
+      {/* ── Check In Now prompt (appears right after approving a member) ── */}
+      {justApproved && recordType === "member" && !checkInDone && (
+        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-green-800">
+              Is {memberName ?? "this member"} here right now?
+            </p>
+            <p className="text-xs text-green-600">Check them in so the session is counted.</p>
+          </div>
+          <button
+            onClick={handleCheckInNow}
+            disabled={checkInBusy}
+            className="shrink-0 bg-green-500 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
+          >
+            {checkInBusy ? "…" : "Check In Now"}
+          </button>
+        </div>
+      )}
+
+      {/* Confirmed check-in */}
+      {checkInDone && (
+        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl px-4 py-2 text-xs text-green-700 font-medium">
+          ✓ Checked in! Remind them to scan their QR card next time to earn loyalty points.
+        </div>
+      )}
     </div>
   );
 }

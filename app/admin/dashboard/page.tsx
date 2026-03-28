@@ -33,15 +33,15 @@ export default async function DashboardPage() {
     admin
       .from("member_registrations")
       .select("*", { count: "exact", head: true })
-      .eq("slip_status", "pending_review"),
+      .in("slip_status", ["pending_review", "cash_pending"]),
     admin
       .from("event_bookings")
       .select("*", { count: "exact", head: true })
-      .eq("slip_status", "pending_review"),
+      .in("slip_status", ["pending_review", "cash_pending"]),
     admin
       .from("shop_orders")
       .select("*", { count: "exact", head: true })
-      .eq("slip_status", "pending_review"),
+      .in("slip_status", ["pending_review", "cash_pending"]),
     admin
       .from("marketing_photos")
       .select("*", { count: "exact", head: true })

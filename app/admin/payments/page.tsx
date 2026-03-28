@@ -115,6 +115,7 @@ export default async function PaymentsPage({
                 recordType="member"
                 initialStatus={m.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
                 qrHref={`/qr/card/${m.id}`}
+                memberName={m.name}
               />
             </div>
           );
