@@ -3,87 +3,120 @@
 import { useState, useEffect } from "react";
 import { BASE_PRICES, MEMBERSHIP_TYPES } from "@/lib/pricing";
 
-// Group the price keys for display
-const PRICE_SECTIONS = [
-  {
-    title: "Single Sessions (per kid)",
-    keys: [
-      { key: "price_climb_unguided",   label: "Unguided Climb Zone (20 min)" },
-      { key: "price_session_group",    label: "Group Guide Session" },
-      { key: "price_session_1to1",     label: "1-to-1 Private Session" },
-      { key: "price_day_camp",         label: "Day Camp (10am to 2pm) per kid" },
-      { key: "price_combo_game_train", label: "Combo Game & Train (2 hrs)" },
-      { key: "price_all_day",          label: "All Day (max 8 hrs)" },
-    ],
-  },
-  {
-    title: "Monthly Memberships",
-    keys: [
-      { key: "price_monthly_2hr", label: "Monthly Flex: 2 Hrs Any Day" },
-      { key: "price_monthly_5hr", label: "Monthly Flex: 5 Hrs Any Day" },
-    ],
-  },
-  {
-    title: "Group Session Cards",
-    keys: [
-      { key: "price_sessions_4",  label: "Group 4-Card (5% off)" },
-      { key: "price_sessions_8",  label: "Group 8-Card (10% off)" },
-      { key: "price_sessions_16", label: "Group 16-Card (15% off)" },
-      { key: "price_sessions_20", label: "Group 20-Card (20% off)" },
-    ],
-  },
-  {
-    title: "Day Camp Cards",
-    keys: [
-      { key: "price_day_camp_4",  label: "Day Camp 4-Card (5% off)" },
-      { key: "price_day_camp_8",  label: "Day Camp 8-Card (10% off)" },
-      { key: "price_day_camp_16", label: "Day Camp 16-Card (15% off)" },
-      { key: "price_day_camp_20", label: "Day Camp 20-Card (20% off)" },
-    ],
-  },
-  {
-    title: "1-to-1 Session Cards",
-    keys: [
-      { key: "price_sessions_1to1_4",  label: "1-to-1 4-Card (5% off)" },
-      { key: "price_sessions_1to1_8",  label: "1-to-1 8-Card (10% off)" },
-      { key: "price_sessions_1to1_16", label: "1-to-1 16-Card (15% off)" },
-      { key: "price_sessions_1to1_20", label: "1-to-1 20-Card (20% off)" },
-    ],
-  },
-  {
-    title: "All Day Cards",
-    keys: [
-      { key: "price_all_day_4",  label: "All Day 4-Card (5% off)" },
-      { key: "price_all_day_8",  label: "All Day 8-Card (10% off)" },
-      { key: "price_all_day_16", label: "All Day 16-Card (15% off)" },
-      { key: "price_all_day_20", label: "All Day 20-Card (20% off)" },
-    ],
-  },
-  {
-    title: "Combo Cards",
-    keys: [
-      { key: "price_combo_4",  label: "Combo 4-Card (5% off)" },
-      { key: "price_combo_8",  label: "Combo 8-Card (10% off)" },
-      { key: "price_combo_16", label: "Combo 16-Card (15% off)" },
-      { key: "price_combo_20", label: "Combo 20-Card (20% off)" },
-    ],
-  },
-  {
-    title: "Birthday / Event Rates",
-    keys: [
-      { key: "birthday_rate_morning",   label: "Morning rate (per hour)" },
-      { key: "birthday_rate_afternoon", label: "Afternoon rate (per hour)" },
-      { key: "birthday_rate_evening",   label: "Evening rate (per hour)" },
-      { key: "birthday_rate_weekend",   label: "Weekend rate (per hour)" },
-      { key: "birthday_extra_6_10",     label: "Extra kids 6–10 (flat fee)" },
-      { key: "birthday_extra_11_15",    label: "Extra kids 11–15 (flat fee)" },
-      { key: "birthday_extra_16_20",    label: "Extra kids 16–20 (flat fee)" },
-    ],
-  },
+// ── Card tier definitions ─────────────────────────────────────
+const CARD_TIERS = [
+  { count: 4,  discount: 0.05, label: "4-Card (5% off)" },
+  { count: 8,  discount: 0.10, label: "8-Card (10% off)" },
+  { count: 16, discount: 0.15, label: "16-Card (15% off)" },
+  { count: 20, discount: 0.20, label: "20-Card (20% off)" },
 ];
 
+// Groups where card prices are derived from a base price
+const CARD_GROUPS = [
+  { label: "Group Sessions",      base: "price_session_group",    suffix: "sessions" },
+  { label: "Day Camp Sessions",   base: "price_day_camp",         suffix: "day_camp" },
+  { label: "1-to-1 Sessions",     base: "price_session_1to1",     suffix: "sessions_1to1" },
+  { label: "All Day Passes",      base: "price_all_day",          suffix: "all_day" },
+  { label: "Combo (Game+Train)",  base: "price_combo_game_train", suffix: "combo" },
+];
+
+// Simple editable rows (no card tiers)
+const SINGLE_ROWS = [
+  { key: "price_climb_unguided", label: "Unguided Climb Zone (20 min)" },
+  { key: "price_monthly_2hr",    label: "Monthly Flex: 2 Hrs Any Day" },
+  { key: "price_monthly_5hr",    label: "Monthly Flex: 5 Hrs Any Day" },
+];
+
+const BIRTHDAY_ROWS = [
+  { key: "birthday_rate_morning",   label: "Morning (per hour)" },
+  { key: "birthday_rate_afternoon", label: "Afternoon (per hour)" },
+  { key: "birthday_rate_evening",   label: "Evening (per hour)" },
+  { key: "birthday_rate_weekend",   label: "Weekend (per hour)" },
+  { key: "birthday_extra_6_10",     label: "Extra kids 6–10 (flat)" },
+  { key: "birthday_extra_11_15",    label: "Extra kids 11–15 (flat)" },
+  { key: "birthday_extra_16_20",    label: "Extra kids 16–20 (flat)" },
+];
+
+const SHOP_ROWS = [
+  { key: "price_shop_tshirt_kids",  label: "Kids T-Shirt" },
+  { key: "price_shop_tshirt_adult", label: "Adult T-Shirt" },
+  { key: "price_shop_shake_bake",   label: "Shake and Bake" },
+];
+
+const STATIC_BASE: Record<string, number> = {
+  ...BASE_PRICES,
+  price_shop_tshirt_kids:  300,
+  price_shop_tshirt_adult: 300,
+  price_shop_shake_bake:   200,
+};
+
+// Compute all derived card prices from base prices
+function buildDerived(prices: Record<string, number>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const g of CARD_GROUPS) {
+    const base = prices[g.base] ?? 0;
+    for (const t of CARD_TIERS) {
+      out[`price_${g.suffix}_${t.count}`] = Math.round(base * t.count * (1 - t.discount));
+    }
+  }
+  return out;
+}
+
+// ── Sub-components ────────────────────────────────────────────
+
+function PriceRow({
+  label,
+  value,
+  onChange,
+  readOnly = false,
+}: {
+  label: string;
+  value: number;
+  onChange?: (v: string) => void;
+  readOnly?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-2.5 gap-4">
+      <label className={`text-sm flex-1 ${readOnly ? "text-gray-400" : "text-gray-700"}`}>
+        {label}
+      </label>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="text-sm text-gray-400 font-mono">฿</span>
+        {readOnly ? (
+          <span className="w-28 text-right font-mono text-sm text-gray-400 pr-1">
+            {value.toLocaleString()}
+          </span>
+        ) : (
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={value}
+            onChange={(e) => onChange?.(e.target.value)}
+            className="w-28 border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
+        <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{title}</h2>
+      </div>
+      <div className="divide-y divide-gray-50">{children}</div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────
+
 export default function AdminSettingsPage() {
-  const [prices, setPrices] = useState<Record<string, number>>({ ...BASE_PRICES });
+  const [prices, setPrices] = useState<Record<string, number>>({ ...STATIC_BASE });
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,18 +125,31 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((data) => {
-        setPrices(data);
+      .then((data: Record<string, string | number>) => {
+        const p: Record<string, number> = { ...STATIC_BASE };
+        const d: Record<string, string> = {};
+        for (const [k, v] of Object.entries(data)) {
+          if (k.startsWith("desc_")) {
+            d[k] = String(v);
+          } else {
+            const n = parseFloat(String(v));
+            if (!isNaN(n)) p[k] = n;
+          }
+        }
+        setPrices(p);
+        setDescriptions(d);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  function handleChange(key: string, value: string) {
-    const num = parseInt(value.replace(/[^0-9]/g, ""), 10);
-    if (!isNaN(num)) {
-      setPrices((p) => ({ ...p, [key]: num }));
-    }
+  function handlePrice(key: string, raw: string) {
+    const n = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    if (!isNaN(n)) setPrices((p) => ({ ...p, [key]: n }));
+  }
+
+  function handleDesc(key: string, value: string) {
+    setDescriptions((d) => ({ ...d, [key]: value }));
   }
 
   async function handleSave() {
@@ -111,13 +157,16 @@ export default function AdminSettingsPage() {
     setSaved(false);
     setError("");
     try {
+      const derived = buildDerived(prices);
+      const payload: Record<string, number | string> = { ...prices, ...derived, ...descriptions };
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(prices),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
+      setPrices((p) => ({ ...p, ...derived }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
@@ -127,28 +176,33 @@ export default function AdminSettingsPage() {
     }
   }
 
+  const derived = buildDerived(prices);
+
+  const SaveButton = () => (
+    <button
+      onClick={handleSave}
+      disabled={saving}
+      className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl transition-colors"
+    >
+      {saving ? "Saving…" : saved ? "✓ Saved!" : "Save All"}
+    </button>
+  );
+
   if (loading) {
-    return (
-      <div className="text-center py-16 text-gray-400 animate-pulse">Loading prices…</div>
-    );
+    return <div className="text-center py-16 text-gray-400 animate-pulse">Loading prices…</div>;
   }
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pricing Settings</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            All prices in Thai Baht (THB). Changes go live immediately after saving.
+            All prices in Thai Baht (THB). Card prices calculate automatically from the base price.
           </p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl transition-colors"
-        >
-          {saving ? "Saving…" : saved ? "✓ Saved!" : "Save All Prices"}
-        </button>
+        <SaveButton />
       </div>
 
       {error && (
@@ -158,62 +212,88 @@ export default function AdminSettingsPage() {
       )}
 
       <div className="flex flex-col gap-6">
-        {PRICE_SECTIONS.map((section) => (
-          <div key={section.title} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
-              <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">
-                {section.title}
-              </h2>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {section.keys.map(({ key, label }) => (
-                <div key={key} className="flex items-center justify-between px-5 py-3 gap-4">
-                  <label className="text-sm text-gray-700 flex-1">{label}</label>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-sm text-gray-400 font-mono">฿</span>
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={prices[key] ?? BASE_PRICES[key] ?? 0}
-                      onChange={(e) => handleChange(key, e.target.value)}
-                      className="w-28 border border-gray-200 rounded-xl px-3 py-1.5 text-sm text-right font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      {/* Save button at bottom too */}
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-6 py-2.5 rounded-xl transition-colors"
-        >
-          {saving ? "Saving…" : saved ? "✓ Saved!" : "Save All Prices"}
-        </button>
-      </div>
-
-      {/* Membership type notes reference */}
-      <div className="mt-8 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">
-            Program Descriptions (read-only)
-          </h2>
-          <p className="text-xs text-gray-400 mt-0.5">These appear as info tooltips on the Join form</p>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {MEMBERSHIP_TYPES.map((mt) => (
-            <div key={mt.id} className="px-5 py-3">
-              <p className="text-sm font-semibold text-gray-700">{mt.label}</p>
-              {mt.note && <p className="text-xs text-gray-500 mt-0.5">{mt.note}</p>}
-            </div>
+        {/* Single sessions + monthly */}
+        <SectionCard title="Single Sessions & Monthly">
+          {SINGLE_ROWS.map(({ key, label }) => (
+            <PriceRow
+              key={key}
+              label={label}
+              value={prices[key] ?? 0}
+              onChange={(v) => handlePrice(key, v)}
+            />
           ))}
-        </div>
+        </SectionCard>
+
+        {/* Card groups — base editable, tiers auto-calculated */}
+        {CARD_GROUPS.map((g) => (
+          <SectionCard key={g.base} title={g.label}>
+            <PriceRow
+              label="Per session (base price)"
+              value={prices[g.base] ?? 0}
+              onChange={(v) => handlePrice(g.base, v)}
+            />
+            {CARD_TIERS.map((t) => {
+              const cardKey = `price_${g.suffix}_${t.count}`;
+              return (
+                <PriceRow
+                  key={cardKey}
+                  label={t.label}
+                  value={derived[cardKey] ?? 0}
+                  readOnly
+                />
+              );
+            })}
+          </SectionCard>
+        ))}
+
+        {/* Birthday / Events */}
+        <SectionCard title="Birthday / Event Rates">
+          {BIRTHDAY_ROWS.map(({ key, label }) => (
+            <PriceRow
+              key={key}
+              label={label}
+              value={prices[key] ?? 0}
+              onChange={(v) => handlePrice(key, v)}
+            />
+          ))}
+        </SectionCard>
+
+        {/* Shop */}
+        <SectionCard title="Shop Items">
+          {SHOP_ROWS.map(({ key, label }) => (
+            <PriceRow
+              key={key}
+              label={label}
+              value={prices[key] ?? 0}
+              onChange={(v) => handlePrice(key, v)}
+            />
+          ))}
+        </SectionCard>
+
+        {/* Program Descriptions */}
+        <SectionCard title="Program Descriptions">
+          {MEMBERSHIP_TYPES.map((mt) => {
+            const descKey = `desc_${mt.id}`;
+            return (
+              <div key={mt.id} className="px-5 py-3">
+                <p className="text-sm font-semibold text-gray-700 mb-1">{mt.label}</p>
+                <textarea
+                  rows={2}
+                  value={descriptions[descKey] ?? mt.note ?? ""}
+                  onChange={(e) => handleDesc(descKey, e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
+                />
+              </div>
+            );
+          })}
+        </SectionCard>
+
+      </div>
+
+      {/* Bottom save button */}
+      <div className="mt-6 flex justify-end">
+        <SaveButton />
       </div>
     </div>
   );

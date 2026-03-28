@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { BASE_PRICES } from "@/lib/pricing";
+import { BASE_PRICES, MEMBERSHIP_TYPES } from "@/lib/pricing";
 
-export const revalidate = 60; // re-fetch from DB at most once per minute
+export const revalidate = 60;
+
+// Default descriptions from MEMBERSHIP_TYPES
+const BASE_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
+  MEMBERSHIP_TYPES.map((m) => [`desc_${m.id}`, m.note ?? ""])
+);
 
 export async function GET() {
   try {
@@ -13,25 +18,25 @@ export async function GET() {
       .order("key");
 
     if (error || !data?.length) {
-      // Fall back to static prices
-      return NextResponse.json(BASE_PRICES);
+      return NextResponse.json({ ...BASE_PRICES, ...BASE_DESCRIPTIONS });
     }
 
-    // Build a prices record from the settings table
-    const prices: Record<string, number> = { ...BASE_PRICES };
+    // Start with all static defaults, overlay DB values
+    const result: Record<string, string | number> = {
+      ...BASE_PRICES,
+      ...BASE_DESCRIPTIONS,
+    };
     for (const row of data) {
-      const num = parseFloat(row.value);
-      if (!isNaN(num)) prices[row.key] = num;
+      result[row.key] = row.value; // keep as string — page parses
     }
 
-    return NextResponse.json(prices);
+    return NextResponse.json(result);
   } catch {
-    return NextResponse.json(BASE_PRICES);
+    return NextResponse.json({ ...BASE_PRICES, ...BASE_DESCRIPTIONS });
   }
 }
 
 export async function PATCH(req: Request) {
-  // Require admin auth via session cookie
   const { createSupabaseServerClient, createAdminClient: makeAdmin } = await import(
     "@/lib/supabase/server"
   );
@@ -51,13 +56,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const updates: Record<string, number> = await req.json();
+  const updates: Record<string, number | string> = await req.json();
 
   const upserts = Object.entries(updates).map(([key, value]) => ({
     key,
     value: String(value),
     label: key
-      .replace(/^price_/, "")
+      .replace(/^(price_|desc_)/, "")
       .replace(/_/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase()),
   }));
