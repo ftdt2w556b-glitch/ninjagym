@@ -86,19 +86,20 @@ export default function HomePage() {
         RICK TEW&apos;S<br />NINJAGYM
       </h1>
 
-      {/* Subtitle — sits just above where the ninja overlaps */}
-      <p className="relative z-20 text-white text-base text-center mb-0 mt-2 font-semibold drop-shadow">
+      {/* Subtitle — no z-index so ninja (z-10) renders on top of it */}
+      <p className="text-white text-base text-center mb-0 mt-2 font-semibold drop-shadow">
         {t.homeSubtitle}
       </p>
 
       {/*
         Ninja hero + yellow pulsating stars
         pointer-events-none so touches pass through to the Join button below
-        marginTop pulls it up over the subtitle; marginBottom pushes into the button
+        marginTop: -35px pulls ninja up so it overlaps the subtitle text
+        marginBottom: -40px lets feet just peek over the Join button top edge
       */}
       <div
         className="relative w-full flex justify-center pointer-events-none"
-        style={{ marginTop: "-18px", marginBottom: "-95px", zIndex: 10 }}
+        style={{ marginTop: "-35px", marginBottom: "-40px", zIndex: 10 }}
       >
         {/* Yellow stars — behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
