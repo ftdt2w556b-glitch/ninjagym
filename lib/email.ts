@@ -121,3 +121,70 @@ export async function sendEventConfirmation({
     `,
   });
 }
+
+export async function sendShopConfirmation({
+  to,
+  name,
+  items,
+  totalAmount,
+  orderId,
+  paymentMethod,
+}: {
+  to: string;
+  name: string;
+  items: { name: string; qty: number; size_or_flavor: string; unit_price: number }[];
+  totalAmount: number;
+  orderId: number;
+  paymentMethod: string;
+}) {
+  const resend = getResend();
+  if (!resend || !to) return;
+
+  const paymentNote =
+    paymentMethod === "stripe"
+      ? "Your card payment has been received."
+      : paymentMethod === "cash"
+      ? "Please pay at the front desk when you pick up."
+      : "Your PromptPay slip is under review. Staff will approve it shortly.";
+
+  const itemRows = items
+    .map(
+      (i) =>
+        `<tr><td style="padding:6px 8px;color:#333">${i.name} (${i.size_or_flavor})</td><td style="padding:6px 8px;color:#333;text-align:center">${i.qty}</td><td style="padding:6px 8px;color:#1a56db;text-align:right;font-weight:bold">${(i.unit_price * i.qty).toLocaleString()} THB</td></tr>`
+    )
+    .join("");
+
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `NinjaGym Store — Order #${orderId} Received`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
+        <h1 style="color:#1a56db;font-size:28px;margin-bottom:4px">Order Received!</h1>
+        <p style="color:#555;margin-top:0">Hi <strong>${name}</strong>, thanks for your NinjaGym Store order.</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f0f4ff;border-radius:12px;overflow:hidden">
+          <thead>
+            <tr style="background:#1a56db;color:#fff">
+              <th style="padding:8px;text-align:left;font-size:13px">Item</th>
+              <th style="padding:8px;text-align:center;font-size:13px">Qty</th>
+              <th style="padding:8px;text-align:right;font-size:13px">Price</th>
+            </tr>
+          </thead>
+          <tbody>${itemRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="padding:8px;font-weight:bold;color:#333">Total</td>
+              <td style="padding:8px;text-align:right;font-weight:bold;color:#1a56db;font-size:16px">${totalAmount.toLocaleString()} THB</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <p style="color:#555;font-size:14px"><strong>Payment:</strong> ${paymentNote}</p>
+        <p style="color:#888;font-size:13px">Order ID: #${orderId} · Questions? Reply to this email or visit us at the front desk.</p>
+        <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
+        <p style="color:#aaa;font-size:12px;text-align:center">NinjaGym Store · Koh Samui, Thailand · <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="color:#aaa">ninjagym.com</a></p>
+      </div>
+    `,
+  });
+}

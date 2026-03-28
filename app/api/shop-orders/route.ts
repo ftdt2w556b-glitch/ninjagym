@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendShopConfirmation } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,6 +59,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // Send confirmation email (fire-and-forget)
+    if (email) {
+      sendShopConfirmation({
+        to: email,
+        name,
+        items,
+        totalAmount: total_amount ?? 0,
+        orderId: data.id,
+        paymentMethod: payment_method,
+      }).catch((e) => console.error("Shop email send failed:", e));
+    }
 
     return NextResponse.json({ id: data.id });
   } catch (err: unknown) {

@@ -23,7 +23,7 @@ export default function ShopPage() {
   const t = translations[lang];
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({ name: "", phone: "", payment_method: "promptpay" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", payment_method: "promptpay" });
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +69,7 @@ export default function ShopPage() {
       const body = new FormData();
       body.append("name", form.name);
       body.append("phone", form.phone);
+      body.append("email", form.email);
       body.append("payment_method", form.payment_method);
       body.append("total_amount", String(total));
       body.append("items", JSON.stringify(
@@ -214,6 +215,13 @@ export default function ShopPage() {
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.phoneLabel}</label>
             <input type="tel" value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t.emailLabel}</label>
+            <input type="email" value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="you@example.com"
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
           </div>
         </div>
