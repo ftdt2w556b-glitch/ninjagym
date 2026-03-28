@@ -166,7 +166,7 @@ export default async function RevenuePage({
           <p className="text-3xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
           <p className="text-sm text-gray-500 mt-1">Transfer / PromptPay ({transferCount} payments)</p>
         </div>
-        <div className="rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #b91c1c, #1e3a8a)" }}>
+        <div className="rounded-2xl p-5 text-white bg-gray-800">
           <p className="text-3xl font-bold">฿{grandTotal.toLocaleString()}</p>
           <p className="text-sm opacity-80 mt-1">Grand Total — {allTx.length} payments</p>
         </div>

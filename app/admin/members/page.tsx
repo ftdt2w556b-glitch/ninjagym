@@ -99,7 +99,7 @@ export default async function MembersPage({
                       {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                       {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                       {(m as { kids_names?: string }).kids_names && (
-                        <p className="text-xs text-blue-600 mt-0.5">👶 {(m as { kids_names?: string }).kids_names}</p>
+                        <p className="text-xs text-blue-600 mt-0.5 font-bold">{(m as { kids_names?: string }).kids_names}</p>
                       )}
                       {(m as { notes?: string }).notes && (
                         <p className="text-xs text-orange-500 mt-0.5 italic">📝 {(m as { notes?: string }).notes}</p>

@@ -10,7 +10,6 @@ export async function GET() {
     const { data, error } = await admin
       .from("settings")
       .select("key, value")
-      .like("key", "price_%")
       .order("key");
 
     if (error || !data?.length) {
