@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
         .from("slips")
         .upload(fileName, buffer, { contentType: slipFile.type, upsert: false });
 
-      if (!uploadError) {
+      if (uploadError) {
+        console.error("Slip upload error:", JSON.stringify(uploadError));
+      } else {
         slip_image = fileName;
         slip_uploaded_at = new Date().toISOString();
       }
@@ -84,10 +86,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ id: data.id });
   } catch (err: unknown) {
-    console.error("POST /api/members error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Server error" },
-      { status: 500 }
-    );
+    // Log full error for Vercel function logs
+    console.error("POST /api/members error:", JSON.stringify(err, null, 2));
+    const msg =
+      err instanceof Error
+        ? err.message
+        : typeof err === "object" && err !== null && "message" in err
+        ? String((err as { message: unknown }).message)
+        : JSON.stringify(err);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
