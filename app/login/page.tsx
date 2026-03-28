@@ -37,11 +37,10 @@ export default function LoginPage() {
   return (
     <div className="public-bg min-h-dvh flex flex-col items-center justify-center px-4">
       {/* Logo */}
-      <div className="mb-4">
+      <div className="mb-3">
         <Image src="/images/logo_small.png" alt="NinjaGym" width={90} height={90} className="drop-shadow-xl" />
       </div>
-      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">NinjaGym</h1>
-      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-8">STAFF LOGIN</p>
+      <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-6">Staff Login</p>
 
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
