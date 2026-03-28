@@ -10,6 +10,7 @@ interface MemberResult {
   membership_type: string;
   slip_status: string;
   sessions_remaining: number | null;
+  expires_at: string | null;
   kids_names: string | null;
   kids_count: number;
   email: string | null;
@@ -41,7 +42,7 @@ export default function ScannerPage() {
     const supabase = createSupabaseBrowserClient();
     const { data, error: dbError } = await supabase
       .from("member_registrations")
-      .select("id, name, email, membership_type, slip_status, sessions_remaining, kids_names, kids_count")
+      .select("id, name, email, membership_type, slip_status, sessions_remaining, expires_at, kids_names, kids_count")
       .eq("id", id)
       .single();
 
@@ -95,6 +96,16 @@ export default function ScannerPage() {
     : "";
 
   const isSessionBased = member && member.sessions_remaining !== null;
+
+  // Monthly flex expiry helpers
+  const isMonthlyFlex = member?.membership_type === "monthly_flex";
+  const expiryDate = member?.expires_at ? new Date(member.expires_at) : null;
+  const now = new Date();
+  const isExpired = expiryDate ? expiryDate < now : false;
+  const daysLeft = expiryDate
+    ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
 
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-start pt-10 px-4">
@@ -165,6 +176,20 @@ export default function ScannerPage() {
       {/* ── Member found, not yet checked in ── */}
       {member && !checkedIn && (
         <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+          {/* Expired membership — block check-in */}
+          {isMonthlyFlex && isExpired && (
+            <div className="bg-red-100 text-red-700 rounded-xl px-3 py-2 mb-4 text-sm font-semibold text-center">
+              ⛔ Monthly membership expired — renewal required
+            </div>
+          )}
+
+          {/* Expiring soon warning */}
+          {isMonthlyFlex && isExpiringSoon && (
+            <div className="bg-orange-100 text-orange-700 rounded-xl px-3 py-2 mb-4 text-sm text-center">
+              ⚠️ Membership expires in <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong> — remind to renew!
+            </div>
+          )}
+
           {/* Payment warning */}
           {member.slip_status !== "approved" && (
             <div className="bg-yellow-100 text-yellow-800 rounded-xl px-3 py-2 mb-4 text-sm flex items-center gap-2">
@@ -201,9 +226,19 @@ export default function ScannerPage() {
             </div>
           )}
 
+          {/* Monthly flex expiry date */}
+          {isMonthlyFlex && expiryDate && !isExpired && (
+            <div className="bg-blue-50 rounded-xl px-3 py-2 my-3 text-center">
+              <p className="text-xs text-gray-500">Membership Valid Until</p>
+              <p className="font-fredoka text-xl text-[#1a56db]">
+                {expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            </div>
+          )}
+
           <button
             onClick={handleCheckIn}
-            disabled={loading}
+            disabled={loading || (isMonthlyFlex && isExpired)}
             className="w-full bg-[#22c55e] text-white font-bold text-xl py-4 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-50 mt-3"
           >
             {loading ? "Checking in…" : "✓ Check In"}

@@ -53,15 +53,25 @@ export async function POST(request: NextRequest) {
         type === "event"  ? "birthday"     :
         "shop_order";
 
-      // Fetch the record to get email + amount
+      // Fetch the record to get email, amount, and membership type
       const { data: record } = await admin
         .from(table)
-        .select("email, amount_paid, total_amount")
+        .select("email, amount_paid, total_amount, membership_type")
         .eq("id", id)
         .single();
 
       const email = record?.email as string | null;
       const amount = (record?.amount_paid ?? record?.total_amount ?? 0) as number;
+
+      // Set expiry for monthly_flex memberships (30 days from approval)
+      if (type === "member" && record?.membership_type === "monthly_flex") {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        await admin
+          .from("member_registrations")
+          .update({ expires_at: expiresAt.toISOString() })
+          .eq("id", id);
+      }
 
       if (email && amount > 0) {
         const points = calcPoints(amount, sourceType);

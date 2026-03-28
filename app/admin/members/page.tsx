@@ -13,7 +13,7 @@ export default async function MembersPage({
 
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -110,6 +110,15 @@ export default async function MembersPage({
                       {m.sessions_remaining !== null && (
                         <p className="text-xs text-blue-500">{m.sessions_remaining} sessions left</p>
                       )}
+                      {(m as { expires_at?: string | null }).expires_at && (() => {
+                        const exp = new Date((m as { expires_at: string }).expires_at);
+                        const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
+                        return (
+                          <p className={`text-xs font-medium ${daysLeft <= 0 ? "text-red-500" : daysLeft <= 7 ? "text-orange-500" : "text-gray-400"}`}>
+                            {daysLeft <= 0 ? "⛔ Expired" : daysLeft <= 7 ? `⚠️ Expires in ${daysLeft}d` : `Until ${exp.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
+                          </p>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell text-gray-600">{m.kids_count}</td>
                     <td className="px-4 py-3">

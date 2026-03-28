@@ -191,8 +191,7 @@ export default function JoinPage() {
         </div>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
-      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.joinTitle}</h1>
-      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">RICK TEW&apos;S DOJO, KOH SAMUI</p>
+      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-5">{t.joinTitle}</h1>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Name */}
@@ -479,15 +478,15 @@ export default function JoinPage() {
             required
           />
           <label htmlFor="policy-check" className="text-sm text-gray-700 leading-snug">
-            I agree to the{" "}
+            {t.policyBefore}{" "}
             <button
               type="button"
               onClick={() => setShowWaiver(true)}
               className="text-[#1a56db] font-semibold underline underline-offset-2"
             >
-              NinjaGym Policies
+              {t.policyLink}
             </button>{" "}
-            and understand: <strong>No Refunds</strong>.
+            {t.policyAfter}
           </label>
         </div>
 
@@ -510,7 +509,7 @@ export default function JoinPage() {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] flex flex-col">
             {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#1a56db] to-[#2563eb] rounded-t-2xl">
-              <h2 className="font-fredoka text-lg text-white">🥷 NinjaGym Rules &amp; Waiver</h2>
+              <h2 className="font-fredoka text-lg text-white">🥷 {t.waiverTitle}</h2>
               <button
                 onClick={() => setShowWaiver(false)}
                 className="text-white/70 hover:text-white text-2xl leading-none"
@@ -538,7 +537,7 @@ export default function JoinPage() {
                 onClick={() => { setAgreedToPolicy(true); setShowWaiver(false); }}
                 className="w-full bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
               >
-                I Understand - Close
+                {t.waiverClose}
               </button>
             </div>
           </div>

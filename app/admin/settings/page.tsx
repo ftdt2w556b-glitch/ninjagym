@@ -15,8 +15,7 @@ const SESSION_BASE_ROWS = [
 // Other single / monthly rows
 const SINGLE_ROWS = [
   { key: "price_climb_unguided", label: "Unguided Climb Zone (20 min)" },
-  { key: "price_monthly_2hr",    label: "Monthly Flex: 2 Hrs Any Day" },
-  { key: "price_monthly_5hr",    label: "Monthly Flex: 5 Hrs Any Day" },
+  { key: "price_monthly_flex",   label: "Monthly Flex: any day or time (30 days)" },
 ];
 
 const BIRTHDAY_ROWS = [
