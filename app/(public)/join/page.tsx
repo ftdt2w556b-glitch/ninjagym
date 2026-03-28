@@ -84,7 +84,7 @@ export default function JoinPage() {
     kids_names: "",
     kids_count: 1,
     membership_type: "session_group",
-    payment_method: "promptpay",
+    payment_method: "cash",
     notes: "",
   });
   const [slip, setSlip] = useState<File | null>(null);
