@@ -122,7 +122,7 @@ export default function AboutPage() {
               <p className="font-bold text-[#ffe033] text-sm mb-1">Ninja Day Camps (10am to 2pm)</p>
               <ul className="text-sm text-white/90 flex flex-col gap-1">
                 <li>4-hour supervised ninja training session</li>
-                <li>Drop-in before 2pm, 555 THB per child</li>
+                <li>Drop-in before 2pm (see Join for pricing)</li>
                 <li>Includes climbing, parkour and obstacle courses</li>
                 <li>Jump and roll fundamentals with active Guides</li>
                 <li>Multi-session cards available with discount</li>

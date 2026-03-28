@@ -21,7 +21,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="relative flex flex-col items-center min-h-dvh px-4 py-8 text-white overflow-hidden">
+    <main className="relative flex flex-col items-center min-h-dvh px-4 py-6 text-white overflow-hidden">
 
       {/* Stars background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -32,7 +32,7 @@ export default function HomePage() {
             style={{
               width: Math.random() * 3 + 1 + "px",
               height: Math.random() * 3 + 1 + "px",
-              top: Math.random() * 60 + "%",
+              top: Math.random() * 70 + "%",
               left: Math.random() * 100 + "%",
               opacity: Math.random() * 0.6 + 0.2,
               animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
@@ -48,48 +48,56 @@ export default function HomePage() {
       </div>
 
       {/* Logo */}
-      <div className="mt-2 mb-1">
+      <div className="mt-2 mb-2">
         <Image
           src="/images/logo_small.png"
           alt="NinjaGym Logo"
-          width={120}
-          height={120}
+          width={130}
+          height={130}
           className="drop-shadow-xl"
           priority
         />
       </div>
 
-      {/* Title */}
-      <h1 className="font-fredoka text-4xl text-center drop-shadow-lg leading-tight">
-        RICK TEW&apos;S NINJAGYM
+      {/* Title — big bold yellow Bangers like the original app */}
+      <h1
+        className="font-bangers text-center leading-none text-[#ffe033] drop-shadow-lg"
+        style={{ fontSize: "clamp(3rem, 14vw, 5.5rem)", textShadow: "2px 3px 0px rgba(0,0,0,0.35)" }}
+      >
+        RICK TEW&apos;S<br />NINJAGYM
       </h1>
-      <p className="font-bangers text-lg tracking-widest text-[#ffe033] text-center mt-1 drop-shadow">
+      <p className="text-white text-base text-center mt-2 mb-1 font-semibold drop-shadow">
         {t.homeSubtitle}
       </p>
 
-      {/* Ninja hero image — floating animation */}
-      <div className="my-4 relative z-10" style={{ animation: "floatNinja 4s ease-in-out infinite" }}>
+      {/* Ninja hero image */}
+      <div className="relative z-10" style={{ animation: "floatNinja 4s ease-in-out infinite" }}>
         <Image
           src="/images/App1_small.png"
           alt="Ninja character"
-          width={280}
-          height={280}
+          width={300}
+          height={300}
           className="drop-shadow-2xl"
           priority
         />
       </div>
 
       {/* CTA buttons */}
-      <div className="flex flex-col gap-3 w-full z-10">
+      <div className="flex flex-col gap-3 w-full z-10 mt-1">
+
+        {/* JOIN NOW — big pill button */}
         <Link
           href="/join"
-          className="bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-xl rounded-2xl py-4 text-center shadow-lg hover:brightness-110 transition-all active:scale-95 tracking-wide"
+          className="bg-gradient-to-b from-[#5dff70] to-[#18a828] text-white font-bangers text-4xl rounded-full py-3 text-center shadow-xl hover:brightness-110 transition-all active:scale-95 tracking-wider"
+          style={{ textShadow: "1px 2px 0px rgba(0,0,0,0.3)" }}
         >
-          JOIN NINJAGYM
+          JOIN NOW
         </Link>
+
+        {/* MY MEMBERSHIP */}
         <Link
           href="/my-membership"
-          className="border-2 border-white text-white font-bold text-base rounded-2xl py-3 text-center hover:bg-white/10 transition-all active:scale-95"
+          className="bg-[#0d2d1a] border border-white/20 text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-[#133d24] transition-all active:scale-95 tracking-wide"
         >
           {t.homeMyMembership}
         </Link>
@@ -101,7 +109,7 @@ export default function HomePage() {
             <span className="text-xs font-bold text-center leading-tight">About</span>
           </Link>
           <Link href="/birthdays" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
-            <Image src="/images/App4_small.png" alt="Events" width={44} height={44} className="rounded-xl object-cover" />
+            <Image src="/images/App4_small.png" alt="Birthdays" width={44} height={44} className="rounded-xl object-cover" />
             <span className="text-xs font-bold text-center leading-tight">Birthdays</span>
           </Link>
           <Link href="/shop" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
@@ -110,17 +118,26 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <Link
-          href="/promptpay"
-          className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
-        >
-          📱 {t.homePromptPay}
-        </Link>
+        {/* Bottom utility links */}
+        <div className="grid grid-cols-2 gap-2">
+          <Link
+            href="/promptpay"
+            className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
+          >
+            📱 PromptPay
+          </Link>
+          <Link
+            href="/contact"
+            className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
+          >
+            ✉️ Contact Us
+          </Link>
+        </div>
       </div>
 
       {/* Staff login */}
-      <div className="mt-6 mb-2">
-        <Link href="/admin/dashboard" className="text-white/40 text-xs underline">
+      <div className="mt-5 mb-2">
+        <Link href="/admin/dashboard" className="text-white/30 text-xs underline">
           {t.homeStaffLogin}
         </Link>
       </div>
@@ -132,7 +149,7 @@ export default function HomePage() {
         }
         @keyframes floatNinja {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-14px); }
+          50% { transform: translateY(-12px); }
         }
       `}</style>
     </main>
