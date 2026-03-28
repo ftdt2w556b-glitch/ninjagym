@@ -150,6 +150,16 @@ export interface WorkInstruction {
   updated_at: string;
 }
 
+export interface ShopInventory {
+  id: number;
+  item_id: string;
+  item_name: string;
+  variant: string;
+  stock_qty: number;
+  low_stock_alert: number;
+  updated_at: string;
+}
+
 export interface ShopCatalogItem {
   id: string;
   name: string;

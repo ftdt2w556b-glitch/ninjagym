@@ -61,13 +61,14 @@ export default async function DashboardPage() {
 
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
 
+  const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0);
+
   const stats = [
-    { label: "Check-ins Today",  value: todayCheckIns ?? 0,                                     color: "bg-blue-100 text-blue-800",     href: "/scanner" },
-    { label: "Pending Payments", value: pendingPayments ?? 0,                                   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
-    { label: "Pending Events",   value: pendingEvents ?? 0,                                     color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
-    { label: "Pending Orders",   value: pendingOrders ?? 0,                                     color: "bg-green-100 text-green-800",   href: "/admin/shop-orders" },
-    { label: "Photos to Review", value: pendingPhotos ?? 0,                                     color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
-    { label: "Revenue Today",    value: `฿${revenueToday.toLocaleString()}`,                    color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
+    { label: "Check-ins Today",  value: todayCheckIns ?? 0,                 color: "bg-blue-100 text-blue-800",     href: "/scanner" },
+    { label: "Pending",          value: totalPending,                        color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
+    { label: "Pending Events",   value: pendingEvents ?? 0,                  color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
+    { label: "Photos to Review", value: pendingPhotos ?? 0,                  color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
+    { label: "Revenue Today",    value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
   ];
 
   // Server actions
@@ -158,7 +159,7 @@ export default async function DashboardPage() {
           href="/admin/payments"
           className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors"
         >
-          💳 Review Payments
+          💳 Review Pending
         </a>
       </div>
 

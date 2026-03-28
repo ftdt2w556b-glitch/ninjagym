@@ -73,6 +73,39 @@ export async function POST(request: NextRequest) {
           .eq("id", id);
       }
 
+      // ── Decrement inventory for approved shop orders ──────────
+      if (type === "shop") {
+        try {
+          const { data: order } = await admin
+            .from("shop_orders")
+            .select("items")
+            .eq("id", id)
+            .single();
+          const items = (order?.items ?? []) as Array<{
+            id: string; qty: number; size_or_flavor?: string | null;
+          }>;
+          for (const item of items) {
+            if (item.id === "gift_card") continue; // no physical stock
+            const variant = item.size_or_flavor ?? "";
+            const { data: inv } = await admin
+              .from("shop_inventory")
+              .select("stock_qty")
+              .eq("item_id", item.id)
+              .eq("variant", variant)
+              .maybeSingle();
+            const newQty = Math.max(0, (inv?.stock_qty ?? 0) - item.qty);
+            await admin
+              .from("shop_inventory")
+              .upsert(
+                { item_id: item.id, variant, stock_qty: newQty, updated_at: new Date().toISOString() },
+                { onConflict: "item_id,variant" }
+              );
+          }
+        } catch (invErr) {
+          console.error("Inventory decrement failed:", invErr);
+        }
+      }
+
       if (email && amount > 0) {
         const points = calcPoints(amount, sourceType);
 

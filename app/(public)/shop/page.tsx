@@ -331,8 +331,8 @@ export default function ShopPage() {
                 </div>
                 <div className="flex flex-col gap-1 text-sm">
                   <p className="font-bold text-gray-800">NinjaGym Samui</p>
-                  <p className="text-gray-500 text-xs">PromptPay / Phone</p>
-                  <p className="font-mono font-bold text-[#1a56db] text-lg">097-xxx-xxxx</p>
+                  <p className="text-gray-500 text-xs">PromptPay Phone Number</p>
+                  <p className="font-mono font-bold text-[#1a56db] text-lg">086-294-4374</p>
                   {cart.length > 0 && (
                     <div className="mt-1 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2">
                       <p className="text-xs text-yellow-700 font-semibold">Amount to pay:</p>
