@@ -114,7 +114,7 @@ export default function HomePage() {
               </span>
               {i < HERO_WORDS.length - 1
                 ? <span style={{ color: "rgba(255,255,255,0.6)" }}>, </span>
-                : <span style={{ color: litStage >= 4 ? "rgba(255,224,51,0.7)" : "rgba(255,255,255,0.55)", transition: "color 0.45s ease" }}>, and…</span>
+                : <span style={{ color: litStage >= 4 ? "#ffe033" : "rgba(255,255,255,0.55)", transition: "color 0.45s ease" }}>, and…</span>
               }
             </span>
           ))}
@@ -137,7 +137,7 @@ export default function HomePage() {
       */}
       <div
         className="relative w-full flex justify-center pointer-events-none"
-        style={{ marginTop: "-15px", marginBottom: "-40px", zIndex: 10 }}
+        style={{ marginTop: "-25px", marginBottom: "-20px", zIndex: 10 }}
       >
         {/* Yellow stars — behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
@@ -174,14 +174,17 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CTA buttons — zIndex 5 so they sit above the ninja's bottom overlap */}
-      <div className="flex flex-col gap-3 w-full relative" style={{ zIndex: 5 }}>
+      {/* CTA buttons — mt-3 gives breathing room below ninja; zIndex 5 */}
+      <div className="flex flex-col gap-3 w-full relative mt-3" style={{ zIndex: 5 }}>
 
-        {/* JOIN NOW — main pill button */}
+        {/* JOIN NOW — trampoline glow synced with ninja float (4s) */}
         <Link
           href="/join"
-          className="bg-gradient-to-b from-[#5dff70] to-[#18a828] text-white font-bangers text-4xl rounded-full py-3 text-center shadow-xl hover:brightness-110 transition-all active:scale-95 tracking-wider"
-          style={{ textShadow: "1px 2px 0px rgba(0,0,0,0.3)" }}
+          className="bg-gradient-to-b from-[#5dff70] to-[#18a828] text-white font-bangers text-4xl rounded-full py-3 text-center shadow-xl active:scale-95 tracking-wider"
+          style={{
+            textShadow: "1px 2px 0px rgba(0,0,0,0.3)",
+            animation: "trampolineGlow 4s ease-in-out infinite",
+          }}
         >
           JOIN NOW
         </Link>
@@ -234,6 +237,11 @@ export default function HomePage() {
         @keyframes floatNinja {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-12px); }
+        }
+        /* Button brightens when ninja is at lowest point (0%/100%) — trampoline */
+        @keyframes trampolineGlow {
+          0%, 100% { filter: brightness(1.25) saturate(1.15); box-shadow: 0 0 18px rgba(93,255,112,0.55); }
+          40%, 60% { filter: brightness(1)    saturate(1);    box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
         }
         @keyframes starPop {
           0%, 100% { opacity: 0.45; transform: scale(0.82); }
