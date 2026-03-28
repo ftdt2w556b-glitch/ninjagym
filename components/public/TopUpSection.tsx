@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MEMBERSHIP_TYPES, getPriceForType, formatTHB } from "@/lib/pricing";
-
-// Bulk types need a qty slider — not suitable for quick top-up. Direct to /join for those.
-const TOPUP_TYPES = MEMBERSHIP_TYPES.filter((m) => !m.bulk);
+import {
+  MEMBERSHIP_TYPES,
+  getPriceForType,
+  calcBulkPrice,
+  BASE_PRICES,
+  formatTHB,
+} from "@/lib/pricing";
 
 interface CheckIn {
   id: number;
@@ -30,20 +33,27 @@ export default function TopUpSection({
   defaultKids,
   recentCheckIns,
 }: Props) {
-  // Shared state — program picker in CONTINUE TRAINING also drives ADD SESSIONS price
-  const safeInitial = TOPUP_TYPES.find((m) => m.id === currentType)
+  const safeInitial = MEMBERSHIP_TYPES.find((m) => m.id === currentType)
     ? currentType
-    : TOPUP_TYPES[0].id;
+    : MEMBERSHIP_TYPES[0].id;
+
   const [selectedType, setSelectedType] = useState(safeInitial);
   const [kidsCount, setKidsCount]       = useState(defaultKids);
+  const [bulkQty, setBulkQty]           = useState(5); // default qty for bulk packs
 
-  const [loading, setLoading]         = useState<string | null>(null);
-  const [success, setSuccess]         = useState<string | null>(null);
-  const [error, setError]             = useState<string | null>(null);
+  const [loading, setLoading]             = useState<string | null>(null);
+  const [success, setSuccess]             = useState<string | null>(null);
+  const [error, setError]                 = useState<string | null>(null);
   const [showPromptPay, setShowPromptPay] = useState(false);
 
-  const selectedMt = TOPUP_TYPES.find((m) => m.id === selectedType);
-  const price      = getPriceForType(selectedType, kidsCount);
+  const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
+  const isBulk     = !!selectedMt?.bulk;
+
+  const price = isBulk
+    ? calcBulkPrice(BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty)
+    : getPriceForType(selectedType, kidsCount);
+
+  const discountPct = isBulk ? Math.min(bulkQty, 20) : 0;
 
   async function doRegister(paymentMethod: "cash" | "promptpay") {
     setLoading(paymentMethod);
@@ -56,6 +66,7 @@ export default function TopUpSection({
     body.append("kids_count", String(kidsCount));
     body.append("payment_method", paymentMethod);
     body.append("amount_paid", String(price));
+    if (isBulk) body.append("sessions_remaining", String(bulkQty));
     body.append("notes", `Top-up from member card #${memberId}`);
 
     try {
@@ -86,9 +97,7 @@ export default function TopUpSection({
             ← Back
           </button>
           <div className="text-center">
-            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-3">
-              Scan to Pay
-            </p>
+            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-3">Scan to Pay</p>
             <Image
               src="/images/promptpay-qr-small.png"
               alt="PromptPay QR"
@@ -101,10 +110,13 @@ export default function TopUpSection({
             <p className="text-sm text-gray-600 font-semibold">Rick Tew Co., Ltd.</p>
           </div>
           <div className="bg-[#ffe033] rounded-xl px-4 py-3 text-center">
-            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">
-              Amount to Transfer
-            </p>
+            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">Amount to Transfer</p>
             <p className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</p>
+            {isBulk && (
+              <p className="text-xs text-[#1a56db]/70 mt-0.5">
+                {bulkQty} sessions · {discountPct}% off
+              </p>
+            )}
           </div>
           <p className="text-sm text-gray-600 text-center">
             Screenshot the confirmation and show staff to complete your check-in.
@@ -118,48 +130,70 @@ export default function TopUpSection({
   return (
     <div className="mt-4 flex flex-col gap-3">
 
-      {/* ── CONTINUE TRAINING — program picker (drives ADD SESSIONS price too) */}
+      {/* ── CONTINUE TRAINING ─────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
           Continue Training
         </p>
-        <p className="text-sm text-gray-500 mb-3">
-          Pick a program — just pick and go.
-        </p>
+        <p className="text-sm text-gray-500 mb-3">Pick a program — just pick and go.</p>
 
+        {/* Program picker */}
         <select
           value={selectedType}
           onChange={(e) => { setSelectedType(e.target.value); setSuccess(null); setError(null); }}
           className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] mb-3"
         >
-          {TOPUP_TYPES.map((mt) => (
-            <option key={mt.id} value={mt.id}>
-              {mt.label}
-            </option>
+          {MEMBERSHIP_TYPES.map((mt) => (
+            <option key={mt.id} value={mt.id}>{mt.label}</option>
           ))}
         </select>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Number of children</span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setKidsCount(Math.max(1, kidsCount - 1))}
-              className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
-            >
-              -
-            </button>
-            <span className="font-bold text-gray-800 w-4 text-center">{kidsCount}</span>
-            <button
-              onClick={() => setKidsCount(Math.min(6, kidsCount + 1))}
-              className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
-            >
-              +
-            </button>
+        {/* Bulk qty slider — appears only for bulk types */}
+        {isBulk && (
+          <div className="bg-blue-50 border border-[#1a56db]/20 rounded-xl px-4 py-3 mb-3">
+            <div className="flex items-center justify-between text-sm mb-2">
+              <span className="font-semibold text-gray-700">{bulkQty} sessions</span>
+              <span className="text-green-600 font-bold">{discountPct}% off</span>
+            </div>
+            <input
+              type="range"
+              min={2}
+              max={20}
+              value={bulkQty}
+              onChange={(e) => setBulkQty(Number(e.target.value))}
+              className="w-full accent-[#1a56db]"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>2 sessions</span>
+              <span>20 sessions (20% off)</span>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Kids count — not shown for bulk (bulk packs are per-pack, not per-kid) */}
+        {!isBulk && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Number of children</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setKidsCount(Math.max(1, kidsCount - 1))}
+                className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
+              >
+                -
+              </button>
+              <span className="font-bold text-gray-800 w-4 text-center">{kidsCount}</span>
+              <button
+                onClick={() => setKidsCount(Math.min(10, kidsCount + 1))}
+                className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ── ADD SESSIONS / TOP UP — price updates when program/kids change above */}
+      {/* ── ADD SESSIONS / TOP UP — payment buttons + live price ────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
           Add Sessions / Top Up
@@ -177,9 +211,14 @@ export default function TopUpSection({
           </div>
         ) : (
           <>
-            {/* Dynamic price summary */}
+            {/* Live price summary */}
             <div className="bg-[#ffe033]/25 border border-[#ffe033] rounded-xl px-4 py-2.5 flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-600 font-medium">{selectedMt?.label}</span>
+              <div>
+                <span className="text-sm text-gray-600 font-medium">{selectedMt?.label}</span>
+                {isBulk && (
+                  <span className="text-xs text-gray-400 ml-2">· {bulkQty} sessions</span>
+                )}
+              </div>
               <span className="font-fredoka text-xl text-[#1a56db]">{formatTHB(price)}</span>
             </div>
 
@@ -214,14 +253,12 @@ export default function TopUpSection({
               </button>
             </div>
 
-            {error && (
-              <p className="text-red-500 text-sm text-center mt-3">{error}</p>
-            )}
+            {error && <p className="text-red-500 text-sm text-center mt-3">{error}</p>}
           </>
         )}
       </div>
 
-      {/* ── RECENT CHECK-INS ───────────────────────────────────────────────── */}
+      {/* ── RECENT CHECK-INS ──────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
           Recent Check-ins
