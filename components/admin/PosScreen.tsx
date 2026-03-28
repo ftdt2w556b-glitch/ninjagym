@@ -300,18 +300,31 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
               <select value={shopItemId} onChange={(e) => {
                 setShopItemId(e.target.value);
                 const item = SHOP_CATALOG.find((i) => i.id === e.target.value);
-                setShopOption(item?.options.values[0] ?? "");
+                const firstOpt = item?.options.groups?.[0]?.values[0] ?? item?.options.values?.[0] ?? "";
+                setShopOption(firstOpt);
               }}
                 className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                 {SHOP_CATALOG.map((i) => (
                   <option key={i.id} value={i.id}>{i.name} — {formatTHB(i.price)}</option>
                 ))}
               </select>
+              {/* Option/size select — supports flat values or optgroups */}
               <select value={shopOption} onChange={(e) => setShopOption(e.target.value)}
                 className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                {SHOP_CATALOG.find((i) => i.id === shopItemId)?.options.values.map((v) => (
-                  <option key={v} value={v}>{v}</option>
-                ))}
+                {(() => {
+                  const catalogItem = SHOP_CATALOG.find((i) => i.id === shopItemId);
+                  if (!catalogItem) return null;
+                  if (catalogItem.options.groups) {
+                    return catalogItem.options.groups.map((g) => (
+                      <optgroup key={g.label} label={g.label}>
+                        {g.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                      </optgroup>
+                    ));
+                  }
+                  return (catalogItem.options.values ?? []).map((v) => (
+                    <option key={v} value={v}>{v}</option>
+                  ));
+                })()}
               </select>
               <button onClick={addShopToCart}
                 className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">

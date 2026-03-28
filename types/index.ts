@@ -157,8 +157,19 @@ export interface ShopCatalogItem {
   description?: string;
   options: {
     label: string;
-    values: string[];
+    values?: string[];
+    groups?: { label: string; values: string[] }[];
   };
+}
+
+export interface LoyaltyTransaction {
+  id: number;
+  profile_id: string;
+  source_type: "shop_order" | "registration" | "birthday" | "daycamp" | "manual";
+  source_id: number | null;
+  points: number;
+  description: string | null;
+  created_at: string;
 }
 
 export interface MembershipType {

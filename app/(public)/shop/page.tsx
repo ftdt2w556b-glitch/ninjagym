@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
-import { SHOP_CATALOG } from "@/lib/shop";
+import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 import { formatTHB } from "@/lib/pricing";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
@@ -19,13 +19,26 @@ interface CartItem {
   unit_price: number;
 }
 
+function getItemPrice(catalogId: string, option: string): number {
+  if (catalogId === "gift_card") return GIFT_CARD_PRICES[option] ?? 0;
+  const item = SHOP_CATALOG.find((i) => i.id === catalogId);
+  return item?.price ?? 0;
+}
+
+function getFirstOption(item: (typeof SHOP_CATALOG)[0]): string {
+  if (item.options.groups && item.options.groups.length > 0) {
+    return item.options.groups[0].values[0];
+  }
+  return item.options.values?.[0] ?? "";
+}
+
 export default function ShopPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({ name: "", phone: "", email: "", payment_method: "promptpay" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", payment_method: "cash" });
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +50,7 @@ export default function ShopPage() {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
     const init: Record<string, string> = {};
-    SHOP_CATALOG.forEach((item) => { init[item.id] = item.options.values[0]; });
+    SHOP_CATALOG.forEach((item) => { init[item.id] = getFirstOption(item); });
     setSelections(init);
   }, []);
 
@@ -45,13 +58,16 @@ export default function ShopPage() {
 
   function addToCart(catalogId: string) {
     const item = SHOP_CATALOG.find((i) => i.id === catalogId)!;
-    const option = selections[catalogId] ?? item.options.values[0];
+    const option = selections[catalogId] ?? getFirstOption(item);
+    const unit_price = getItemPrice(catalogId, option);
     setCart((prev) => {
       const existing = prev.find((c) => c.catalogId === catalogId && c.option === option);
       if (existing) {
-        return prev.map((c) => c.catalogId === catalogId && c.option === option ? { ...c, qty: c.qty + 1 } : c);
+        return prev.map((c) =>
+          c.catalogId === catalogId && c.option === option ? { ...c, qty: c.qty + 1 } : c
+        );
       }
-      return [...prev, { catalogId, name: item.name, option, qty: 1, unit_price: item.price }];
+      return [...prev, { catalogId, name: item.name, option, qty: 1, unit_price }];
     });
   }
 
@@ -127,6 +143,15 @@ export default function ShopPage() {
 
   return (
     <div className="px-4 py-6">
+      {/* CSS for float animation */}
+      <style jsx global>{`
+        @keyframes floatShop {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        .float-shop { animation: floatShop 3s ease-in-out infinite; }
+      `}</style>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -153,40 +178,59 @@ export default function ShopPage() {
 
       {/* Catalog */}
       <div className="flex flex-col gap-4 mb-6">
-        {SHOP_CATALOG.map((item) => (
-          <div key={item.id} className="bg-white rounded-2xl p-4 shadow">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h2 className="font-bold text-gray-800">{item.name}</h2>
-                {item.description && (
-                  <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
-                )}
+        {SHOP_CATALOG.map((item) => {
+          const hasGroups = item.options.groups && item.options.groups.length > 0;
+          const currentOption = selections[item.id] ?? getFirstOption(item);
+          const displayPrice = item.id === "gift_card"
+            ? (GIFT_CARD_PRICES[currentOption] ?? 0)
+            : item.price;
+
+          return (
+            <div key={item.id} className="bg-white rounded-2xl p-4 shadow">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1 pr-2">
+                  <h2 className="font-bold text-gray-800">{item.name}</h2>
+                  {item.description && (
+                    <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                  )}
+                </div>
+                <span className="font-fredoka text-lg text-[#1a56db] shrink-0">
+                  {item.id === "gift_card" ? formatTHB(displayPrice) : formatTHB(item.price)}
+                </span>
               </div>
-              <span className="font-fredoka text-lg text-[#1a56db]">{formatTHB(item.price)}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1">
-                <label className="block text-xs text-gray-500 mb-1">{item.options.label}</label>
-                <select
-                  value={selections[item.id] ?? item.options.values[0]}
-                  onChange={(e) => setSelections({ ...selections, [item.id]: e.target.value })}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">{item.options.label}</label>
+                  <select
+                    value={currentOption}
+                    onChange={(e) => setSelections({ ...selections, [item.id]: e.target.value })}
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                  >
+                    {hasGroups
+                      ? item.options.groups!.map((group) => (
+                          <optgroup key={group.label} label={group.label}>
+                            {group.values.map((v) => (
+                              <option key={v} value={v}>{v}</option>
+                            ))}
+                          </optgroup>
+                        ))
+                      : item.options.values!.map((v) => (
+                          <option key={v} value={v}>{v}</option>
+                        ))
+                    }
+                  </select>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addToCart(item.id)}
+                  className="bg-[#1a56db] text-white font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors mt-4"
                 >
-                  {item.options.values.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
+                  {t.addToCart}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => addToCart(item.id)}
-                className="bg-[#1a56db] text-white font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors mt-4"
-              >
-                {t.addToCart}
-              </button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Cart */}
@@ -244,14 +288,14 @@ export default function ShopPage() {
           </div>
         </div>
 
-        {/* Payment method */}
+        {/* Payment method — cash first */}
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
             {[
+              { value: "cash",      label: `💵 ${t.cashOption}` },
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
-              { value: "cash", label: `💵 ${t.cashOption}` },
-              { value: "stripe", label: "💳 Credit / Debit Card" },
+              { value: "stripe",    label: "💳 Credit / Debit Card" },
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
@@ -266,14 +310,63 @@ export default function ShopPage() {
           </div>
         </div>
 
+        {/* PromptPay panel */}
         {form.payment_method === "promptpay" && (
-          <div className="bg-white rounded-2xl p-4 shadow">
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
-            <p className="text-xs text-gray-500 mb-3">{t.slipInstructions}</p>
-            <input type="file" accept="image/*"
-              onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
-              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold" />
-            {slip && <p className="text-xs text-green-600 mt-2">Selected: {slip.name}</p>}
+          <div className="bg-white rounded-2xl shadow overflow-hidden">
+            {/* Header */}
+            <div className="bg-[#1a56db] px-4 py-3">
+              <p className="text-white font-bold text-sm">📱 PromptPay Payment</p>
+            </div>
+            <div className="p-4 flex flex-col gap-4">
+              {/* QR + account */}
+              <div className="flex gap-4 items-start">
+                <div className="shrink-0">
+                  <Image
+                    src="/images/promptpay-qr-small.png"
+                    alt="PromptPay QR"
+                    width={100}
+                    height={100}
+                    className="rounded-xl border border-gray-100"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-sm">
+                  <p className="font-bold text-gray-800">NinjaGym Samui</p>
+                  <p className="text-gray-500 text-xs">PromptPay / Phone</p>
+                  <p className="font-mono font-bold text-[#1a56db] text-lg">097-xxx-xxxx</p>
+                  {cart.length > 0 && (
+                    <div className="mt-1 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2">
+                      <p className="text-xs text-yellow-700 font-semibold">Amount to pay:</p>
+                      <p className="font-fredoka text-xl text-[#1a56db]">{formatTHB(total)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Steps */}
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-xs font-bold text-gray-600 mb-2">HOW TO PAY:</p>
+                <ol className="text-xs text-gray-600 space-y-1">
+                  <li>1. Open your banking app</li>
+                  <li>2. Scan QR code or enter phone number</li>
+                  <li>3. Enter the exact amount shown above</li>
+                  <li>4. Take a screenshot of your payment slip</li>
+                  <li>5. Upload the slip below</li>
+                </ol>
+              </div>
+
+              {/* Slip upload */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
+                <p className="text-xs text-gray-500 mb-2">{t.slipInstructions}</p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold"
+                />
+                {slip && <p className="text-xs text-green-600 mt-2">✓ Selected: {slip.name}</p>}
+              </div>
+            </div>
           </div>
         )}
 
