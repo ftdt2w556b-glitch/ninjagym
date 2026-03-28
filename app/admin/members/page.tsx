@@ -13,7 +13,7 @@ export default async function MembersPage({
 
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, training_focus, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -107,8 +107,8 @@ export default async function MembersPage({
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
                       <p>{typeLabel}</p>
-                      {(m as { training_focus?: string }).training_focus && (
-                        <p className="text-xs text-gray-400">{(m as { training_focus?: string }).training_focus}</p>
+                      {m.sessions_remaining !== null && (
+                        <p className="text-xs text-blue-500">{m.sessions_remaining} sessions left</p>
                       )}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell text-gray-600">{m.kids_count}</td>

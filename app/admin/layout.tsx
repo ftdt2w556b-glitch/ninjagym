@@ -10,15 +10,15 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+
+  // Run auth check and profile fetch in parallel once we have the client
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
   }
 
-  const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
     .select("role, name")
@@ -36,7 +36,7 @@ export default async function AdminLayout({
     { href: "/admin/members", label: "Members", roles: ["admin", "staff", "owner"] },
     { href: "/admin/payments", label: "Payments", roles: ["admin", "staff"] },
     { href: "/admin/event-bookings", label: "Events", roles: ["admin", "staff", "owner"] },
-    { href: "/admin/shop-orders", label: "Shop Orders", roles: ["admin", "staff"] },
+    { href: "/admin/shop-orders", label: "Orders", roles: ["admin", "staff"] },
     { href: "/admin/reports/cash", label: "Revenue", roles: ["admin", "owner"] },
     { href: "/admin/staff", label: "Users", roles: ["admin"] },
     { href: "/admin/photos", label: "📸 Photos", roles: ["admin", "staff", "owner"] },
