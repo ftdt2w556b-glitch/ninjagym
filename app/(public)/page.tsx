@@ -137,7 +137,7 @@ export default function HomePage() {
       */}
       <div
         className="relative w-full flex justify-center pointer-events-none"
-        style={{ marginTop: "-25px", marginBottom: "-20px", zIndex: 10 }}
+        style={{ marginTop: "-18px", marginBottom: "-42px", zIndex: 10 }}
       >
         {/* Yellow stars — behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
