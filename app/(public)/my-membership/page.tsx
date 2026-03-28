@@ -39,44 +39,50 @@ export default function MyMembershipPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh px-6 py-10 text-white">
-      <div className="mb-6">
-        <Image src="/images/logo_small.png" alt="NinjaGym" width={90} height={90} />
+    <div className="flex flex-col items-center justify-center min-h-dvh px-5 py-10">
+
+      {/* Logo above the card */}
+      <div className="mb-5">
+        <Image src="/images/logo_small.png" alt="NinjaGym" width={100} height={100} className="drop-shadow-xl" />
       </div>
-      <h1 className="font-fredoka text-3xl text-center drop-shadow mb-1">My Membership</h1>
-      <p className="text-white/70 text-sm text-center mb-8">
-        Enter your name, phone number, or email to find your QR card
-      </p>
 
-      <form onSubmit={handleLookup} className="w-full flex flex-col gap-3">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g. Sarah or +66 80 000 0000"
-          className="w-full rounded-2xl px-4 py-4 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#ffe033] shadow-lg"
-          autoFocus
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
-        >
-          {loading ? "Searching..." : "Find My QR Card 🥷"}
-        </button>
-      </form>
+      {/* Frosted card — makes content readable over the busy background */}
+      <div className="w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl px-6 py-8">
+        <h1 className="font-fredoka text-3xl text-center text-[#1a56db] mb-1">My Membership</h1>
+        <p className="text-gray-500 text-sm text-center mb-6">
+          Enter your name, phone number, or email to find your QR card
+        </p>
 
-      {error && (
-        <div className="mt-4 bg-red-500/20 border border-red-400/30 text-red-100 rounded-xl px-4 py-3 text-sm text-center">
-          {error}
-        </div>
-      )}
+        <form onSubmit={handleLookup} className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. Sarah or +66 80 000 0000"
+            className="w-full rounded-2xl border border-gray-200 px-4 py-4 text-gray-800 text-base focus:outline-none focus:ring-2 focus:ring-[#1a56db] shadow-sm"
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:brightness-110 transition-all disabled:opacity-50"
+          >
+            {loading ? "Searching..." : "Find My QR Card"}
+          </button>
+        </form>
 
-      <div className="mt-8 flex flex-col items-center gap-3">
-        <Link href="/join" className="text-[#ffe033] font-semibold text-sm underline">
+        {error && (
+          <div className="mt-4 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm text-center">
+            {error}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex flex-col items-center gap-3">
+        <Link href="/join" className="text-[#ffe033] font-semibold text-sm underline drop-shadow">
           Not a member yet? Join here →
         </Link>
-        <Link href="/" className="text-white/40 text-sm underline">← Back to Home</Link>
+        <Link href="/" className="text-white/60 text-sm underline drop-shadow">← Back to Home</Link>
       </div>
     </div>
   );
