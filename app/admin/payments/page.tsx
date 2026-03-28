@@ -115,31 +115,42 @@ export default async function PaymentsPage({
                     <input type="hidden" name="id" value={m.id} />
                     <input type="hidden" name="action" value="approve" />
                     <input type="hidden" name="type" value="member" />
-                    <button
-                      type="submit"
-                      className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 transition-colors"
-                    >
-                      Approve
+                    <button type="submit" className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 transition-colors">
+                      ✓ Approve
                     </button>
                   </form>
                   <form action="/api/payments" method="POST">
                     <input type="hidden" name="id" value={m.id} />
                     <input type="hidden" name="action" value="reject" />
                     <input type="hidden" name="type" value="member" />
-                    <button
-                      type="submit"
-                      className="bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-red-200 transition-colors"
-                    >
-                      Reject
+                    <button type="submit" className="bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-red-200 transition-colors">
+                      ✕ Reject
                     </button>
                   </form>
-                  <a
-                    href={`/qr/card/${m.id}`}
-                    className="bg-blue-50 text-[#1a56db] font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors"
-                  >
+                  <a href={`/qr/card/${m.id}`} className="bg-blue-50 text-[#1a56db] font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors">
                     View QR Card
                   </a>
                 </div>
+              )}
+              {m.slip_status === "rejected" && (
+                <form action="/api/payments" method="POST">
+                  <input type="hidden" name="id" value={m.id} />
+                  <input type="hidden" name="action" value="restore" />
+                  <input type="hidden" name="type" value="member" />
+                  <button type="submit" className="bg-yellow-100 text-yellow-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-yellow-200 transition-colors">
+                    ↩ Restore to Pending
+                  </button>
+                </form>
+              )}
+              {m.slip_status === "approved" && (
+                <form action="/api/payments" method="POST">
+                  <input type="hidden" name="id" value={m.id} />
+                  <input type="hidden" name="action" value="restore" />
+                  <input type="hidden" name="type" value="member" />
+                  <button type="submit" className="bg-gray-100 text-gray-500 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
+                    ↩ Undo Approval
+                  </button>
+                </form>
               )}
             </div>
           );

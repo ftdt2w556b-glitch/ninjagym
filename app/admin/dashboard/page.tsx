@@ -23,6 +23,7 @@ export default async function DashboardPage() {
     { count: pendingOrders },
     { count: pendingPhotos },
     { data: questions },
+    { data: todayApproved },
   ] = await Promise.all([
     admin
       .from("attendance_logs")
@@ -50,14 +51,23 @@ export default async function DashboardPage() {
       .select("id, asker_name, question, answer, answered_at, answered_by")
       .order("created_at", { ascending: false })
       .limit(10),
+    admin
+      .from("member_registrations")
+      .select("amount_paid")
+      .eq("slip_status", "approved")
+      .gte("slip_reviewed_at", `${today}T00:00:00`)
+      .lte("slip_reviewed_at", `${today}T23:59:59`),
   ]);
 
+  const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
+
   const stats = [
-    { label: "Check-ins Today",  value: todayCheckIns ?? 0,    color: "bg-blue-100 text-blue-800",     href: "/scanner" },
-    { label: "Pending Payments", value: pendingPayments ?? 0,  color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
-    { label: "Pending Events",   value: pendingEvents ?? 0,    color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
-    { label: "Pending Orders",   value: pendingOrders ?? 0,    color: "bg-green-100 text-green-800",   href: "/admin/shop-orders" },
-    { label: "Photos to Review", value: pendingPhotos ?? 0,    color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
+    { label: "Check-ins Today",  value: todayCheckIns ?? 0,                                     color: "bg-blue-100 text-blue-800",     href: "/scanner" },
+    { label: "Pending Payments", value: pendingPayments ?? 0,                                   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
+    { label: "Pending Events",   value: pendingEvents ?? 0,                                     color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
+    { label: "Pending Orders",   value: pendingOrders ?? 0,                                     color: "bg-green-100 text-green-800",   href: "/admin/shop-orders" },
+    { label: "Photos to Review", value: pendingPhotos ?? 0,                                     color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
+    { label: "Revenue Today",    value: `฿${revenueToday.toLocaleString()}`,                    color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
   ];
 
   // Server actions
@@ -130,13 +140,25 @@ export default async function DashboardPage() {
           href="/scanner"
           className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors"
         >
-          QR Scanner
+          📷 QR Scanner
         </a>
         <a
           href="/admin/pos"
           className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors"
         >
-          POS Counter
+          🛒 POS Counter
+        </a>
+        <a
+          href="/join"
+          className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors"
+        >
+          ➕ New Registration
+        </a>
+        <a
+          href="/admin/payments"
+          className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors"
+        >
+          💳 Review Payments
         </a>
       </div>
 

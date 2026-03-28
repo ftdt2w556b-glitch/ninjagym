@@ -1,115 +1,228 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import Link from "next/link";
 
-export default async function CashReportPage({
+type Mode = "day" | "month" | "year";
+
+function buildRange(mode: Mode, date: string): { from: string; to: string; label: string } {
+  if (mode === "day") {
+    return {
+      from: `${date}T00:00:00`,
+      to:   `${date}T23:59:59`,
+      label: new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase(),
+    };
+  }
+  if (mode === "month") {
+    const [y, m] = date.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    const mm = String(m).padStart(2, "0");
+    return {
+      from: `${y}-${mm}-01T00:00:00`,
+      to:   `${y}-${mm}-${lastDay}T23:59:59`,
+      label: new Date(y, m - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase(),
+    };
+  }
+  // year
+  const y = date;
+  return {
+    from: `${y}-01-01T00:00:00`,
+    to:   `${y}-12-31T23:59:59`,
+    label: `YEAR ${y}`,
+  };
+}
+
+function defaultDate(mode: Mode): string {
+  const now = new Date();
+  if (mode === "day")   return now.toISOString().split("T")[0];
+  if (mode === "month") return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return String(now.getFullYear());
+}
+
+function inputType(mode: Mode) {
+  if (mode === "day")   return "date";
+  if (mode === "month") return "month";
+  return "number";
+}
+
+export default async function RevenuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ mode?: string; date?: string }>;
 }) {
-  const { from, to } = await searchParams;
+  const { mode: rawMode, date: rawDate } = await searchParams;
+  const mode: Mode = (rawMode === "month" || rawMode === "year") ? rawMode : "day";
+  const date = rawDate ?? defaultDate(mode);
+  const { from, to, label } = buildRange(mode, date);
+
   const admin = createAdminClient();
 
-  const today = new Date().toISOString().split("T")[0];
-  const dateFrom = from ?? today;
-  const dateTo = to ?? today;
-
-  const { data: sales } = await admin
+  // POS cash sales
+  const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("*, profiles(name, email)")
-    .gte("processed_at", `${dateFrom}T00:00:00`)
-    .lte("processed_at", `${dateTo}T23:59:59`)
+    .select("amount, payment_method, processed_at, sale_type, notes, profiles(name)")
+    .gte("processed_at", from)
+    .lte("processed_at", to)
     .order("processed_at", { ascending: false });
 
-  const total = sales?.reduce((sum, s) => sum + Number(s.amount), 0) ?? 0;
+  // Approved member registrations (by approval date)
+  const { data: memberPayments } = await admin
+    .from("member_registrations")
+    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type")
+    .eq("slip_status", "approved")
+    .gte("slip_reviewed_at", from)
+    .lte("slip_reviewed_at", to)
+    .order("slip_reviewed_at", { ascending: false });
 
-  const byType = sales?.reduce((acc, s) => {
-    const key = s.sale_type ?? "other";
-    acc[key] = (acc[key] ?? 0) + Number(s.amount);
-    return acc;
-  }, {} as Record<string, number>) ?? {};
+  // Combine into unified list
+  type TxRow = { time: string; description: string; method: string; amount: number; source: "pos" | "registration" };
+
+  const allTx: TxRow[] = [
+    ...(cashSales ?? []).map((s) => ({
+      time: s.processed_at,
+      description: s.sale_type ?? "POS Sale",
+      method: s.payment_method ?? "cash",
+      amount: Number(s.amount),
+      source: "pos" as const,
+    })),
+    ...(memberPayments ?? []).map((m) => ({
+      time: m.slip_reviewed_at ?? "",
+      description: `Membership – ${m.name}`,
+      method: m.payment_method ?? "cash",
+      amount: Number(m.amount_paid ?? 0),
+      source: "registration" as const,
+    })),
+  ].sort((a, b) => b.time.localeCompare(a.time));
+
+  const cashTotal    = allTx.filter((t) => t.method === "cash").reduce((s, t) => s + t.amount, 0);
+  const transferTotal = allTx.filter((t) => t.method !== "cash").reduce((s, t) => s + t.amount, 0);
+  const grandTotal   = cashTotal + transferTotal;
+
+  const cashCount    = allTx.filter((t) => t.method === "cash").length;
+  const transferCount = allTx.filter((t) => t.method !== "cash").length;
+
+  const exportUrl = `/api/reports/cash/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-gray-900">Cash Report</h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Revenue</h1>
+          <p className="text-sm text-gray-400 mt-0.5">All approved payments by period</p>
+        </div>
         <a
-          href={`/api/reports/cash/export?from=${dateFrom}&to=${dateTo}`}
-          className="bg-[#1a56db] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+          href={exportUrl}
+          className="bg-[#22c55e] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-green-600 transition-colors"
         >
           Export CSV
         </a>
       </div>
 
-      {/* Date filter */}
-      <form method="GET" className="flex gap-3 mb-6 flex-wrap">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
-          <input type="date" name="from" defaultValue={dateFrom}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+      {/* Mode toggle + date */}
+      <div className="flex flex-wrap items-end gap-3 mb-6">
+        {/* Day / Month / Year tabs */}
+        <div className="flex rounded-xl border border-gray-200 overflow-hidden bg-white">
+          {(["day", "month", "year"] as Mode[]).map((m) => (
+            <Link
+              key={m}
+              href={`?mode=${m}&date=${defaultDate(m)}`}
+              className={`px-4 py-2 text-sm font-semibold capitalize transition-colors ${
+                mode === m ? "bg-[#1a56db] text-white" : "text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {m === "day" ? "Day" : m === "month" ? "Month" : "Year"}
+            </Link>
+          ))}
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
-          <input type="date" name="to" defaultValue={dateTo}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-        </div>
-        <div className="flex items-end">
-          <button type="submit"
-            className="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-700 transition-colors">
-            Filter
-          </button>
-        </div>
-      </form>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-4 mb-6 sm:grid-cols-4">
-        <div className="bg-[#1a56db] text-white rounded-2xl p-4">
-          <p className="text-sm opacity-80">Total Sales</p>
-          <p className="font-fredoka text-2xl">{total.toLocaleString()} THB</p>
-        </div>
-        <div className="bg-white rounded-2xl p-4 shadow">
-          <p className="text-sm text-gray-500">Transactions</p>
-          <p className="font-bold text-2xl text-gray-900">{sales?.length ?? 0}</p>
-        </div>
-        {Object.entries(byType).map(([type, amount]) => (
-          <div key={type} className="bg-white rounded-2xl p-4 shadow">
-            <p className="text-sm text-gray-500 capitalize">{type}</p>
-            <p className="font-bold text-lg text-gray-900">{Number(amount).toLocaleString()} THB</p>
-          </div>
-        ))}
+        {/* Date input + Go */}
+        <form method="GET" className="flex gap-2 items-end">
+          <input type="hidden" name="mode" value={mode} />
+          <input
+            type={inputType(mode)}
+            name="date"
+            defaultValue={date}
+            min={mode === "year" ? "2020" : undefined}
+            max={mode === "year" ? "2100" : undefined}
+            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+          />
+          <button
+            type="submit"
+            className="bg-[#1a56db] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
+          >
+            Go
+          </button>
+        </form>
       </div>
 
-      {/* Table */}
+      {/* Period label */}
+      <p className="text-sm font-bold text-gray-700 mb-4">{label}</p>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-2xl shadow p-5">
+          <p className="text-3xl font-bold text-green-600">฿{cashTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">Cash ({cashCount} payments)</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-5">
+          <p className="text-3xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">Transfer / PromptPay ({transferCount} payments)</p>
+        </div>
+        <div className="rounded-2xl p-5 text-white" style={{ background: "linear-gradient(135deg, #b91c1c, #1e3a8a)" }}>
+          <p className="text-3xl font-bold">฿{grandTotal.toLocaleString()}</p>
+          <p className="text-sm opacity-80 mt-1">Grand Total — {allTx.length} payments</p>
+        </div>
+      </div>
+
+      {/* Transactions table */}
       <div className="bg-white rounded-2xl shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Time</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Type</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Description</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Method</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Amount</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Staff</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Notes</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Source</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {sales?.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-gray-400">
-                    {new Date(s.processed_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {allTx.map((tx, i) => (
+                <tr key={i} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-gray-400 tabular-nums">
+                    {tx.time
+                      ? new Date(tx.time).toLocaleString("en-US", {
+                          month: "short", day: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })
+                      : "—"}
                   </td>
-                  <td className="px-4 py-3 capitalize text-gray-600">{s.sale_type ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-700">{tx.description}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      tx.method === "cash"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}>
+                      {tx.method === "cash" ? "Cash" : "PromptPay"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 font-semibold text-gray-900">
-                    {Number(s.amount).toLocaleString()} THB
+                    ฿{tx.amount.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell text-gray-500">
-                    {(s.profiles as { name?: string; email?: string } | null)?.name ??
-                     (s.profiles as { name?: string; email?: string } | null)?.email ?? "—"}
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    <span className={`text-xs font-medium ${
+                      tx.source === "pos" ? "text-purple-600" : "text-orange-600"
+                    }`}>
+                      {tx.source === "pos" ? "POS" : "Registration"}
+                    </span>
                   </td>
-                  <td className="px-4 py-3 hidden sm:table-cell text-gray-400">{s.notes ?? "—"}</td>
                 </tr>
               ))}
-              {(!sales || sales.length === 0) && (
+              {allTx.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-gray-400">No sales for this period.</td>
+                  <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
+                    No payments recorded for this period.
+                  </td>
                 </tr>
               )}
             </tbody>

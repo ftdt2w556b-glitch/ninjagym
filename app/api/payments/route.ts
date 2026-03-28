@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const slip_status = action === "approve" ? "approved" : "rejected";
+  const slip_status =
+    action === "approve"  ? "approved"       :
+    action === "restore"  ? "pending_review" :
+    "rejected";
   const table =
     type === "member"
       ? "member_registrations"

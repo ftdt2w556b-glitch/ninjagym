@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import LogoutButton from "@/components/admin/LogoutButton";
 
 export default async function AdminLayout({
   children,
@@ -36,7 +37,7 @@ export default async function AdminLayout({
     { href: "/admin/payments", label: "Payments", roles: ["admin", "staff"] },
     { href: "/admin/event-bookings", label: "Events", roles: ["admin", "staff", "owner"] },
     { href: "/admin/shop-orders", label: "Shop Orders", roles: ["admin", "staff"] },
-    { href: "/admin/reports/cash", label: "Cash Report", roles: ["admin", "owner"] },
+    { href: "/admin/reports/cash", label: "Revenue", roles: ["admin", "owner"] },
     { href: "/admin/staff", label: "Users", roles: ["admin"] },
     { href: "/admin/photos", label: "📸 Photos", roles: ["admin", "staff", "owner"] },
     { href: "/admin/techniques", label: "Techniques", roles: ["admin", "staff", "owner"] },
@@ -58,14 +59,7 @@ export default async function AdminLayout({
             <span className="text-sm text-gray-500 hidden sm:block">
               {profile.name ?? user.email} ({role})
             </span>
-            <form action="/api/auth/logout" method="POST">
-              <button
-                type="submit"
-                className="text-sm text-red-600 hover:underline"
-              >
-                Logout
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </div>
       </header>

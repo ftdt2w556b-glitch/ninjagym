@@ -13,7 +13,7 @@ export default async function MembersPage({
 
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, slip_status, amount_paid, payment_method, created_at, sessions_remaining")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, training_focus, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -78,8 +78,8 @@ export default async function MembersPage({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">ID</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">#</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Name / Contact</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Membership</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Kids</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
@@ -93,12 +93,24 @@ export default async function MembersPage({
                 const typeLabel = MEMBERSHIP_TYPES.find((t) => t.id === m.membership_type)?.label ?? m.membership_type;
                 return (
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-400 font-mono">#{m.id}</td>
+                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">#{m.id}</td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-900">{m.name}</p>
+                      {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                       {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
+                      {(m as { kids_names?: string }).kids_names && (
+                        <p className="text-xs text-blue-600 mt-0.5">👶 {(m as { kids_names?: string }).kids_names}</p>
+                      )}
+                      {(m as { notes?: string }).notes && (
+                        <p className="text-xs text-orange-500 mt-0.5 italic">📝 {(m as { notes?: string }).notes}</p>
+                      )}
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-gray-600">{typeLabel}</td>
+                    <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
+                      <p>{typeLabel}</p>
+                      {(m as { training_focus?: string }).training_focus && (
+                        <p className="text-xs text-gray-400">{(m as { training_focus?: string }).training_focus}</p>
+                      )}
+                    </td>
                     <td className="px-4 py-3 hidden md:table-cell text-gray-600">{m.kids_count}</td>
                     <td className="px-4 py-3">
                       <Badge label={slipStatusLabel(m.slip_status)} variant={slipStatusVariant(m.slip_status)} />

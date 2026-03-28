@@ -40,7 +40,7 @@ export default function LoginPage() {
       <div className="mb-3">
         <Image src="/images/logo_small.png" alt="NinjaGym" width={90} height={90} className="drop-shadow-xl" />
       </div>
-      <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-6">Staff Login</p>
+      <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-6">Admin Portal</p>
 
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
