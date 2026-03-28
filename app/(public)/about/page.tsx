@@ -110,14 +110,37 @@ export default function AboutPage() {
               </ul>
             </div>
             <div>
-              <p className="font-bold text-[#ffe033] text-sm mb-1">🏕️ Ninja Day Camps</p>
+              <p className="font-bold text-[#ffe033] text-sm mb-1">🏕️ Ninja Day Camps (10am–2pm)</p>
               <ul className="text-sm text-white/90 flex flex-col gap-1">
-                <li>• 5-hour sessions</li>
-                <li>• Drop-in before 3pm</li>
-                <li>• Extended activity packages available</li>
+                <li>• 4-hour supervised ninja training session</li>
+                <li>• Drop-in before 3pm — 555 THB per child</li>
+                <li>• Includes climbing, parkour, obstacle courses</li>
+                <li>• Jump &amp; roll fundamentals with active Guides</li>
+                <li>• Multi-session cards available with discount</li>
+                <li>• Register through the Join form or MY MEMBERSHIP</li>
               </ul>
             </div>
           </div>
+        </div>
+
+        {/* Gaming Room */}
+        <div className="bg-white rounded-2xl p-5 shadow">
+          <h2 className="font-bold text-[#1a56db] text-lg mb-3">🎮 Game Room</h2>
+          <p className="text-sm text-gray-600 leading-relaxed mb-3">
+            NinjaGym members get access to our Game Room — a dedicated gaming space where kids can relax, socialise, and play between training sessions.
+          </p>
+          <div className="bg-blue-50 rounded-xl p-4 mb-3">
+            <p className="font-bold text-[#1a56db] text-sm mb-2">⛏️ Minecraft Server</p>
+            <p className="text-sm text-gray-600 leading-relaxed">
+              We run our own <strong>private NinjaGym Minecraft server</strong> — kids can log in, build, explore and play together in a safe, moderated world. It&apos;s a great reward after training and a fun way to keep the NinjaGym community connected even at home.
+            </p>
+          </div>
+          <ul className="flex flex-col gap-1.5 text-sm text-gray-600">
+            <li className="flex items-start gap-2"><span>🎮</span><span>Available to all active members</span></li>
+            <li className="flex items-start gap-2"><span>🖥️</span><span>Gaming stations at the gym between sessions</span></li>
+            <li className="flex items-start gap-2"><span>🌐</span><span>Private Minecraft server — members get login details</span></li>
+            <li className="flex items-start gap-2"><span>🤝</span><span>Combo Game &amp; Train sessions include 2-hour game room access</span></li>
+          </ul>
         </div>
 
         {/* Event Space */}
