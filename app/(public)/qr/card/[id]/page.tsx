@@ -8,10 +8,14 @@ import ShareButton from "@/components/public/ShareButton";
 
 export default async function QrCardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { id } = await params;
+  const { from } = await searchParams;
+  const fromAdmin = from === "admin";
   const admin = createAdminClient();
 
   const { data: member } = await admin
@@ -48,7 +52,11 @@ export default async function QrCardPage({
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/" className="text-white/70 text-sm hover:text-white">← Home</Link>
+        {fromAdmin ? (
+          <Link href="/admin/members" className="text-white/70 text-sm hover:text-white">← Members</Link>
+        ) : (
+          <Link href="/" className="text-white/70 text-sm hover:text-white">← Home</Link>
+        )}
         <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
       </div>
 
@@ -60,7 +68,11 @@ export default async function QrCardPage({
           {isApproved ? `Welcome, ${firstName}!` : `You're Registered, ${firstName}!`}
         </h1>
         <p className="text-white/70 text-sm mt-1.5">
-          Bookmark this page — it is your personal NinjaGym card
+          This is your permanent member card
+        </p>
+        <p className="text-white/45 text-xs mt-1">
+          Lost this link? Find it again at{" "}
+          <Link href="/my-membership" className="underline hover:text-white/70">My Membership</Link>
         </p>
       </div>
 
@@ -156,7 +168,9 @@ export default async function QrCardPage({
 
         {/* Footer */}
         <div className="bg-gray-50 px-5 py-3 text-center border-t border-gray-100">
-          <p className="text-xs text-gray-400">NinjaGym, Rick Tew&apos;s Dojo, Koh Samui</p>
+          <p className="text-xs text-gray-400">Rick Tew&apos;s NinjaGym</p>
+          {/* Hidden for SEO */}
+          <span className="sr-only">Koh Samui, Thailand</span>
         </div>
       </div>
 

@@ -133,7 +133,7 @@ export default async function MembersPage({
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link
-                          href={`/qr/card/${m.id}`}
+                          href={`/qr/card/${m.id}?from=admin`}
                           className="text-xs text-[#1a56db] hover:underline"
                         >
                           QR Card
