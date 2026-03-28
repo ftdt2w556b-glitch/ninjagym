@@ -66,40 +66,36 @@ export default function HomePage() {
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
-      {/* Logo */}
-      <div className="mt-2 mb-2">
+      {/* Logo — large enough to read "Rick Tew's" text on it */}
+      <div className="mt-2 mb-3">
         <Image
           src="/images/logo_small.png"
           alt="NinjaGym Logo"
-          width={130}
-          height={130}
+          width={210}
+          height={210}
           className="drop-shadow-xl"
           priority
         />
       </div>
 
-      {/* Title */}
-      <h1
-        className="font-bangers text-center leading-none text-[#ffe033] drop-shadow-lg"
-        style={{ fontSize: "clamp(3rem, 14vw, 5.5rem)", textShadow: "2px 3px 0px rgba(0,0,0,0.35)" }}
+      {/* Subtitle — now the primary text; styled prominently since heading is gone */}
+      <p
+        className="font-fredoka text-white text-center font-bold drop-shadow-lg mb-1"
+        style={{ fontSize: "clamp(1.4rem, 6vw, 2rem)", textShadow: "1px 2px 0px rgba(0,0,0,0.4)" }}
       >
-        RICK TEW&apos;S<br />NINJAGYM
-      </h1>
-
-      {/* Subtitle — no z-index so ninja (z-10) renders on top of it */}
-      <p className="text-white text-base text-center mb-0 mt-2 font-semibold drop-shadow">
         {t.homeSubtitle}
       </p>
 
       {/*
-        Ninja hero + yellow pulsating stars
-        pointer-events-none so touches pass through to the Join button below
-        marginTop: -35px pulls ninja up so it overlaps the subtitle text
-        marginBottom: -40px lets feet just peek over the Join button top edge
+        Ninja hero + yellow pulsating stars.
+        Default position is BELOW the subtitle — no negative marginTop.
+        The float animation moves up 12px at peak, which may just graze the
+        subtitle bottom edge but won't cover it on initial load.
+        marginBottom: -40px lets feet just peek over the Join button top edge.
       */}
       <div
         className="relative w-full flex justify-center pointer-events-none"
-        style={{ marginTop: "-35px", marginBottom: "-40px", zIndex: 10 }}
+        style={{ marginTop: "0px", marginBottom: "-40px", zIndex: 10 }}
       >
         {/* Yellow stars — behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
