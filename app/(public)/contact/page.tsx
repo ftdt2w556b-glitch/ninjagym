@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 const SUBJECTS = [
   "General Question",
@@ -43,10 +44,7 @@ export default function ContactPage() {
 
   return (
     <div className="px-4 py-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/" className="text-white/70 text-sm hover:text-white">Back</Link>
-        <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
-      </div>
+      <PublicPageHeader />
 
       {/* Contact card */}
       <div className="bg-[#0f1e2e] rounded-2xl shadow-2xl overflow-hidden">

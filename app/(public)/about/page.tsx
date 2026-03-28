@@ -1,14 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
+import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 export default function AboutPage() {
   return (
     <div className="px-4 py-6 text-white">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/" className="text-white/70 text-sm hover:text-white">Back</Link>
-        <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
-      </div>
+      <PublicPageHeader />
 
       <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">About NinjaGym</h1>
       <p className="text-[#ffe033] font-bold tracking-wide mb-6">RICK TEW&apos;S DOJO, KOH SAMUI</p>
