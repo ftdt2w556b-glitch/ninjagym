@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 
@@ -20,53 +21,120 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-dvh px-4 py-10 text-white">
-      <div className="absolute top-4 right-4">
+    <main className="relative flex flex-col items-center min-h-dvh px-4 py-8 text-white overflow-hidden">
+
+      {/* Stars background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[...Array(30)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white"
+            style={{
+              width: Math.random() * 3 + 1 + "px",
+              height: Math.random() * 3 + 1 + "px",
+              top: Math.random() * 60 + "%",
+              left: Math.random() * 100 + "%",
+              opacity: Math.random() * 0.6 + 0.2,
+              animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
+              animationDelay: Math.random() * 3 + "s",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Language switcher */}
+      <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
-      <h1 className="font-fredoka text-5xl mb-2 text-center drop-shadow-lg">
-        NinjaGym
+      {/* Logo */}
+      <div className="mt-2 mb-1">
+        <Image
+          src="/images/logo_small.png"
+          alt="NinjaGym Logo"
+          width={120}
+          height={120}
+          className="drop-shadow-xl"
+          priority
+        />
+      </div>
+
+      {/* Title */}
+      <h1 className="font-fredoka text-4xl text-center drop-shadow-lg leading-tight">
+        RICK TEW&apos;S NINJAGYM
       </h1>
-      <p className="font-bangers text-xl tracking-widest text-[#ffe033] mb-10 text-center">
+      <p className="font-bangers text-lg tracking-widest text-[#ffe033] text-center mt-1 drop-shadow">
         {t.homeSubtitle}
       </p>
 
-      <div className="flex flex-col gap-4 w-full">
+      {/* Ninja hero image — floating animation */}
+      <div className="my-4 relative z-10" style={{ animation: "floatNinja 4s ease-in-out infinite" }}>
+        <Image
+          src="/images/App1_small.png"
+          alt="Ninja character"
+          width={220}
+          height={220}
+          className="drop-shadow-2xl"
+          priority
+        />
+      </div>
+
+      {/* CTA buttons */}
+      <div className="flex flex-col gap-3 w-full z-10">
         <Link
           href="/join"
-          className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 text-center shadow-lg hover:bg-green-500 transition-colors"
+          className="bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-xl rounded-2xl py-4 text-center shadow-lg hover:brightness-110 transition-all active:scale-95"
         >
-          {t.homeJoin}
+          🥷 {t.homeJoin}
         </Link>
         <Link
-          href="/birthdays"
-          className="bg-white text-[#1a56db] font-bold text-lg rounded-2xl py-4 text-center shadow-lg hover:bg-gray-50 transition-colors"
+          href="/qr/card/me"
+          className="border-2 border-white text-white font-bold text-base rounded-2xl py-3 text-center hover:bg-white/10 transition-all active:scale-95"
         >
-          {t.homeBirthdays}
+          {t.homeMyMembership ?? "MY MEMBERSHIP Login"}
         </Link>
-        <Link
-          href="/shop"
-          className="bg-[#ffe033] text-[#1a56db] font-bold text-lg rounded-2xl py-4 text-center shadow-lg hover:bg-yellow-300 transition-colors"
-        >
-          {t.homeShop}
-        </Link>
+
+        {/* Secondary nav grid */}
+        <div className="grid grid-cols-3 gap-3 mt-1">
+          <Link href="/about" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App3_small.png" alt="About" width={48} height={48} className="rounded-xl object-cover" />
+            <span className="text-xs font-bold text-center leading-tight">About</span>
+          </Link>
+          <Link href="/birthdays" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App4_small.png" alt="Events" width={48} height={48} className="rounded-xl object-cover" />
+            <span className="text-xs font-bold text-center leading-tight">{t.homeBirthdays}</span>
+          </Link>
+          <Link href="/shop" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App6_small.png" alt="Shop" width={48} height={48} className="rounded-xl object-cover" />
+            <span className="text-xs font-bold text-center leading-tight">{t.homeShop}</span>
+          </Link>
+        </div>
+
         <Link
           href="/promptpay"
-          className="bg-white/20 text-white font-semibold text-base rounded-2xl py-3 text-center hover:bg-white/30 transition-colors"
+          className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
         >
-          {t.homePromptPay}
+          📱 {t.homePromptPay}
         </Link>
       </div>
 
-      <div className="mt-10">
-        <Link
-          href="/admin/dashboard"
-          className="text-white/60 text-sm underline"
-        >
+      {/* Staff login */}
+      <div className="mt-6 mb-2">
+        <Link href="/admin/dashboard" className="text-white/40 text-xs underline">
           {t.homeStaffLogin}
         </Link>
       </div>
+
+      <style jsx global>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.2; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.4); }
+        }
+        @keyframes floatNinja {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-14px); }
+        }
+      `}</style>
     </main>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
@@ -84,10 +86,41 @@ export default function BirthdaysPage() {
 
   return (
     <div className="px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-fredoka text-3xl text-white drop-shadow">{t.birthdayTitle}</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
+          <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
+        </div>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
+
+      {/* Hero image */}
+      <div className="rounded-2xl overflow-hidden shadow-xl mb-4 -mx-1">
+        <Image
+          src="/images/App4_small.png"
+          alt="Birthday parties at NinjaGym"
+          width={480}
+          height={280}
+          className="w-full object-cover"
+          priority
+        />
+      </div>
+
+      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.birthdayTitle}</h1>
+      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-2">MAKE IT A PARTY THEY WILL NEVER FORGET!</p>
+      <p className="text-white/70 text-xs mb-5">📍 Big C, Bophut, Koh Samui</p>
+
+      {/* What's included */}
+      <div className="bg-[#1a56db] rounded-2xl p-4 shadow mb-5">
+        <h2 className="font-bold text-white text-sm uppercase tracking-wide mb-3">What&apos;s Included</h2>
+        <ul className="flex flex-col gap-1.5 text-sm text-white/90">
+          {["1 guided 50-minute training session","Birthday decorations & staff assistance","Access to training, climbing & ninja zones","Cleanup service included","5 kids free with every event"].map(item => (
+            <li key={item} className="flex items-start gap-2"><span>🥷</span><span>{item}</span></li>
+          ))}
+        </ul>
+      </div>
+
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Contact */}

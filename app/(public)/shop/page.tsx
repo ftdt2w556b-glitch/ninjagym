@@ -2,6 +2,8 @@
 
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { SHOP_CATALOG } from "@/lib/shop";
@@ -125,13 +127,29 @@ export default function ShopPage() {
 
   return (
     <div className="px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-fredoka text-3xl text-white drop-shadow">{t.shopTitle}</h1>
-          <p className="text-white/70 text-sm">{t.shopSubtitle}</p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
+          <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
         </div>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
+
+      {/* Hero image */}
+      <div className="rounded-2xl overflow-hidden shadow-xl mb-4 -mx-1">
+        <Image
+          src="/images/ninjagymshop_small.jpg"
+          alt="NinjaGym Store"
+          width={480}
+          height={240}
+          className="w-full object-cover"
+          priority
+        />
+      </div>
+
+      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.shopTitle}</h1>
+      <p className="text-white/70 text-sm mb-5">{t.shopSubtitle}</p>
 
       {/* Catalog */}
       <div className="flex flex-col gap-4 mb-6">

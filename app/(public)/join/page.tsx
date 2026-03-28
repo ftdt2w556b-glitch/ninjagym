@@ -2,6 +2,8 @@
 
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { MEMBERSHIP_TYPES, getPriceForType, formatTHB } from "@/lib/pricing";
@@ -110,10 +112,15 @@ export default function JoinPage() {
   return (
     <div className="px-4 py-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-fredoka text-3xl text-white drop-shadow">{t.joinTitle}</h1>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
+          <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
+        </div>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
+      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.joinTitle}</h1>
+      <p className="font-bangers text-base text-[#ffe033] tracking-widest mb-5">RICK TEW&apos;S DOJO — KOH SAMUI</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Name */}

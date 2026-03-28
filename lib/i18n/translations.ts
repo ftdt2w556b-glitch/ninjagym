@@ -56,7 +56,8 @@ export const translations = {
     homeShop: "Shop",
     homePromptPay: "PromptPay Instructions",
     homeStaffLogin: "Staff Login",
-    homeSubtitle: "Rick Tew's Dojo — Koh Samui",
+    homeSubtitle: "Run, Jump, Kick and Climb like a Ninja",
+    homeMyMembership: "MY MEMBERSHIP Login",
   },
   ru: {
     joinTitle: "Вступить в NinjaGym",
@@ -106,7 +107,8 @@ export const translations = {
     homeShop: "Магазин",
     homePromptPay: "Инструкция PromptPay",
     homeStaffLogin: "Вход для персонала",
-    homeSubtitle: "Додзё Рика Тью — о. Самуи",
+    homeSubtitle: "Беги, прыгай, дерись и лазай как Ниндзя",
+    homeMyMembership: "Войти в МОЙ ПРОФИЛЬ",
   },
   th: {
     joinTitle: "สมัครสมาชิก NinjaGym",
@@ -156,7 +158,8 @@ export const translations = {
     homeShop: "ร้านค้า",
     homePromptPay: "วิธีใช้พร้อมเพย์",
     homeStaffLogin: "เข้าสู่ระบบพนักงาน",
-    homeSubtitle: "ดาโจะของ Rick Tew — เกาะสมุย",
+    homeSubtitle: "วิ่ง กระโดด เตะ และปีนป่ายแบบนินจา",
+    homeMyMembership: "เข้าสู่ระบบสมาชิก",
   },
 };
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { Lang } from "@/lib/i18n/translations";
 
@@ -96,7 +97,14 @@ export default function PromptPayPage() {
             <h2 className="font-bold text-gray-800">{c.step2Title}</h2>
           </div>
           <p className="text-sm text-gray-600 mb-3">{c.step2Body}</p>
-          <div className="bg-blue-50 rounded-xl px-4 py-3 text-center">
+          <div className="bg-blue-50 rounded-xl px-4 py-4 text-center">
+            <Image
+              src="/images/promptpay-qr-small.png"
+              alt="PromptPay QR Code"
+              width={160}
+              height={160}
+              className="mx-auto mb-3 rounded-xl"
+            />
             <p className="text-xs text-gray-500 mb-1">PromptPay Number</p>
             <p className="font-fredoka text-2xl text-[#1a56db] tracking-widest">0862944374</p>
             <p className="text-sm text-gray-600 mt-1">Rick Tew Co., Ltd.</p>
