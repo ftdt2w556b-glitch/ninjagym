@@ -69,8 +69,24 @@ export interface EventBooking {
   slip_reviewed_at: string | null;
   slip_notes: string | null;
   notes: string | null;
+  photographer_requested: boolean;
+  photographer_fee: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface MarketingPhoto {
+  id: number;
+  file_path: string;
+  caption: string | null;
+  member_id: number | null;
+  booking_id: number | null;
+  uploaded_by: string | null;
+  approved: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  tags: string[] | null;
+  created_at: string;
 }
 
 export interface ShopOrderItem {

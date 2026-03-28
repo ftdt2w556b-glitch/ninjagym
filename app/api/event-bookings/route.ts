@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
     const payment_method = formData.get("payment_method") as string;
     const amount_paid = Number(formData.get("amount_paid")) || null;
     const notes = formData.get("notes") as string;
+    const photographer_requested = formData.get("photographer_requested") === "true";
+    const photographer_fee = photographer_requested ? 1500 : 0;
     const slipFile = formData.get("slip") as File | null;
 
     if (!name || !event_date || !time_slot) {
@@ -81,6 +83,8 @@ export async function POST(request: NextRequest) {
         slip_status,
         slip_uploaded_at,
         notes: notes || null,
+        photographer_requested,
+        photographer_fee,
       })
       .select("id")
       .single();

@@ -38,6 +38,7 @@ export default async function AdminLayout({
     { href: "/admin/shop-orders", label: "Shop Orders", roles: ["admin", "staff"] },
     { href: "/admin/reports/cash", label: "Cash Report", roles: ["admin", "owner"] },
     { href: "/admin/staff", label: "Staff", roles: ["admin"] },
+    { href: "/admin/photos", label: "📸 Photos", roles: ["admin", "staff", "owner"] },
     { href: "/admin/pos", label: "POS", roles: ["admin", "staff"] },
     { href: "/scanner", label: "Scanner", roles: ["admin", "staff"] },
   ].filter((link) => link.roles.includes(role));

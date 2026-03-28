@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import QRCode from "react-qr-code";
 import Link from "next/link";
+import Image from "next/image";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import ShareButton from "@/components/public/ShareButton";
 
@@ -20,6 +21,15 @@ export default async function QrCardPage({
     .single();
 
   if (!member) notFound();
+
+  const { data: photos } = await admin
+    .from("marketing_photos")
+    .select("id, file_path, caption, tags")
+    .eq("member_id", Number(id))
+    .eq("approved", true)
+    .order("created_at", { ascending: false });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
   const membershipLabel =
     MEMBERSHIP_TYPES.find((m) => m.id === member.membership_type)?.label ??
@@ -120,6 +130,34 @@ export default async function QrCardPage({
       <div className="mt-4 text-center">
         <p className="text-white/60 text-xs">Save this page to your phone home screen for quick access</p>
       </div>
+
+      {/* Approved marketing photos for this member */}
+      {photos && photos.length > 0 && (
+        <div className="mt-6">
+          <h2 className="font-fredoka text-xl text-white drop-shadow mb-3">📸 Your NinjaGym Photos</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {photos.map(photo => (
+              <div key={photo.id} className="rounded-2xl overflow-hidden shadow-lg bg-white">
+                <div className="relative aspect-square">
+                  <Image
+                    src={`${supabaseUrl}/storage/v1/object/public/marketing-photos/${photo.file_path}`}
+                    alt={photo.caption ?? "NinjaGym action photo"}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 480px) 50vw, 200px"
+                  />
+                </div>
+                {photo.caption && (
+                  <p className="text-xs text-gray-500 px-3 py-2 truncate">{photo.caption}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-white/50 text-xs text-center mt-3">
+            Want high-res? Ask staff for a Google Drive share link.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

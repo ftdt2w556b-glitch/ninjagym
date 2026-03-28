@@ -22,6 +22,8 @@ export default function BirthdaysPage() {
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
 
+  const PHOTOGRAPHER_FEE = 1500; // THB
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -35,6 +37,7 @@ export default function BirthdaysPage() {
     birthday_child_age: "",
     payment_method: "promptpay",
     notes: "",
+    photographer_requested: false,
   });
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -50,7 +53,8 @@ export default function BirthdaysPage() {
     localStorage.setItem("ng_lang", l);
   }
 
-  const total = getBirthdayAmount(form.time_slot, form.num_hours, form.num_kids);
+  const baseTotal = getBirthdayAmount(form.time_slot, form.num_hours, form.num_kids);
+  const total = baseTotal + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0);
   const selectedSlot = TIME_SLOTS.find((s) => s.id === form.time_slot)!;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -226,6 +230,30 @@ export default function BirthdaysPage() {
           </div>
         </div>
 
+        {/* Photographer upgrade */}
+        <div className={`rounded-2xl p-4 shadow border-2 transition-colors ${
+          form.photographer_requested ? "bg-blue-50 border-[#1a56db]" : "bg-white border-transparent"
+        }`}>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={form.photographer_requested}
+              onChange={(e) => setForm({ ...form, photographer_requested: e.target.checked })}
+              className="mt-1 accent-[#1a56db] w-5 h-5"
+            />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-gray-800">📸 Add NinjaGym Photographer</p>
+                <span className="font-fredoka text-lg text-[#1a56db]">+{formatTHB(PHOTOGRAPHER_FEE)}</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Staff will capture action shots of your event. Web-ready photos delivered to your member page within 24hrs. High-res available on request via Google Drive.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Available for birthdays, events and day camps only.</p>
+            </div>
+          </label>
+        </div>
+
         {/* Price summary */}
         <div className="bg-[#ffe033] rounded-2xl px-4 py-3 shadow">
           <div className="flex items-center justify-between mb-1">
@@ -235,6 +263,7 @@ export default function BirthdaysPage() {
           <p className="text-xs text-[#1a56db]/70">
             {selectedSlot.rate} THB/hr x {form.num_hours} hrs
             {form.num_kids > 5 ? ` + extra kids` : " (first 5 kids included)"}
+            {form.photographer_requested ? ` + photographer (${PHOTOGRAPHER_FEE} THB)` : ""}
           </p>
         </div>
 
