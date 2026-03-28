@@ -1,0 +1,125 @@
+"use client";
+
+import { useState } from "react";
+
+type SlipStatus = "pending_review" | "cash_pending" | "approved" | "rejected";
+
+const STATUS_LABEL: Record<SlipStatus, string> = {
+  pending_review: "Pending Review",
+  cash_pending:   "Cash Pending",
+  approved:       "Approved",
+  rejected:       "Rejected",
+};
+
+const STATUS_BADGE: Record<SlipStatus, string> = {
+  pending_review: "bg-yellow-100 text-yellow-700",
+  cash_pending:   "bg-orange-100 text-orange-700",
+  approved:       "bg-green-100 text-green-700",
+  rejected:       "bg-red-100 text-red-600",
+};
+
+export default function PaymentActions({
+  id,
+  recordType,
+  initialStatus,
+  qrHref,
+}: {
+  id: number;
+  recordType: "member" | "event" | "shop";
+  initialStatus: SlipStatus;
+  qrHref?: string;
+}) {
+  const [status, setStatus] = useState<SlipStatus>(initialStatus);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function doAction(action: string, nextStatus: SlipStatus) {
+    setBusy(action);
+    setErr(null);
+    const prev = status;
+    setStatus(nextStatus); // optimistic
+
+    try {
+      const fd = new FormData();
+      fd.set("id", String(id));
+      fd.set("action", action);
+      fd.set("type", recordType);
+      const res = await fetch("/api/payments", {
+        method: "POST",
+        headers: { accept: "application/json" },
+        body: fd,
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (e) {
+      setStatus(prev); // revert
+      setErr("Action failed — please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const isPending  = status === "pending_review" || status === "cash_pending";
+  const isApproved = status === "approved";
+  const isRejected = status === "rejected";
+
+  return (
+    <div>
+      {/* Live status badge */}
+      <div className="mb-3">
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_BADGE[status]}`}>
+          {busy && (
+            <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+          )}
+          {STATUS_LABEL[status]}
+        </span>
+      </div>
+
+      {err && (
+        <p className="text-xs text-red-500 mb-2">{err}</p>
+      )}
+
+      <div className="flex gap-2 flex-wrap">
+        {isPending && (
+          <>
+            <button
+              onClick={() => doAction("approve", "approved")}
+              disabled={!!busy}
+              className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 disabled:opacity-50 transition-colors"
+            >
+              ✓ Approve
+            </button>
+            <button
+              onClick={() => doAction("reject", "rejected")}
+              disabled={!!busy}
+              className="bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-red-200 disabled:opacity-50 transition-colors"
+            >
+              ✕ Reject
+            </button>
+          </>
+        )}
+
+        {(isApproved || isRejected) && (
+          <button
+            onClick={() => doAction("restore", "pending_review")}
+            disabled={!!busy}
+            className="bg-yellow-100 text-yellow-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-yellow-200 disabled:opacity-50 transition-colors"
+          >
+            ↩ {isRejected ? "Restore to Pending" : "Undo Approval"}
+          </button>
+        )}
+
+        {qrHref && (
+          <a
+            href={qrHref}
+            className="bg-blue-50 text-[#1a56db] font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors"
+          >
+            View QR Card
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}

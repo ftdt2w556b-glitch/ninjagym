@@ -14,14 +14,15 @@ const BELT_STYLE: Record<string, { badge: string; bg: string; border: string }> 
 export default async function TechniqueDetailPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const { slug } = await params;
   const admin = createAdminClient();
 
   const { data: technique } = await admin
     .from("techniques")
     .select("*")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   if (!technique) notFound();
@@ -40,12 +41,13 @@ export default async function TechniqueDetailPage({
     "use server";
     const instructions = formData.get("instructions") as string;
     const id = formData.get("id") as string;
+    const slugVal = formData.get("slug") as string;
     const adminClient = createAdminClient();
     await adminClient
       .from("techniques")
       .update({ instructions, updated_at: new Date().toISOString() })
       .eq("id", id);
-    redirect(`/admin/techniques/${params.slug}`);
+    redirect(`/admin/techniques/${slugVal}`);
   }
 
   return (
@@ -86,6 +88,7 @@ export default async function TechniqueDetailPage({
           </h2>
           <form action={saveInstructions} className="flex flex-col gap-4">
             <input type="hidden" name="id" value={technique.id} />
+            <input type="hidden" name="slug" value={technique.slug} />
             <textarea
               name="instructions"
               defaultValue={technique.instructions ?? ""}

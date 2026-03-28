@@ -37,6 +37,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Return JSON for fetch/XHR callers; redirect for plain form POSTs
+  const acceptsJson = request.headers.get("accept")?.includes("application/json");
+  if (acceptsJson) {
+    return NextResponse.json({ success: true, slip_status });
+  }
+
   const referer = request.headers.get("referer") ?? "/admin/payments";
   return NextResponse.redirect(new URL(referer, request.url));
 }

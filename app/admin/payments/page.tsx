@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
+import PaymentActions from "@/components/admin/PaymentActions";
 
 export default async function PaymentsPage({
   searchParams,
@@ -31,7 +31,7 @@ export default async function PaymentsPage({
         <h1 className="text-xl font-bold text-gray-900">Payment Review</h1>
         <div className="flex gap-2 text-sm">
           {[
-            { value: "", label: "Pending" },
+            { value: "",         label: "Pending"  },
             { value: "approved", label: "Approved" },
             { value: "rejected", label: "Rejected" },
           ].map((opt) => (
@@ -59,20 +59,22 @@ export default async function PaymentsPage({
 
           return (
             <div key={m.id} className="bg-white rounded-2xl shadow p-5">
+              {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-gray-900">{m.name}</span>
-                    <Badge label={slipStatusLabel(m.slip_status)} variant={slipStatusVariant(m.slip_status)} />
-                  </div>
-                  <p className="text-sm text-gray-500">{typeLabel} x{m.kids_count} kids</p>
+                  <p className="font-bold text-gray-900 text-base">{m.name}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{typeLabel} · {m.kids_count} kid{m.kids_count !== 1 ? "s" : ""}</p>
                   {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
+                  {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-[#1a56db]">
-                    {m.amount_paid ? `${Number(m.amount_paid).toLocaleString()} THB` : "-"}
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-[#1a56db] text-lg">
+                    {m.amount_paid ? `฿${Number(m.amount_paid).toLocaleString()}` : "-"}
                   </p>
-                  <p className="text-xs text-gray-400">{m.payment_method}</p>
+                  <p className="text-xs text-gray-400 capitalize">{m.payment_method}</p>
+                  <p className="text-xs text-gray-300">
+                    {new Date(m.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </p>
                 </div>
               </div>
 
@@ -84,7 +86,7 @@ export default async function PaymentsPage({
                     <img
                       src={slipUrl}
                       alt="Payment slip"
-                      className="max-h-48 rounded-xl border border-gray-200 object-contain hover:opacity-90 transition-opacity"
+                      className="max-h-52 rounded-xl border border-gray-200 object-contain hover:opacity-90 transition-opacity"
                     />
                   </a>
                   {m.slip_uploaded_at && (
@@ -97,61 +99,23 @@ export default async function PaymentsPage({
 
               {!slipUrl && m.payment_method === "promptpay" && (
                 <div className="bg-yellow-50 rounded-xl px-3 py-2 mb-4 text-xs text-yellow-700">
-                  No slip uploaded yet.
+                  ⚠️ No slip uploaded yet.
                 </div>
               )}
 
-              {/* Notes */}
               {m.slip_notes && (
                 <div className="bg-gray-50 rounded-xl px-3 py-2 mb-4 text-xs text-gray-600">
-                  Note: {m.slip_notes}
+                  📝 {m.slip_notes}
                 </div>
               )}
 
-              {/* Actions */}
-              {(m.slip_status === "pending_review" || m.slip_status === "cash_pending") && (
-                <div className="flex gap-2 flex-wrap">
-                  <form action="/api/payments" method="POST">
-                    <input type="hidden" name="id" value={m.id} />
-                    <input type="hidden" name="action" value="approve" />
-                    <input type="hidden" name="type" value="member" />
-                    <button type="submit" className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 transition-colors">
-                      ✓ Approve
-                    </button>
-                  </form>
-                  <form action="/api/payments" method="POST">
-                    <input type="hidden" name="id" value={m.id} />
-                    <input type="hidden" name="action" value="reject" />
-                    <input type="hidden" name="type" value="member" />
-                    <button type="submit" className="bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-red-200 transition-colors">
-                      ✕ Reject
-                    </button>
-                  </form>
-                  <a href={`/qr/card/${m.id}`} className="bg-blue-50 text-[#1a56db] font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors">
-                    View QR Card
-                  </a>
-                </div>
-              )}
-              {m.slip_status === "rejected" && (
-                <form action="/api/payments" method="POST">
-                  <input type="hidden" name="id" value={m.id} />
-                  <input type="hidden" name="action" value="restore" />
-                  <input type="hidden" name="type" value="member" />
-                  <button type="submit" className="bg-yellow-100 text-yellow-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-yellow-200 transition-colors">
-                    ↩ Restore to Pending
-                  </button>
-                </form>
-              )}
-              {m.slip_status === "approved" && (
-                <form action="/api/payments" method="POST">
-                  <input type="hidden" name="id" value={m.id} />
-                  <input type="hidden" name="action" value="restore" />
-                  <input type="hidden" name="type" value="member" />
-                  <button type="submit" className="bg-gray-100 text-gray-500 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors">
-                    ↩ Undo Approval
-                  </button>
-                </form>
-              )}
+              {/* Optimistic action buttons */}
+              <PaymentActions
+                id={m.id}
+                recordType="member"
+                initialStatus={m.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
+                qrHref={`/qr/card/${m.id}`}
+              />
             </div>
           );
         })}
