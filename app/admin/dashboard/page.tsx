@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const admin = createAdminClient();
@@ -10,6 +11,7 @@ export default async function DashboardPage() {
     { count: pendingPayments },
     { count: pendingEvents },
     { count: pendingOrders },
+    { count: pendingPhotos },
   ] = await Promise.all([
     admin
       .from("attendance_logs")
@@ -28,13 +30,18 @@ export default async function DashboardPage() {
       .from("shop_orders")
       .select("*", { count: "exact", head: true })
       .eq("slip_status", "pending_review"),
+    admin
+      .from("marketing_photos")
+      .select("*", { count: "exact", head: true })
+      .eq("approved", false),
   ]);
 
   const stats = [
-    { label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800" },
-    { label: "Pending Payments", value: pendingPayments ?? 0, color: "bg-yellow-100 text-yellow-800" },
-    { label: "Pending Events", value: pendingEvents ?? 0, color: "bg-purple-100 text-purple-800" },
-    { label: "Pending Orders", value: pendingOrders ?? 0, color: "bg-green-100 text-green-800" },
+    { label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/scanner" },
+    { label: "Pending Payments", value: pendingPayments ?? 0, color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
+    { label: "Pending Events", value: pendingEvents ?? 0, color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
+    { label: "Pending Orders", value: pendingOrders ?? 0, color: "bg-green-100 text-green-800", href: "/admin/shop-orders" },
+    { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
   ];
 
   return (
@@ -51,13 +58,14 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-4 mb-8">
         {stats.map((stat) => (
-          <div
+          <Link
             key={stat.label}
-            className={`rounded-2xl p-5 ${stat.color} flex flex-col`}
+            href={stat.href}
+            className={`rounded-2xl p-5 ${stat.color} flex flex-col hover:opacity-80 transition-opacity`}
           >
             <span className="text-3xl font-bold">{stat.value}</span>
             <span className="text-sm font-medium mt-1">{stat.label}</span>
-          </div>
+          </Link>
         ))}
       </div>
 

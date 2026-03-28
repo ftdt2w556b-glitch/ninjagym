@@ -81,7 +81,7 @@ export default function BirthdaysPage() {
         return;
       }
 
-      router.push(`/?booked=${data.id}`);
+      router.push(`/birthdays/submitted`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);

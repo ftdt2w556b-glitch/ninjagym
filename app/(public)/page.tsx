@@ -95,17 +95,21 @@ export default function HomePage() {
         </Link>
 
         {/* Secondary nav grid */}
-        <div className="grid grid-cols-3 gap-3 mt-1">
-          <Link href="/about" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
-            <Image src="/images/App3_small.png" alt="About" width={48} height={48} className="rounded-xl object-cover" />
+        <div className="grid grid-cols-4 gap-2 mt-1">
+          <Link href="/about" className="bg-white/15 rounded-2xl p-2 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App3_small.png" alt="About" width={40} height={40} className="rounded-xl object-cover" />
             <span className="text-xs font-bold text-center leading-tight">About</span>
           </Link>
-          <Link href="/birthdays" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
-            <Image src="/images/App4_small.png" alt="Events" width={48} height={48} className="rounded-xl object-cover" />
-            <span className="text-xs font-bold text-center leading-tight">{t.homeBirthdays}</span>
+          <Link href="/birthdays" className="bg-white/15 rounded-2xl p-2 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App4_small.png" alt="Events" width={40} height={40} className="rounded-xl object-cover" />
+            <span className="text-xs font-bold text-center leading-tight">Birthdays</span>
           </Link>
-          <Link href="/shop" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-2 hover:bg-white/25 transition-all active:scale-95">
-            <Image src="/images/App6_small.png" alt="Shop" width={48} height={48} className="rounded-xl object-cover" />
+          <Link href="/daycamps" className="bg-white/15 rounded-2xl p-2 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
+            <span className="text-3xl">🏕️</span>
+            <span className="text-xs font-bold text-center leading-tight">Day Camp</span>
+          </Link>
+          <Link href="/shop" className="bg-white/15 rounded-2xl p-2 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
+            <Image src="/images/App6_small.png" alt="Shop" width={40} height={40} className="rounded-xl object-cover" />
             <span className="text-xs font-bold text-center leading-tight">{t.homeShop}</span>
           </Link>
         </div>
