@@ -30,7 +30,7 @@ const serwist = new Serwist({
         url.pathname.startsWith("/qr/card"),
       handler: "NetworkFirst",
       options: {
-        cacheName: "checkin-pages",
+        cacheName: "checkin-pages-v2",
         expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
       },
     },
