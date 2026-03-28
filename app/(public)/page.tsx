@@ -27,13 +27,32 @@ const YELLOW_STARS = [
   { top: "55%", right: "8%", size: "1.2rem", delay: "0.5s", duration: "2.6s", char: "✦", color: "#ffe033" },
 ];
 
+// Words that light up one by one, then "Play like a Ninja!!" all at once
+const HERO_WORDS = [
+  { word: "Run",   stage: 1 },
+  { word: "Jump",  stage: 2 },
+  { word: "Kick",  stage: 3 },
+  { word: "Climb", stage: 4 },
+];
+
 export default function HomePage() {
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
+  const [litStage, setLitStage] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
+
+    // Word-by-word light-up: Run → Jump → Kick → Climb → Play like a Ninja!!
+    const timers = [
+      setTimeout(() => setLitStage(1), 600),
+      setTimeout(() => setLitStage(2), 1200),
+      setTimeout(() => setLitStage(3), 1800),
+      setTimeout(() => setLitStage(4), 2400),
+      setTimeout(() => setLitStage(5), 3300),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   function handleLang(l: Lang) {
@@ -78,24 +97,47 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Subtitle — now the primary text; styled prominently since heading is gone */}
-      <p
-        className="font-fredoka text-white text-center font-bold drop-shadow-lg mb-1"
-        style={{ fontSize: "clamp(1.4rem, 6vw, 2rem)", textShadow: "1px 2px 0px rgba(0,0,0,0.4)" }}
+      {/* Animated headline — words light up one by one then stay yellow */}
+      <div
+        className="font-fredoka font-bold text-center drop-shadow-lg mb-2 select-none"
+        style={{ fontSize: "clamp(1.5rem, 6.5vw, 2.1rem)", textShadow: "1px 2px 0px rgba(0,0,0,0.45)", lineHeight: 1.25 }}
       >
-        {t.homeSubtitle}
-      </p>
+        {/* Line 1: Run, Jump, Kick, Climb, and... */}
+        <div>
+          {HERO_WORDS.map(({ word, stage }, i) => (
+            <span key={word}>
+              <span style={{
+                color: litStage >= stage ? "#ffe033" : "rgba(255,255,255,0.85)",
+                transition: "color 0.45s ease",
+              }}>
+                {word}
+              </span>
+              {i < HERO_WORDS.length - 1
+                ? <span style={{ color: "rgba(255,255,255,0.6)" }}>, </span>
+                : <span style={{ color: litStage >= 4 ? "rgba(255,224,51,0.7)" : "rgba(255,255,255,0.55)", transition: "color 0.45s ease" }}>, and…</span>
+              }
+            </span>
+          ))}
+        </div>
+        {/* Line 2: Play like a Ninja!! — all lights up together */}
+        <div style={{
+          color: litStage >= 5 ? "#ffe033" : "rgba(255,255,255,0.85)",
+          transition: "color 0.55s ease",
+        }}>
+          Play like a Ninja!!
+        </div>
+      </div>
 
       {/*
         Ninja hero + yellow pulsating stars.
-        Default position is BELOW the subtitle — no negative marginTop.
-        The float animation moves up 12px at peak, which may just graze the
-        subtitle bottom edge but won't cover it on initial load.
+        marginTop: -15px nudges him slightly higher without covering text at load.
+        The float animation (+12px up at peak) may graze the subtitle's bottom
+        edge but the starting position is safely below.
         marginBottom: -40px lets feet just peek over the Join button top edge.
       */}
       <div
         className="relative w-full flex justify-center pointer-events-none"
-        style={{ marginTop: "0px", marginBottom: "-40px", zIndex: 10 }}
+        style={{ marginTop: "-15px", marginBottom: "-40px", zIndex: 10 }}
       >
         {/* Yellow stars — behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
@@ -124,8 +166,8 @@ export default function HomePage() {
           <Image
             src="/images/App1_small.png"
             alt="Ninja character"
-            width={340}
-            height={340}
+            width={300}
+            height={300}
             className="drop-shadow-2xl"
             priority
           />
