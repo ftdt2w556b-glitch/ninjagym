@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
-import { MEMBERSHIP_TYPES, getPriceForType, formatTHB } from "@/lib/pricing";
+import { MEMBERSHIP_TYPES, BASE_PRICES, getPriceForType, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { MembershipType } from "@/types";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
@@ -95,6 +95,7 @@ export default function JoinPage() {
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [showWaiver, setShowWaiver] = useState(false);
   // Stripe two-step state
+  const [sessionQty, setSessionQty] = useState(5);
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
 
@@ -108,7 +109,10 @@ export default function JoinPage() {
     localStorage.setItem("ng_lang", l);
   }
 
-  const price = getPriceForType(form.membership_type, form.kids_count);
+  const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === form.membership_type);
+  const price = selectedMt?.bulk
+    ? calcBulkPrice(BASE_PRICES[selectedMt.bulkBase!] ?? 0, sessionQty)
+    : getPriceForType(form.membership_type, form.kids_count);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -119,6 +123,7 @@ export default function JoinPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(price));
+      if (selectedMt?.bulk) body.append("sessions_remaining", String(sessionQty));
       if (sessionFocus) body.append("notes", sessionFocus ? `Focus: ${sessionFocus}${form.notes ? " | " + form.notes : ""}` : form.notes);
       if (slip && form.payment_method === "promptpay") body.append("slip", slip);
 
@@ -258,15 +263,17 @@ export default function JoinPage() {
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.membershipTypeLabel} *</label>
           <div className="flex flex-col gap-1 max-h-72 overflow-y-auto pr-0.5">
             {MEMBERSHIP_TYPES.map((mt: MembershipType) => {
-              const p = getPriceForType(mt.id, form.kids_count);
+              const isBulk = !!mt.bulk;
+              const p = isBulk
+                ? calcBulkPrice(BASE_PRICES[mt.bulkBase!] ?? 0, sessionQty)
+                : getPriceForType(mt.id, form.kids_count);
+              const isSelected = form.membership_type === mt.id;
               const isOpen = expandedNote === mt.id;
               return (
                 <div key={mt.id} className="flex flex-col">
                   <label
                     className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border transition-colors ${
-                      form.membership_type === mt.id
-                        ? "border-[#1a56db] bg-blue-50"
-                        : "border-gray-100 hover:bg-gray-50"
+                      isSelected ? "border-[#1a56db] bg-blue-50" : "border-gray-100 hover:bg-gray-50"
                     }`}
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -274,7 +281,7 @@ export default function JoinPage() {
                         type="radio"
                         name="membership_type"
                         value={mt.id}
-                        checked={form.membership_type === mt.id}
+                        checked={isSelected}
                         onChange={() => setForm({ ...form, membership_type: mt.id })}
                         className="accent-[#1a56db] shrink-0"
                       />
@@ -297,7 +304,31 @@ export default function JoinPage() {
                       )}
                     </div>
                   </label>
-                  {isOpen && mt.note && (
+
+                  {/* Bulk qty slider — shown when this bulk type is selected */}
+                  {isBulk && isSelected && (
+                    <div className="mx-3 mb-1 px-3 py-3 bg-blue-50 border border-[#1a56db]/20 rounded-b-xl">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="font-semibold text-gray-700">{sessionQty} sessions</span>
+                        <span className="text-green-600 font-bold">{Math.min(sessionQty, 20)}% off</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={2}
+                        max={20}
+                        value={sessionQty}
+                        onChange={(e) => setSessionQty(Number(e.target.value))}
+                        className="w-full accent-[#1a56db]"
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>2 sessions</span>
+                        <span>20 sessions (20% off)</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info note */}
+                  {isOpen && mt.note && !isBulk && (
                     <div className="mx-3 mb-1 px-3 py-2 bg-blue-50 border border-[#1a56db]/20 rounded-b-xl text-xs text-gray-600 leading-relaxed">
                       {mt.note}
                     </div>

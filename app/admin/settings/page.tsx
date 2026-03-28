@@ -3,24 +3,16 @@
 import { useState, useEffect } from "react";
 import { BASE_PRICES, MEMBERSHIP_TYPES } from "@/lib/pricing";
 
-// ── Card tier definitions ─────────────────────────────────────
-const CARD_TIERS = [
-  { count: 4,  discount: 0.05, label: "4-Card (5% off)" },
-  { count: 8,  discount: 0.10, label: "8-Card (10% off)" },
-  { count: 16, discount: 0.15, label: "16-Card (15% off)" },
-  { count: 20, discount: 0.20, label: "20-Card (20% off)" },
+// Per-session base prices (used for single sessions AND bulk discount calculation)
+const SESSION_BASE_ROWS = [
+  { key: "price_session_group",    label: "Group Session (per session)" },
+  { key: "price_day_camp",         label: "Day Camp (per session)" },
+  { key: "price_session_1to1",     label: "1-to-1 Session (per session)" },
+  { key: "price_all_day",          label: "All Day Pass (per session)" },
+  { key: "price_combo_game_train", label: "Combo Game & Train (per session)" },
 ];
 
-// Groups where card prices are derived from a base price
-const CARD_GROUPS = [
-  { label: "Group Sessions",      base: "price_session_group",    suffix: "sessions" },
-  { label: "Day Camp Sessions",   base: "price_day_camp",         suffix: "day_camp" },
-  { label: "1-to-1 Sessions",     base: "price_session_1to1",     suffix: "sessions_1to1" },
-  { label: "All Day Passes",      base: "price_all_day",          suffix: "all_day" },
-  { label: "Combo (Game+Train)",  base: "price_combo_game_train", suffix: "combo" },
-];
-
-// Simple editable rows (no card tiers)
+// Other single / monthly rows
 const SINGLE_ROWS = [
   { key: "price_climb_unguided", label: "Unguided Climb Zone (20 min)" },
   { key: "price_monthly_2hr",    label: "Monthly Flex: 2 Hrs Any Day" },
@@ -49,18 +41,6 @@ const STATIC_BASE: Record<string, number> = {
   price_shop_tshirt_adult: 300,
   price_shop_shake_bake:   200,
 };
-
-// Compute all derived card prices from base prices
-function buildDerived(prices: Record<string, number>): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const g of CARD_GROUPS) {
-    const base = prices[g.base] ?? 0;
-    for (const t of CARD_TIERS) {
-      out[`price_${g.suffix}_${t.count}`] = Math.round(base * t.count * (1 - t.discount));
-    }
-  }
-  return out;
-}
 
 // ── Sub-components ────────────────────────────────────────────
 
@@ -157,8 +137,7 @@ export default function AdminSettingsPage() {
     setSaved(false);
     setError("");
     try {
-      const derived = buildDerived(prices);
-      const payload: Record<string, number | string> = { ...prices, ...derived, ...descriptions };
+      const payload: Record<string, number | string> = { ...prices, ...descriptions };
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -166,7 +145,6 @@ export default function AdminSettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Save failed");
-      setPrices((p) => ({ ...p, ...derived }));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
@@ -175,8 +153,6 @@ export default function AdminSettingsPage() {
       setSaving(false);
     }
   }
-
-  const derived = buildDerived(prices);
 
   const SaveButton = () => (
     <button
@@ -213,9 +189,12 @@ export default function AdminSettingsPage() {
 
       <div className="flex flex-col gap-6">
 
-        {/* Single sessions + monthly */}
-        <SectionCard title="Single Sessions & Monthly">
-          {SINGLE_ROWS.map(({ key, label }) => (
+        {/* Per-session base prices */}
+        <SectionCard title="Per-Session Prices">
+          <div className="px-5 py-2 text-xs text-gray-400 border-b border-gray-50">
+            Bulk session purchases discount automatically: 1% off per session (buy 10 = 10% off, max 20%).
+          </div>
+          {SESSION_BASE_ROWS.map(({ key, label }) => (
             <PriceRow
               key={key}
               label={label}
@@ -225,27 +204,17 @@ export default function AdminSettingsPage() {
           ))}
         </SectionCard>
 
-        {/* Card groups — base editable, tiers auto-calculated */}
-        {CARD_GROUPS.map((g) => (
-          <SectionCard key={g.base} title={g.label}>
+        {/* Single sessions + monthly */}
+        <SectionCard title="Other Single Sessions & Monthly">
+          {SINGLE_ROWS.map(({ key, label }) => (
             <PriceRow
-              label="Per session (base price)"
-              value={prices[g.base] ?? 0}
-              onChange={(v) => handlePrice(g.base, v)}
+              key={key}
+              label={label}
+              value={prices[key] ?? 0}
+              onChange={(v) => handlePrice(key, v)}
             />
-            {CARD_TIERS.map((t) => {
-              const cardKey = `price_${g.suffix}_${t.count}`;
-              return (
-                <PriceRow
-                  key={cardKey}
-                  label={t.label}
-                  value={derived[cardKey] ?? 0}
-                  readOnly
-                />
-              );
-            })}
-          </SectionCard>
-        ))}
+          ))}
+        </SectionCard>
 
         {/* Birthday / Events */}
         <SectionCard title="Birthday / Event Rates">
