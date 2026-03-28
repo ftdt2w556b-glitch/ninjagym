@@ -11,6 +11,67 @@ import { MembershipType } from "@/types";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
+// Session types that benefit from a focus selection
+const SESSION_TYPES_WITH_FOCUS = new Set([
+  "session_group", "session_1to1", "day_camp", "combo_game_train", "all_day", "climb_unguided",
+]);
+
+const SESSION_FOCUS_GROUPS = [
+  {
+    label: "🥋 Stances",
+    options: [
+      "Horse / Side Stance", "Cat Stance", "Defensive Stance", "Power Stance",
+      "Fighting Stance", "Low Stance", "Bow / Open Stance", "Blade Stance",
+      "Reactive Stance", "Combat Stance",
+    ],
+  },
+  {
+    label: "🔄 Rolls & Falls",
+    options: ["Front Roll", "Back Roll", "Side Roll", "Breakfall", "Dive Roll"],
+  },
+  {
+    label: "🦵 Kicks",
+    options: [
+      "Front Kick", "Side Kick", "Roundhouse Kick", "Back Kick",
+      "Spinning Kick", "Jump Kick", "Axe Kick",
+    ],
+  },
+  {
+    label: "👊 Strikes",
+    options: ["Straight Punch", "Palm Strike", "Hammer Fist", "Elbow Strike", "Knife Hand"],
+  },
+  {
+    label: "🤸 Jumps & Parkour",
+    options: [
+      "Precision Jump", "Long Jump", "Vault", "Wall Run",
+      "Climb & Descent", "Balance Beam", "Kong Vault",
+    ],
+  },
+  {
+    label: "🧗 Climbing",
+    options: ["Rope Climb", "Wall Climb", "Bouldering", "Traverse Wall"],
+  },
+  {
+    label: "🎯 General",
+    options: ["Flexibility & Stretching", "Ninja Conditioning", "Free Play", "Games"],
+  },
+];
+
+const WAIVER_RULES = [
+  { icon: "⚠️", text: "Participation is at **your own risk**. Areas of the center are dangerous and similar to a public playground." },
+  { icon: "👧", text: "**Only Kids** (no parents or guardians) on the mat." },
+  { icon: "🚫", text: "**Do not enter the mats** without a NinjaGym Safety Guide bringing them into the center." },
+  { icon: "📢", text: "No **Yelling**, running, disruptive behavior, or ignoring a Safety Guide. Kids must behave or be asked to sit out **without refund**." },
+  { icon: "👥", text: "**Parents are responsible** for ensuring their kids follow the rules and Guides. We want to focus on our program." },
+  { icon: "⏱️", text: "Each session is **50 minutes** long." },
+  { icon: "🚧", text: "Inform your kids to **NOT MOVE** or disrupt our equipment." },
+  { icon: "🚪", text: "Please **depart shortly after** a session. No children playing in entry areas." },
+  { icon: "🍔", text: "**No outside food or drink** in the center. Please clean up after yourself." },
+  { icon: "🎓", text: "Sessions are **\"learn by doing\"** with a relaxed, fun environment — not a strict martial arts class." },
+  { icon: "📷", text: "By registering you **consent to photos/video** being taken during sessions for marketing use." },
+  { icon: "💰", text: "**No Refunds**. All sales are final once the session has begun." },
+];
+
 export default function JoinPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
@@ -30,6 +91,9 @@ export default function JoinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [expandedNote, setExpandedNote] = useState<string | null>(null);
+  const [sessionFocus, setSessionFocus] = useState("");
+  const [agreedToPolicy, setAgreedToPolicy] = useState(false);
+  const [showWaiver, setShowWaiver] = useState(false);
   // Stripe two-step state
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
@@ -55,6 +119,7 @@ export default function JoinPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(price));
+      if (sessionFocus) body.append("notes", sessionFocus ? `Focus: ${sessionFocus}${form.notes ? " | " + form.notes : ""}` : form.notes);
       if (slip && form.payment_method === "promptpay") body.append("slip", slip);
 
       const res = await fetch("/api/members", { method: "POST", body });
@@ -312,13 +377,60 @@ export default function JoinPage() {
           </div>
         )}
 
+        {/* Training Session Focus — only for single-session types */}
+        {SESSION_TYPES_WITH_FOCUS.has(form.membership_type) && (
+          <div className="bg-white rounded-2xl p-4 shadow">
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Training Session Focus <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <p className="text-xs text-gray-400 mb-2">What would you like to focus on in your session?</p>
+            <select
+              value={sessionFocus}
+              onChange={(e) => setSessionFocus(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            >
+              <option value="">— No preference —</option>
+              {SESSION_FOCUS_GROUPS.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.options.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
         )}
 
+        {/* Policy agreement */}
+        <div className="bg-white rounded-2xl px-4 py-3 shadow flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="policy-check"
+            checked={agreedToPolicy}
+            onChange={(e) => setAgreedToPolicy(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-[#1a56db] shrink-0"
+            required
+          />
+          <label htmlFor="policy-check" className="text-sm text-gray-700 leading-snug">
+            I agree to the{" "}
+            <button
+              type="button"
+              onClick={() => setShowWaiver(true)}
+              className="text-[#1a56db] font-semibold underline underline-offset-2"
+            >
+              NinjaGym Policies
+            </button>{" "}
+            and understand: <strong>No Refunds</strong>.
+          </label>
+        </div>
+
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !agreedToPolicy}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
@@ -328,6 +440,47 @@ export default function JoinPage() {
             : t.submitBtn}
         </button>
       </form>
+
+      {/* Waiver Modal */}
+      {showWaiver && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#1a56db] to-[#2563eb] rounded-t-2xl">
+              <h2 className="font-fredoka text-lg text-white">🥷 NinjaGym Rules &amp; Waiver</h2>
+              <button
+                onClick={() => setShowWaiver(false)}
+                className="text-white/70 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            {/* Rules list */}
+            <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-3">
+              {WAIVER_RULES.map((rule, i) => (
+                <div key={i} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
+                  <span className="text-xl shrink-0">{rule.icon}</span>
+                  <p
+                    className="text-sm text-gray-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: rule.text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"),
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Close button */}
+            <div className="px-5 pb-5 pt-2">
+              <button
+                onClick={() => { setAgreedToPolicy(true); setShowWaiver(false); }}
+                className="w-full bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                I Understand — Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

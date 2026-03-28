@@ -72,8 +72,8 @@ export default function HomePage() {
         <Image
           src="/images/App1_small.png"
           alt="Ninja character"
-          width={220}
-          height={220}
+          width={280}
+          height={280}
           className="drop-shadow-2xl"
           priority
         />
@@ -91,7 +91,7 @@ export default function HomePage() {
           href="/qr/card/me"
           className="border-2 border-white text-white font-bold text-base rounded-2xl py-3 text-center hover:bg-white/10 transition-all active:scale-95"
         >
-          {t.homeMyMembership ?? "MY MEMBERSHIP Login"}
+          {t.homeMyMembership}
         </Link>
 
         {/* Secondary nav grid */}

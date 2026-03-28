@@ -39,6 +39,7 @@ export default function RootLayout({
     <html lang="en" className={nunito.variable}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Bangers&display=swap"
           rel="stylesheet"

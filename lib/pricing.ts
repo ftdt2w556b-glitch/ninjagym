@@ -2,9 +2,9 @@ import { MembershipType } from "@/types";
 
 export const MEMBERSHIP_TYPES: MembershipType[] = [
   // Single sessions (per kid)
-  { id: "climb_unguided",   label: "Unguided Climb Zone (20 min)",  perKid: true,  note: "Self-guided climb zone access for 20 minutes. No instructor." },
-  { id: "session_group",    label: "Group Guide Session",            perKid: true,  note: "50-min guided group session with an instructor. Suitable for all levels." },
-  { id: "session_1to1",     label: "1-to-1 Private Session",        perKid: true,  note: "50-min private session with dedicated instructor. Best for focused skill building." },
+  { id: "climb_unguided",   label: "Unguided Climb Zone (20 min)",  perKid: true,  note: "Self-guided climb zone access for 20 minutes. No Guide required." },
+  { id: "session_group",    label: "Group Guide Session",            perKid: true,  note: "50-min guided group session with a Guide. Suitable for all levels." },
+  { id: "session_1to1",     label: "1-to-1 Private Session",        perKid: true,  note: "50-min private session with a dedicated Guide. Best for focused skill building." },
   { id: "day_camp",         label: "Day Camp (10am–2pm)",           perKid: true,  note: "4-hour supervised day camp. Drop-in before 3pm. Includes climbing, parkour and ninja training." },
   { id: "combo_game_train", label: "Combo Game & Train (2 hrs)",    perKid: true,  note: "2-hour session combining a guided training session with game room access." },
   { id: "all_day",          label: "All Day (max 8 hrs)",           perKid: true,  note: "Full day access up to 8 hours. Best value for a full day of ninja training." },

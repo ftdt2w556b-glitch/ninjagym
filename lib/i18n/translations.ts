@@ -60,7 +60,7 @@ const en = {
   homePromptPay: "PromptPay Instructions",
   homeStaffLogin: "Staff Login",
   homeSubtitle: "Run, Jump, Kick and Climb like a Ninja",
-  homeMyMembership: "MY MEMBERSHIP Login",
+  homeMyMembership: "MY MEMBERSHIP",
 };
 
 export const translations: Record<Lang, typeof en> = {
@@ -111,7 +111,7 @@ export const translations: Record<Lang, typeof en> = {
     homePromptPay: "Инструкция PromptPay",
     homeStaffLogin: "Вход для персонала",
     homeSubtitle: "Беги, прыгай, дерись и лазай как Ниндзя",
-    homeMyMembership: "Войти в МОЙ ПРОФИЛЬ",
+    homeMyMembership: "МОЙ ПРОФИЛЬ",
   },
   th: {
     joinTitle: "สมัครสมาชิก NinjaGym",
@@ -159,7 +159,7 @@ export const translations: Record<Lang, typeof en> = {
     homePromptPay: "วิธีใช้พร้อมเพย์",
     homeStaffLogin: "เข้าสู่ระบบพนักงาน",
     homeSubtitle: "วิ่ง กระโดด เตะ และปีนป่ายแบบนินจา",
-    homeMyMembership: "เข้าสู่ระบบสมาชิก",
+    homeMyMembership: "สมาชิกของฉัน",
   },
   fr: {
     joinTitle: "Rejoindre NinjaGym",
@@ -207,7 +207,7 @@ export const translations: Record<Lang, typeof en> = {
     homePromptPay: "Instructions PromptPay",
     homeStaffLogin: "Connexion Personnel",
     homeSubtitle: "Cours, Saute, Botte et Grimpe comme un Ninja",
-    homeMyMembership: "Mon Compte Membre",
+    homeMyMembership: "MON ABONNEMENT",
   },
   he: {
     joinTitle: "הצטרף ל-NinjaGym",
@@ -255,7 +255,7 @@ export const translations: Record<Lang, typeof en> = {
     homePromptPay: "הוראות PromptPay",
     homeStaffLogin: "כניסת צוות",
     homeSubtitle: "רוץ, קפוץ, בעט וטפס כמו ניניה",
-    homeMyMembership: "כניסה לחשבון שלי",
+    homeMyMembership: "המנוי שלי",
   },
 };
 
