@@ -147,6 +147,12 @@ export default async function MembersPage({
                         >
                           QR Card
                         </Link>
+                        <Link
+                          href={`/admin/members/${m.id}`}
+                          className="text-xs text-gray-500 hover:underline"
+                        >
+                          Edit
+                        </Link>
                         {m.slip_status === "pending_review" && (
                           <Link href={`/admin/payments?member=${m.id}`} className="text-xs text-yellow-600 hover:underline">
                             Review

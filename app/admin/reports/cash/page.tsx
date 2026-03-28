@@ -105,7 +105,7 @@ export default async function RevenuePage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Revenue</h1>
+          <h1 className="text-xl font-bold text-gray-900">Sales</h1>
           <p className="text-sm text-gray-400 mt-0.5">All approved payments by period</p>
         </div>
         <a
