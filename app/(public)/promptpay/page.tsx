@@ -55,11 +55,51 @@ const content = {
     registerBtn: "สมัครสมาชิก",
     backBtn: "กลับหน้าหลัก",
   },
-};
+  fr: {
+    title: "Paiement PromptPay",
+    subtitle: "Comment payer avec PromptPay",
+    step1Title: "Ouvrez votre application bancaire",
+    step1Body: "Ouvrez n'importe quelle application bancaire thaïlandaise : KBank, SCB, Bangkok Bank, Krungthai ou toute appli compatible PromptPay.",
+    step2Title: "Transfert vers PromptPay",
+    step2Body: "Envoyez le montant exact à :",
+    step3Title: "Prenez une capture d'écran",
+    step3Body: "Capturez l'écran de confirmation du virement indiquant le montant, le nom du destinataire et la référence de transaction.",
+    step4Title: "Téléchargez votre reçu",
+    step4Body: "Retournez à votre formulaire d'inscription ou de réservation et téléchargez la capture. Le personnel approuvera en quelques minutes.",
+    questions: "Des questions ?",
+    questionsBody: "Montrez cette page au personnel à l'accueil et ils vous aideront.",
+    registerBtn: "S'inscrire comme membre",
+    backBtn: "Retour à l'accueil",
+  },
+  he: {
+    title: "תשלום PromptPay",
+    subtitle: "כיצד לשלם עם PromptPay",
+    step1Title: "פתח את אפליקציית הבנק שלך",
+    step1Body: "פתח כל אפליקציית בנק תאילנדית: KBank, SCB, Bangkok Bank, Krungthai או כל אפליקציה עם PromptPay.",
+    step2Title: "העבר אל PromptPay",
+    step2Body: "שלח את הסכום המדויק אל:",
+    step3Title: "צלם מסך",
+    step3Body: "צלם מסך של אישור ההעברה המציג את הסכום, שם הנמען ומספר העסקה.",
+    step4Title: "העלה את האסמכתא",
+    step4Body: "חזור לטופס ההרשמה או ההזמנה שלך והעלה את הצילום מסך. הצוות יאשר תוך מספר דקות.",
+    questions: "שאלות?",
+    questionsBody: "הצג דף זה לצוות בדלפק ויעזרו לך.",
+    registerBtn: "הרשמה כחבר",
+    backBtn: "חזרה לדף הבית",
+  },
+} satisfies Record<string, {
+  title: string; subtitle: string;
+  step1Title: string; step1Body: string;
+  step2Title: string; step2Body: string;
+  step3Title: string; step3Body: string;
+  step4Title: string; step4Body: string;
+  questions: string; questionsBody: string;
+  registerBtn: string; backBtn: string;
+}>;
 
 export default function PromptPayPage() {
   const [lang, setLang] = useState<Lang>("en");
-  const c = content[lang];
+  const c = content[lang as keyof typeof content] ?? content.en;
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;

@@ -6,9 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { Lang } from "@/lib/i18n/translations";
-import { formatTHB } from "@/lib/pricing";
+import { formatTHB, getPriceForType } from "@/lib/pricing";
 
-const CAMP_PRICE_PER_KID = 1200; // THB per kid per day
+const CAMP_PRICE_PER_KID = getPriceForType("day_camp", 1); // 555 THB per kid
 
 export default function DayCampsPage() {
   const router = useRouter();

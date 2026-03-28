@@ -7,6 +7,7 @@ import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { MEMBERSHIP_TYPES, getPriceForType, formatTHB } from "@/lib/pricing";
+import { MembershipType } from "@/types";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -28,6 +29,7 @@ export default function JoinPage() {
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [expandedNote, setExpandedNote] = useState<string | null>(null);
   // Stripe two-step state
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
@@ -189,34 +191,53 @@ export default function JoinPage() {
         {/* Membership type */}
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.membershipTypeLabel} *</label>
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-            {MEMBERSHIP_TYPES.map((mt) => {
+          <div className="flex flex-col gap-1 max-h-72 overflow-y-auto pr-0.5">
+            {MEMBERSHIP_TYPES.map((mt: MembershipType) => {
               const p = getPriceForType(mt.id, form.kids_count);
+              const isOpen = expandedNote === mt.id;
               return (
-                <label
-                  key={mt.id}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border transition-colors ${
-                    form.membership_type === mt.id
-                      ? "border-[#1a56db] bg-blue-50"
-                      : "border-gray-100 hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="membership_type"
-                      value={mt.id}
-                      checked={form.membership_type === mt.id}
-                      onChange={() => setForm({ ...form, membership_type: mt.id })}
-                      className="accent-[#1a56db]"
-                    />
-                    <span className="text-sm font-medium text-gray-800">{mt.label}</span>
-                    {mt.perKid && (
-                      <span className="text-xs text-gray-400">per kid</span>
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-[#1a56db]">{formatTHB(p)}</span>
-                </label>
+                <div key={mt.id} className="flex flex-col">
+                  <label
+                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer border transition-colors ${
+                      form.membership_type === mt.id
+                        ? "border-[#1a56db] bg-blue-50"
+                        : "border-gray-100 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <input
+                        type="radio"
+                        name="membership_type"
+                        value={mt.id}
+                        checked={form.membership_type === mt.id}
+                        onChange={() => setForm({ ...form, membership_type: mt.id })}
+                        className="accent-[#1a56db] shrink-0"
+                      />
+                      <span className="text-sm font-medium text-gray-800 truncate">{mt.label}</span>
+                      {mt.perKid && (
+                        <span className="text-xs text-gray-400 shrink-0">×{form.kids_count}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className="text-sm font-bold text-[#1a56db]">{formatTHB(p)}</span>
+                      {mt.note && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setExpandedNote(isOpen ? null : mt.id); }}
+                          className="w-5 h-5 rounded-full bg-gray-200 hover:bg-[#1a56db] hover:text-white text-gray-500 text-xs font-bold flex items-center justify-center transition-colors"
+                          title="More info"
+                        >
+                          i
+                        </button>
+                      )}
+                    </div>
+                  </label>
+                  {isOpen && mt.note && (
+                    <div className="mx-3 mb-1 px-3 py-2 bg-blue-50 border border-[#1a56db]/20 rounded-b-xl text-xs text-gray-600 leading-relaxed">
+                      {mt.note}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

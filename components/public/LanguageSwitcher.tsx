@@ -1,12 +1,6 @@
 "use client";
 
-import { Lang } from "@/lib/i18n/translations";
-
-const FLAGS: { lang: Lang; flag: string; label: string }[] = [
-  { lang: "en", flag: "🇬🇧", label: "EN" },
-  { lang: "ru", flag: "🇷🇺", label: "RU" },
-  { lang: "th", flag: "🇹🇭", label: "TH" },
-];
+import { Lang, LANGUAGES } from "@/lib/i18n/translations";
 
 export default function LanguageSwitcher({
   current,
@@ -15,22 +9,26 @@ export default function LanguageSwitcher({
   current: Lang;
   onChange: (lang: Lang) => void;
 }) {
+  const selected = LANGUAGES.find((l) => l.code === current);
+
   return (
-    <div className="flex gap-1">
-      {FLAGS.map(({ lang, flag, label }) => (
-        <button
-          key={lang}
-          onClick={() => onChange(lang)}
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-semibold transition-colors ${
-            current === lang
-              ? "bg-white text-[#1a56db]"
-              : "bg-white/20 text-white hover:bg-white/30"
-          }`}
-        >
-          <span>{flag}</span>
-          <span>{label}</span>
-        </button>
-      ))}
+    <div className="relative">
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value as Lang)}
+        className="appearance-none bg-white/20 text-white font-semibold text-sm rounded-xl pl-3 pr-7 py-1.5 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white/50 cursor-pointer hover:bg-white/30 transition-colors"
+        style={{ WebkitAppearance: "none" }}
+      >
+        {LANGUAGES.map(({ code, label, flag }) => (
+          <option key={code} value={code} className="text-gray-800 bg-white">
+            {flag} {label}
+          </option>
+        ))}
+      </select>
+      {/* Custom dropdown arrow */}
+      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/70 text-xs">
+        ▾
+      </span>
     </div>
   );
 }

@@ -165,6 +165,7 @@ export interface MembershipType {
   id: string;
   label: string;
   perKid: boolean;
+  note?: string;
 }
 
 export interface SaleData {
