@@ -15,6 +15,8 @@ export async function POST(request: NextRequest) {
     const payment_method = formData.get("payment_method") as string;
     const amount_paid = Number(formData.get("amount_paid")) || null;
     const notes = formData.get("notes") as string;
+    const sessions_remaining = formData.get("sessions_remaining") ? Number(formData.get("sessions_remaining")) : null;
+    const parent_member_id = formData.get("parent_member_id") ? Number(formData.get("parent_member_id")) : null;
     const slipFile = formData.get("slip") as File | null;
 
     if (!name || !membership_type) {
@@ -67,6 +69,8 @@ export async function POST(request: NextRequest) {
         slip_status,
         slip_uploaded_at,
         notes: notes || null,
+        sessions_remaining,
+        parent_member_id,
       })
       .select("id")
       .single();

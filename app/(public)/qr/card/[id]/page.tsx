@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import QRCode from "react-qr-code";
 import Link from "next/link";
 import Image from "next/image";
@@ -21,11 +21,16 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at")
+    .select("id, name, phone, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id")
     .eq("id", id)
     .single();
 
   if (!member) notFound();
+
+  // Top-up payment records redirect to the parent (main) card
+  if (member.parent_member_id) {
+    redirect(`/qr/card/${member.parent_member_id}`);
+  }
 
   const [{ data: photos }, { data: checkIns }] = await Promise.all([
     admin

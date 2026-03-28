@@ -13,7 +13,7 @@ export default async function MembersPage({
 
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at, parent_member_id")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -91,17 +91,26 @@ export default async function MembersPage({
             <tbody className="divide-y divide-gray-50">
               {members?.map((m) => {
                 const typeLabel = MEMBERSHIP_TYPES.find((t) => t.id === m.membership_type)?.label ?? m.membership_type;
+                const isTopUp = !!(m as { parent_member_id?: number | null }).parent_member_id;
+                const parentId = (m as { parent_member_id?: number | null }).parent_member_id;
                 return (
-                  <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={m.id} className={`hover:bg-gray-50 transition-colors ${isTopUp ? "bg-blue-50/40" : ""}`}>
                     <td className="px-4 py-3 text-gray-400 font-mono text-xs">#{m.id}</td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-900">{m.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="font-semibold text-gray-900">{m.name}</p>
+                        {isTopUp && (
+                          <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
+                            Top-up → <Link href={`/admin/members?q=${encodeURIComponent(m.name ?? "")}`} className="underline">#{parentId}</Link>
+                          </span>
+                        )}
+                      </div>
                       {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                       {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                       {(m as { kids_names?: string }).kids_names && (
                         <p className="text-xs text-blue-600 mt-0.5 font-bold">{(m as { kids_names?: string }).kids_names}</p>
                       )}
-                      {(m as { notes?: string }).notes && (
+                      {(m as { notes?: string }).notes && !isTopUp && (
                         <p className="text-xs text-orange-500 mt-0.5 italic">📝 {(m as { notes?: string }).notes}</p>
                       )}
                     </td>
@@ -133,7 +142,7 @@ export default async function MembersPage({
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link
-                          href={`/qr/card/${m.id}?from=admin`}
+                          href={`/qr/card/${isTopUp ? parentId : m.id}?from=admin`}
                           className="text-xs text-[#1a56db] hover:underline"
                         >
                           QR Card

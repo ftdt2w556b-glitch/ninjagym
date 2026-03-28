@@ -53,15 +53,37 @@ export async function POST(request: NextRequest) {
         type === "event"  ? "birthday"     :
         "shop_order";
 
-      // Fetch the record to get email, amount, and membership type
+      // Fetch the record to get email, amount, membership type, and top-up link
       const { data: record } = await admin
         .from(table)
-        .select("email, amount_paid, total_amount, membership_type")
+        .select("email, amount_paid, total_amount, membership_type, parent_member_id, sessions_remaining")
         .eq("id", id)
         .single();
 
       const email = record?.email as string | null;
       const amount = (record?.amount_paid ?? record?.total_amount ?? 0) as number;
+
+      // ── Top-up: add sessions to parent card on approval ──────────
+      if (type === "member" && record?.parent_member_id) {
+        try {
+          const parentId = record.parent_member_id as number;
+          const addedSessions = (record.sessions_remaining as number | null) ?? 0;
+          if (addedSessions > 0) {
+            const { data: parent } = await admin
+              .from("member_registrations")
+              .select("sessions_remaining")
+              .eq("id", parentId)
+              .single();
+            const current = (parent?.sessions_remaining as number | null) ?? 0;
+            await admin
+              .from("member_registrations")
+              .update({ sessions_remaining: current + addedSessions })
+              .eq("id", parentId);
+          }
+        } catch (topUpErr) {
+          console.error("Top-up session merge failed:", topUpErr);
+        }
+      }
 
       // Set expiry for monthly_flex memberships (30 days from approval)
       if (type === "member" && record?.membership_type === "monthly_flex") {
