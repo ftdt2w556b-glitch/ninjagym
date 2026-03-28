@@ -53,7 +53,7 @@ export default async function StaffPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Staff Accounts</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-6">User Accounts</h1>
 
       {/* Existing staff */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-8">
@@ -115,7 +115,7 @@ export default async function StaffPage() {
 
       {/* Add new staff */}
       <div className="bg-white rounded-2xl shadow p-6 max-w-md">
-        <h2 className="font-bold text-gray-800 mb-4">Add Staff Account</h2>
+        <h2 className="font-bold text-gray-800 mb-4">Add User Account</h2>
         <form action={createStaff} className="flex flex-col gap-4">
           {[
             { name: "name", label: "Full Name", type: "text", placeholder: "e.g. Som Smith" },

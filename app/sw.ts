@@ -23,17 +23,8 @@ const serwist = new Serwist({
         expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
       },
     },
-    {
-      // Cache scanner and QR card pages for offline check-in
-      matcher: ({ url }) =>
-        url.pathname.startsWith("/scanner") ||
-        url.pathname.startsWith("/qr/card"),
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "checkin-pages-v2",
-        expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
-      },
-    },
+    // QR card pages are NOT cached — they contain live member data
+    // and caching them caused ERR_FAILED on navigation
   ],
 });
 
