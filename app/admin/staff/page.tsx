@@ -1,11 +1,12 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
 
 export default async function StaffPage() {
   const admin = createAdminClient();
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, name, email, role, created_at")
+    .select("id, name, email, role, pin, created_at")
     .order("created_at", { ascending: true });
 
   async function createStaff(formData: FormData) {
@@ -39,6 +40,17 @@ export default async function StaffPage() {
     redirect("/admin/staff");
   }
 
+  async function setPin(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    const pin = formData.get("pin") as string;
+    if (!pin || pin.length < 4) redirect("/admin/staff");
+    const hashed = await bcrypt.hash(pin, 10);
+    const adminClient = createAdminClient();
+    await adminClient.from("profiles").update({ pin: hashed }).eq("id", id);
+    redirect("/admin/staff");
+  }
+
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-6">Staff Accounts</h1>
@@ -52,6 +64,7 @@ export default async function StaffPage() {
               <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
               <th className="text-left px-4 py-3 font-semibold text-gray-600">Change Role</th>
+              <th className="text-left px-4 py-3 font-semibold text-gray-600">POS PIN</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -80,6 +93,17 @@ export default async function StaffPage() {
                     <button type="submit"
                       className="text-xs bg-[#1a56db] text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors">
                       Save
+                    </button>
+                  </form>
+                </td>
+                <td className="px-4 py-3">
+                  <form action={setPin} className="flex items-center gap-2">
+                    <input type="hidden" name="id" value={p.id} />
+                    <input type="password" name="pin" maxLength={8} placeholder={p.pin ? "••••" : "Set PIN"}
+                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
+                    <button type="submit"
+                      className="text-xs bg-gray-600 text-white px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors">
+                      {p.pin ? "Change" : "Set"}
                     </button>
                   </form>
                 </td>
