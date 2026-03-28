@@ -2,16 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 const TIME_SLOTS: { id: BirthdayTimeSlot; label: string; rate: number; note: string }[] = [
   { id: "morning",   label: "Morning / Off-Peak",  rate: 3000, note: "9:00am – 3:30pm (weekdays)" },
   { id: "afternoon", label: "Afternoon / Peak",     rate: 5000, note: "3:30pm – 6:30pm (weekdays)" },
   { id: "evening",   label: "Evening / Off-Peak",   rate: 3000, note: "6:30pm – 9:30pm (weekdays)" },
   { id: "weekend",   label: "Weekend",              rate: 5000, note: "After 2:00pm (Sat / Sun)" },
+];
+
+const TERMS = [
+  "Arrival, setup, and departure must all occur within your booked time. Staff begins setup at your start time.",
+  "Please instruct guests to arrive 15–20 minutes after your start time so setup is complete.",
+  "Overtime is charged at 500 THB per 10-minute period if you exceed your reserved end time.",
+  "No refunds. We reserve your date on payment.",
+  "Pay in advance to confirm your booking.",
+  "Regular NinjaGym policies apply for events and birthdays.",
 ];
 
 const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
@@ -37,6 +49,7 @@ export default function BirthdaysPage() {
     notes: "",
     photographer_requested: false,
   });
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -57,6 +70,10 @@ export default function BirthdaysPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!termsAccepted) {
+      setError("Please read and accept the Terms before submitting.");
+      return;
+    }
     setSubmitting(true);
     setError("");
 
@@ -90,22 +107,22 @@ export default function BirthdaysPage() {
     <div className="px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
-        </div>
+        <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
-      {/* Animated hero */}
-      <div className="relative flex justify-center items-center py-6 mb-2">
-        <div className="absolute w-64 h-64 rounded-full bg-blue-300/10 animate-pulse" style={{ animationDuration: "2s" }} />
-        <div className="absolute w-48 h-48 rounded-full bg-yellow-300/15 animate-pulse" style={{ animationDuration: "3s", animationDelay: "0.5s" }} />
-        <span
-          className="relative text-[7rem] leading-none select-none animate-bounce"
-          style={{ animationDuration: "2.8s", filter: "drop-shadow(0 0 24px rgba(255,210,40,0.55))" }}
-        >
-          🎂
-        </span>
+      {/* Floating hero image (same as home page style) */}
+      <div className="flex justify-center py-4 mb-2">
+        <div style={{ animation: "floatCake 3s ease-in-out infinite" }}>
+          <Image
+            src="/images/App4_small.png"
+            alt="Birthday party at NinjaGym"
+            width={180}
+            height={180}
+            className="drop-shadow-2xl rounded-3xl"
+            priority
+          />
+        </div>
       </div>
 
       {/* Title */}
@@ -120,7 +137,7 @@ export default function BirthdaysPage() {
       </div>
 
       {/* What's included */}
-      <div className="bg-[#1a3a6e] border border-white/10 rounded-2xl p-5 shadow mb-5">
+      <div className="bg-[#1a3a6e] border border-white/10 rounded-2xl p-5 shadow mb-4">
         <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🎉 WHAT IS INCLUDED</h2>
         <ul className="flex flex-col gap-2 text-sm text-white/90">
           {[
@@ -132,14 +149,30 @@ export default function BirthdaysPage() {
             "5 kids free with every event",
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
-              <span className="text-base shrink-0">🥷</span>
+              <span className="shrink-0">🥷</span>
               <span>{item}</span>
             </li>
           ))}
         </ul>
       </div>
 
+      {/* TERMS */}
+      <div className="bg-[#2a1f3d] border-2 border-orange-500/40 rounded-2xl p-5 shadow mb-5">
+        <h2 className="font-bangers text-orange-400 text-lg tracking-widest mb-4">📋 TERMS</h2>
+        <ol className="flex flex-col gap-0">
+          {TERMS.map((term, i) => (
+            <li key={i} className="flex items-start gap-3 py-2.5 border-b border-white/10 last:border-0">
+              <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/80 text-white text-xs font-bold flex items-center justify-center mt-0.5">
+                {i + 1}
+              </span>
+              <span className="text-sm text-white/85 leading-relaxed">{term}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
         {/* Your details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
           <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Your Details</h2>
@@ -202,9 +235,7 @@ export default function BirthdaysPage() {
             <div className="grid grid-cols-2 gap-2">
               {TIME_SLOTS.map((slot) => (
                 <label key={slot.id} className={`flex flex-col px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
-                  form.time_slot === slot.id
-                    ? "border-[#1a56db] bg-blue-50"
-                    : "border-gray-200 hover:bg-gray-50"
+                  form.time_slot === slot.id ? "border-[#1a56db] bg-blue-50" : "border-gray-200 hover:bg-gray-50"
                 }`}>
                   <input type="radio" name="time_slot" value={slot.id}
                     checked={form.time_slot === slot.id}
@@ -224,7 +255,7 @@ export default function BirthdaysPage() {
               onChange={(e) => setForm({ ...form, hours: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
               placeholder="e.g. 2:00pm – 4:00pm" />
-            <p className="text-xs text-gray-400 mt-1">Required so we can reserve your exact time slot.</p>
+            <p className="text-xs text-gray-400 mt-1">Required — this reserves your exact time slot.</p>
           </div>
 
           <div>
@@ -243,7 +274,7 @@ export default function BirthdaysPage() {
             <input type="number" required min="1" max="20" value={form.num_kids}
               onChange={(e) => setForm({ ...form, num_kids: Number(e.target.value) })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-            <p className="text-xs text-gray-400 mt-1">First 5 kids included. Extra kids: 6–10 +500 THB · 11–15 +1,000 THB · 16–20 +1,500 THB</p>
+            <p className="text-xs text-gray-400 mt-1">First 5 kids included · 6–10 +500 THB · 11–15 +1,000 THB · 16–20 +1,500 THB</p>
           </div>
 
           <div>
@@ -252,7 +283,7 @@ export default function BirthdaysPage() {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
-              placeholder="Any special requests or info for staff..." />
+              placeholder="Any special requests for staff..." />
           </div>
         </div>
 
@@ -261,12 +292,9 @@ export default function BirthdaysPage() {
           form.photographer_requested ? "bg-blue-50 border-[#1a56db]" : "bg-white border-gray-100"
         }`}>
           <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={form.photographer_requested}
+            <input type="checkbox" checked={form.photographer_requested}
               onChange={(e) => setForm({ ...form, photographer_requested: e.target.checked })}
-              className="mt-1 accent-[#1a56db] w-5 h-5 shrink-0"
-            />
+              className="mt-1 accent-[#1a56db] w-5 h-5 shrink-0" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
                 <p className="font-bold text-gray-800">📸 Want Photos Too?</p>
@@ -287,7 +315,7 @@ export default function BirthdaysPage() {
           </div>
           <p className="text-sm text-gray-700 mt-1">
             {selectedSlot.rate.toLocaleString()} THB/hr × {form.num_hours} hr{form.num_hours !== 1 ? "s" : ""}
-            {form.num_kids > 5 ? " + extra kids" : " (first 5 kids included)"}
+            {form.num_kids > 5 ? " + extra kids" : " (first 5 included)"}
             {form.photographer_requested ? " + photos (1,000 THB)" : ""}
           </p>
         </div>
@@ -313,27 +341,84 @@ export default function BirthdaysPage() {
           </div>
         </div>
 
-        {/* Slip upload (PromptPay only) */}
+        {/* PromptPay panel */}
         {form.payment_method === "promptpay" && (
-          <div className="bg-white rounded-2xl p-5 shadow">
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
-            <p className="text-xs text-gray-500 mb-3">{t.slipInstructions}</p>
-            <input type="file" accept="image/*"
-              onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
-              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold" />
-            {slip && <p className="text-xs text-green-600 mt-2">✓ {slip.name}</p>}
+          <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-4">
+            <div className="flex flex-col items-center gap-2">
+              <Image src="/images/promptpay-qr-small.png" alt="PromptPay QR" width={160} height={160} className="rounded-xl" />
+              <div className="text-center">
+                <p className="text-sm font-bold text-gray-800">PromptPay: 086-294-4374</p>
+                <p className="text-xs text-gray-500">Bangkok Bank: 451-7-17573-5</p>
+              </div>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 text-center w-full">
+                <p className="text-xs text-gray-500 mb-0.5">Transfer exactly</p>
+                <p className="text-2xl font-bold text-[#1a56db]">{formatTHB(total)}</p>
+              </div>
+            </div>
+
+            <ol className="flex flex-col gap-2 text-xs text-gray-600">
+              {[
+                "Open your banking app",
+                `Transfer exactly ${formatTHB(total)} to the number above`,
+                "Take a screenshot of the confirmation",
+                "Upload your slip below",
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="shrink-0 w-5 h-5 rounded-full bg-[#1a56db] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-1">{t.uploadSlip}</label>
+              <input type="file" accept="image/*"
+                onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+                className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold" />
+              {slip && <p className="text-xs text-green-600 mt-2">✓ {slip.name}</p>}
+            </div>
           </div>
         )}
+
+        {/* Terms acceptance */}
+        <div className={`rounded-2xl p-4 border-2 transition-colors ${
+          termsAccepted ? "bg-green-50 border-green-400" : "bg-white border-orange-300"
+        }`}>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-1 accent-green-600 w-5 h-5 shrink-0"
+            />
+            <p className="text-sm text-gray-700 leading-relaxed">
+              I have read and agree to the <strong>Terms</strong> above, including that{" "}
+              <strong>setup, event, and departure must occur within my booked time</strong>, and that{" "}
+              <strong>overtime is charged at 500 THB per 10-minute period</strong>.
+            </p>
+          </label>
+        </div>
 
         {error && (
           <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
         )}
 
-        <button type="submit" disabled={submitting}
+        <button type="submit" disabled={submitting || !termsAccepted}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50">
           {submitting ? t.submitting : t.bookBtn}
         </button>
+
+        {!termsAccepted && (
+          <p className="text-center text-xs text-white/60">Please accept the terms above to continue</p>
+        )}
       </form>
+
+      <style jsx global>{`
+        @keyframes floatCake {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-14px); }
+        }
+      `}</style>
     </div>
   );
 }
