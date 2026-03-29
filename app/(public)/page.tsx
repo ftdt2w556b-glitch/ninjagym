@@ -186,7 +186,7 @@ export default function HomePage() {
             animation: "trampolineGlow 4s ease-in-out infinite",
           }}
         >
-          JOIN NOW
+          {t.homeJoinBtn}
         </Link>
 
         {/* MY MEMBERSHIP */}
@@ -201,11 +201,11 @@ export default function HomePage() {
         <div className="grid grid-cols-3 gap-2 mt-1">
           <Link href="/about" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
             <Image src="/images/App3_small.png" alt="About" width={44} height={44} className="rounded-xl object-cover" />
-            <span className="text-xs font-bold text-center leading-tight">About</span>
+            <span className="text-xs font-bold text-center leading-tight">{t.homeAbout}</span>
           </Link>
           <Link href="/birthdays" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
             <Image src="/images/App4_small.png" alt="Birthdays" width={44} height={44} className="rounded-xl object-cover" />
-            <span className="text-xs font-bold text-center leading-tight">Birthdays</span>
+            <span className="text-xs font-bold text-center leading-tight">{t.homeBirthdays}</span>
           </Link>
           <Link href="/shop" className="bg-white/15 rounded-2xl p-3 flex flex-col items-center gap-1.5 hover:bg-white/25 transition-all active:scale-95">
             <Image src="/images/App6_small.png" alt="Shop" width={44} height={44} className="rounded-xl object-cover" />
@@ -218,7 +218,7 @@ export default function HomePage() {
           href="/contact"
           className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
         >
-          ✉️ Contact Us
+          ✉️ {t.homeContactUs}
         </Link>
       </div>
 

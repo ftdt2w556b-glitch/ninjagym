@@ -412,7 +412,7 @@ export default function JoinPage() {
                 onChange={() => setForm({ ...form, payment_method: "stripe" })}
                 className="accent-[#1a56db]"
               />
-              <span className="text-sm font-medium">💳 Credit / Debit Card</span>
+              <span className="text-sm font-medium">💳 {t.cardOption}</span>
             </label>
           </div>
         </div>
