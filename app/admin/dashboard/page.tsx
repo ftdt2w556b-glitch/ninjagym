@@ -35,6 +35,7 @@ export default async function DashboardPage() {
     admin
       .from("member_registrations")
       .select("*", { count: "exact", head: true })
+      .neq("membership_type", "birthday_event")
       .in("slip_status", ["pending_review", "cash_pending"]),
     admin
       .from("event_bookings")

@@ -13,16 +13,27 @@ export default async function PaymentsPage({
   const admin = createAdminClient();
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  // ── Members query ────────────────────────────────────────────
+  // ── Members query (exclude birthday_event — managed via Events tab) ──
   let membersQuery = admin
     .from("member_registrations")
     .select("id, name, phone, email, membership_type, kids_count, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
+    .neq("membership_type", "birthday_event")
     .order("created_at", { ascending: false })
     .limit(100);
 
   if (status) membersQuery = membersQuery.eq("slip_status", status);
   else membersQuery = membersQuery.in("slip_status", ["pending_review", "cash_pending"]);
   if (member) membersQuery = membersQuery.eq("id", member);
+
+  // ── Events query ─────────────────────────────────────────────
+  let eventsQuery = admin
+    .from("event_bookings")
+    .select("id, name, phone, email, event_date, time_slot, hours, num_hours, num_kids, birthday_child_name, birthday_child_age, payment_method, amount_paid, slip_image, slip_status, slip_uploaded_at, notes, created_at")
+    .order("event_date", { ascending: true })
+    .limit(100);
+
+  if (status) eventsQuery = eventsQuery.eq("slip_status", status);
+  else eventsQuery = eventsQuery.in("slip_status", ["pending_review", "cash_pending"]);
 
   // ── Shop orders query ────────────────────────────────────────
   let shopQuery = admin
@@ -34,20 +45,22 @@ export default async function PaymentsPage({
   if (status) shopQuery = shopQuery.eq("slip_status", status);
   else shopQuery = shopQuery.in("slip_status", ["pending_review", "cash_pending"]);
 
-  const [{ data: members }, { data: shopOrders }] = await Promise.all([
-    source === "shop" ? Promise.resolve({ data: [] }) : membersQuery,
-    source === "members" ? Promise.resolve({ data: [] }) : shopQuery,
+  const [{ data: members }, { data: events }, { data: shopOrders }] = await Promise.all([
+    source === "members" ? membersQuery : Promise.resolve({ data: [] }),
+    source === "events"  ? eventsQuery  : Promise.resolve({ data: [] }),
+    source === "shop"    ? shopQuery    : Promise.resolve({ data: [] }),
   ]);
 
   // pending counts for tab labels
-  const { count: pendingMembers } = await admin
-    .from("member_registrations")
-    .select("*", { count: "exact", head: true })
-    .in("slip_status", ["pending_review", "cash_pending"]);
-  const { count: pendingShop } = await admin
-    .from("shop_orders")
-    .select("*", { count: "exact", head: true })
-    .in("slip_status", ["pending_review", "cash_pending"]);
+  const [{ count: pendingMembers }, { count: pendingEvents }, { count: pendingShop }] = await Promise.all([
+    admin.from("member_registrations").select("*", { count: "exact", head: true })
+      .neq("membership_type", "birthday_event")
+      .in("slip_status", ["pending_review", "cash_pending"]),
+    admin.from("event_bookings").select("*", { count: "exact", head: true })
+      .in("slip_status", ["pending_review", "cash_pending"]),
+    admin.from("shop_orders").select("*", { count: "exact", head: true })
+      .in("slip_status", ["pending_review", "cash_pending"]),
+  ]);
 
   const statusOpts = [
     { value: "",         label: "Pending"  },
@@ -65,6 +78,7 @@ export default async function PaymentsPage({
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
         {[
           { id: "members", label: `Members${pendingMembers ? ` (${pendingMembers})` : ""}` },
+          { id: "events",  label: `Events${pendingEvents ? ` (${pendingEvents})` : ""}` },
           { id: "shop",    label: `Shop Orders${pendingShop ? ` (${pendingShop})` : ""}` },
         ].map((t) => (
           <a
@@ -173,6 +187,92 @@ export default async function PaymentsPage({
           {(!members || members.length === 0) && (
             <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400">
               No member payments to review.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Events list ── */}
+      {source === "events" && (
+        <div className="flex flex-col gap-4">
+          {events?.map((b) => {
+            const slipUrl = b.slip_image
+              ? `${SUPABASE_URL}/storage/v1/object/public/slips/${b.slip_image}`
+              : null;
+
+            return (
+              <div key={b.id} className="bg-white rounded-2xl shadow p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="font-bold text-gray-900 text-base">{b.name}</p>
+                    <p className="text-sm text-[#1a56db] font-semibold mt-0.5">
+                      🎂 {b.birthday_child_name}
+                      {b.birthday_child_age ? `, turning ${b.birthday_child_age}` : ""}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {b.event_date
+                        ? new Date(b.event_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+                        : ""}
+                      {b.time_slot ? ` · ${b.time_slot}` : ""}
+                      {b.num_hours ? ` · ${b.num_hours}h` : ""}
+                      {b.num_kids ? ` · ${b.num_kids} kids` : ""}
+                    </p>
+                    {b.phone && <p className="text-xs text-gray-400">{b.phone}</p>}
+                    {b.email && <p className="text-xs text-gray-400">{b.email}</p>}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-bold text-[#1a56db] text-lg">
+                      {b.amount_paid ? `฿${Number(b.amount_paid).toLocaleString()}` : "–"}
+                    </p>
+                    <p className="text-xs text-gray-400 capitalize">{b.payment_method}</p>
+                    <p className="text-xs text-gray-300">
+                      {new Date(b.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                </div>
+
+                {b.notes && (
+                  <div className="bg-gray-50 rounded-xl px-3 py-2 mb-4 text-xs text-gray-600">
+                    📝 {b.notes}
+                  </div>
+                )}
+
+                {slipUrl && (
+                  <div className="mb-4">
+                    <p className="text-xs text-gray-500 mb-2">Payment Slip:</p>
+                    <a href={slipUrl} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={slipUrl}
+                        alt="Payment slip"
+                        className="max-h-52 rounded-xl border border-gray-200 object-contain hover:opacity-90 transition-opacity"
+                      />
+                    </a>
+                    {b.slip_uploaded_at && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Uploaded: {new Date(b.slip_uploaded_at).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {!slipUrl && b.payment_method === "promptpay" && (
+                  <div className="bg-yellow-50 rounded-xl px-3 py-2 mb-4 text-xs text-yellow-700">
+                    ⚠️ No slip uploaded yet.
+                  </div>
+                )}
+
+                <PaymentActions
+                  id={b.id}
+                  recordType="event"
+                  initialStatus={b.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
+                />
+              </div>
+            );
+          })}
+
+          {(!events || events.length === 0) && (
+            <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400">
+              No event bookings to review.
             </div>
           )}
         </div>
