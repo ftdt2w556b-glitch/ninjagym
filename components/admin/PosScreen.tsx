@@ -97,7 +97,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
   // Feedback state
   const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; saleId?: number; printerOk?: boolean; change?: number } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; saleId?: number; printerOk?: boolean; change?: number; time?: string } | null>(null);
   const [drawerMsg, setDrawerMsg] = useState("");
 
   // Change calculator state
@@ -250,13 +250,15 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
       employee: activeStaff!.name,
     });
 
+    const now = new Date();
+    const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     setProcessing(false);
     setScreen("main");
-    setResult({ success: true, saleId, printerOk, change: changeAmt });
+    setResult({ success: true, saleId, printerOk, change: changeAmt, time });
     setCart([]);
     setNotes("");
     setCashInput("");
-    setCountdown(10); // auto-logout after 10 seconds
+    setCountdown(20); // auto-logout after 20 seconds
   }
 
   async function manualOpenDrawer() {
@@ -661,7 +663,10 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
             <div className={`rounded-2xl p-5 ${result.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
               {result.success ? (
                 <>
-                  <p className="font-bold text-lg">✓ Sale #{result.saleId} complete</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-lg">✓ Sale #{result.saleId} complete</p>
+                    {result.time && <span className="text-green-200 text-sm font-mono">{result.time}</span>}
+                  </div>
                   {result.change !== undefined && result.change > 0 && (
                     <div className="my-2 bg-white/20 rounded-xl px-4 py-3 flex justify-between items-center">
                       <span className="font-bold text-sm">Change to give customer</span>
@@ -671,13 +676,9 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
                   {result.printerOk ? (
                     <p className="text-green-100 text-sm">Receipt printed, drawer opened.</p>
                   ) : (
-                    <p className="text-yellow-200 text-sm font-semibold">Printer offline — open drawer manually.</p>
+                    <p className="text-yellow-200 text-sm font-semibold">⚠️ Drawer did not open — check printer bridge connection.</p>
                   )}
-                  <div className="mt-3 flex items-center justify-between">
-                    <button onClick={() => { setCountdown(null); setResult(null); }}
-                      className="bg-white/20 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/30 transition-colors text-sm">
-                      New Sale
-                    </button>
+                  <div className="mt-3 flex justify-end">
                     <span className="text-green-200 text-xs">
                       Logging out in {countdown}s…
                     </span>
