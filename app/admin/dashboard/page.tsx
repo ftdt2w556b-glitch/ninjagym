@@ -22,7 +22,7 @@ export default async function DashboardPage() {
     { count: pendingEvents },
     { count: pendingOrders },
     { count: pendingPhotos },
-    { data: questions },
+    { data: rawQuestions },
     { data: todayApproved },
   ] = await Promise.all([
     admin
@@ -46,12 +46,10 @@ export default async function DashboardPage() {
       .from("marketing_photos")
       .select("*", { count: "exact", head: true })
       .eq("approved", false),
+    // Use select("*") so missing columns (resolved) don't crash the query
     admin
       .from("staff_questions")
-      .select(`
-        id, asker_name, question, answer, answered_at, answered_by, resolved, created_at,
-        staff_question_replies ( id, author_name, body, created_at )
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(30),
     admin
@@ -61,6 +59,24 @@ export default async function DashboardPage() {
       .gte("slip_reviewed_at", `${today}T00:00:00`)
       .lte("slip_reviewed_at", `${today}T23:59:59`),
   ]);
+
+  // Fetch replies separately — fails gracefully if table doesn't exist yet
+  type Reply = { id: number; question_id: number; author_name: string; body: string; created_at: string };
+  let repliesMap: Record<number, Reply[]> = {};
+  if (rawQuestions && rawQuestions.length > 0) {
+    const ids = rawQuestions.map((q: { id: number }) => q.id);
+    const { data: replies } = await admin
+      .from("staff_question_replies")
+      .select("id, question_id, author_name, body, created_at")
+      .in("question_id", ids)
+      .order("created_at", { ascending: true });
+    if (replies) {
+      for (const r of replies as Reply[]) {
+        if (!repliesMap[r.question_id]) repliesMap[r.question_id] = [];
+        repliesMap[r.question_id].push(r);
+      }
+    }
+  }
 
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0);
@@ -152,15 +168,13 @@ export default async function DashboardPage() {
   }
 
   // ── Partition questions ─────────────────────────────────────────────────────
-  type Reply = { id: number; author_name: string; body: string; created_at: string };
   type Question = {
     id: number; asker_name: string; question: string;
     answer: string | null; answered_at: string | null; answered_by: string | null;
     resolved: boolean | null; created_at: string;
-    staff_question_replies: Reply[];
   };
 
-  const allQuestions = (questions ?? []) as Question[];
+  const allQuestions = (rawQuestions ?? []) as Question[];
   const openQuestions     = allQuestions.filter((q) => !q.resolved);
   const resolvedQuestions = allQuestions.filter((q) => !!q.resolved);
 
@@ -220,9 +234,7 @@ export default async function DashboardPage() {
         {openQuestions.length > 0 && (
           <div className="flex flex-col gap-4 mb-6">
             {openQuestions.map((q) => {
-              const replies = [...(q.staff_question_replies ?? [])].sort(
-                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-              );
+              const replies = repliesMap[q.id] ?? [];
               const isAnswered = !!q.answer;
 
               return (
@@ -333,9 +345,7 @@ export default async function DashboardPage() {
             </summary>
             <div className="flex flex-col gap-3 mt-3">
               {resolvedQuestions.map((q) => {
-                const replies = [...(q.staff_question_replies ?? [])].sort(
-                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                );
+                const replies = repliesMap[q.id] ?? [];
                 return (
                   <div key={q.id} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden opacity-75">
                     <div className="px-4 pt-4 pb-2">
