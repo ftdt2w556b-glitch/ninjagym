@@ -9,6 +9,7 @@ import {
   BASE_PRICES,
   formatTHB,
 } from "@/lib/pricing";
+import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface CheckIn {
   id: number;
@@ -33,6 +34,8 @@ export default function TopUpSection({
   defaultKids,
   recentCheckIns,
 }: Props) {
+  const { t } = useLanguage();
+
   const safeInitial = MEMBERSHIP_TYPES.find((m) => m.id === currentType)
     ? currentType
     : MEMBERSHIP_TYPES[0].id;
@@ -95,10 +98,10 @@ export default function TopUpSection({
             onClick={() => setShowPromptPay(false)}
             className="text-gray-400 text-sm text-left underline"
           >
-            ← Back
+            {t.back}
           </button>
           <div className="text-center">
-            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-3">Scan to Pay</p>
+            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-3">{t.payPromptPay}</p>
             <Image
               src="/images/promptpay-qr-small.png"
               alt="PromptPay QR"
@@ -111,11 +114,11 @@ export default function TopUpSection({
             <p className="text-sm text-gray-600 font-semibold">Rick Tew Co., Ltd.</p>
           </div>
           <div className="bg-[#ffe033] rounded-xl px-4 py-3 text-center">
-            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">Amount to Transfer</p>
+            <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">{t.payingFor}</p>
             <p className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</p>
             {isBulk && (
               <p className="text-xs text-[#1a56db]/70 mt-0.5">
-                {bulkQty} sessions · {discountPct}% off
+                {bulkQty} {t.sessions} · {discountPct}% off
               </p>
             )}
           </div>
@@ -134,9 +137,9 @@ export default function TopUpSection({
       {/* ── CONTINUE TRAINING ─────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">
-          Continue Training
+          {t.continueTraining}
         </p>
-        <p className="text-sm text-gray-500 mb-3">Pick a program — just pick and go.</p>
+        <p className="text-sm text-gray-500 mb-3">{t.continueTrainingHint}</p>
 
         {/* Program picker */}
         <select
@@ -153,7 +156,7 @@ export default function TopUpSection({
         {isBulk && (
           <div className="bg-blue-50 border border-[#1a56db]/20 rounded-xl px-4 py-3 mb-3">
             <div className="flex items-center justify-between text-sm mb-2">
-              <span className="font-semibold text-gray-700">{bulkQty} sessions</span>
+              <span className="font-semibold text-gray-700">{bulkQty} {t.sessions}</span>
               <span className="text-green-600 font-bold">{discountPct}% off</span>
             </div>
             <input
@@ -165,8 +168,8 @@ export default function TopUpSection({
               className="w-full accent-[#1a56db]"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>2 sessions</span>
-              <span>20 sessions (20% off)</span>
+              <span>2 {t.sessions}</span>
+              <span>20 {t.sessions} (20% off)</span>
             </div>
           </div>
         )}
@@ -174,7 +177,7 @@ export default function TopUpSection({
         {/* Kids count — not shown for bulk (bulk packs are per-pack, not per-kid) */}
         {!isBulk && (
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">Number of children</span>
+            <span className="text-sm text-gray-600">{t.numChildren}</span>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setKidsCount(Math.max(1, kidsCount - 1))}
@@ -197,7 +200,7 @@ export default function TopUpSection({
       {/* ── ADD SESSIONS / TOP UP — payment buttons + live price ────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-          Add Sessions / Top Up
+          {t.addSessions}
         </p>
 
         {success ? (
@@ -229,28 +232,26 @@ export default function TopUpSection({
                 disabled={!!loading}
                 className="w-full bg-[#1a56db] text-white font-bold text-base rounded-xl py-3.5 hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {loading === "promptpay" ? "Processing…" : "Pay by PromptPay / QR Scan"}
+                {loading === "promptpay" ? t.submitting : t.payPromptPay}
               </button>
 
-              <p className="text-center text-gray-300 text-xs">— or —</p>
+              <p className="text-center text-gray-300 text-xs">— {t.or} —</p>
 
               <button
                 onClick={() => doRegister("cash")}
                 disabled={!!loading}
                 className="w-full border-2 border-green-500 text-green-600 font-bold text-base rounded-xl py-3.5 hover:bg-green-50 transition-colors disabled:opacity-50"
               >
-                {loading === "cash"
-                  ? "Processing…"
-                  : "Pay Cash at the Gym — tell staff when you arrive"}
+                {loading === "cash" ? t.submitting : t.payCashGym}
               </button>
 
-              <p className="text-center text-gray-300 text-xs">— or —</p>
+              <p className="text-center text-gray-300 text-xs">— {t.or} —</p>
 
               <button
                 disabled
                 className="w-full border border-gray-200 text-gray-400 font-semibold text-base rounded-xl py-3.5 cursor-not-allowed"
               >
-                Pay by Credit / Debit Card
+                {t.payCardDisabled}
               </button>
             </div>
 
@@ -262,10 +263,10 @@ export default function TopUpSection({
       {/* ── RECENT CHECK-INS ──────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-          Recent Check-ins
+          {t.recentCheckIns}
         </p>
         {recentCheckIns.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-1">No check-ins recorded yet</p>
+          <p className="text-sm text-gray-400 text-center py-1">{t.noCheckIns}</p>
         ) : (
           <div className="flex flex-col divide-y divide-gray-50">
             {recentCheckIns.map((ci) => (
