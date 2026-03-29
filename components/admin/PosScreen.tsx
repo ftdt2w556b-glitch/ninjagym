@@ -5,7 +5,7 @@ import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG } from "@/lib/shop";
 
-type StaffMember = { id: string; name: string; role: string; hasPin: boolean };
+type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 
 type Screen =
   | "select_staff"
@@ -48,6 +48,10 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
     setActiveStaff(s);
     setPinError("");
     setPin("");
+    if (s.staffType === "pos" && !s.hasPin) {
+      setPinError("No PIN set — contact admin");
+      return;
+    }
     if (s.hasPin) {
       setScreen("pin_entry");
     } else {
@@ -69,7 +73,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
     const res = await fetch("/api/pos/verify-pin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ staffId: activeStaff!.id, pin: entered }),
+      body: JSON.stringify({ staffId: activeStaff!.id, pin: entered, staffType: activeStaff!.staffType }),
     });
     if (res.ok) {
       setScreen("main");
@@ -121,6 +125,8 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
       body: JSON.stringify({
         action: "cash_sale",
         staffId: activeStaff!.id,
+        staffType: activeStaff!.staffType,
+        staffName: activeStaff!.name,
         amount: total,
         saleType,
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit })),
@@ -156,7 +162,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
     await fetch("/api/pos/action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "open_drawer", staffId: activeStaff!.id, reason: "manual_open" }),
+      body: JSON.stringify({ action: "open_drawer", staffId: activeStaff!.id, staffType: activeStaff!.staffType, staffName: activeStaff!.name, reason: "manual_open" }),
     });
     const bridgeOk = await openDrawerOnly(activeStaff!.name);
     setDrawerMsg(bridgeOk ? "Drawer opened." : "Drawer command sent — open manually if needed.");
@@ -176,6 +182,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
         <h1 className="font-fredoka text-4xl text-white mb-2">NinjaGym POS</h1>
         <p className="text-gray-400 mb-8">Who are you?</p>
+        {pinError && <p className="text-red-400 text-sm mb-4">{pinError}</p>}
         <div className="flex flex-col gap-3 w-full max-w-xs">
           {staff.map((s) => (
             <button

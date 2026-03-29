@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, staffId, amount, saleType, referenceId, items, notes, reason } = body;
+    const { action, staffId, staffType, staffName, amount, saleType, referenceId, items, notes, reason } = body;
 
     if (!staffId) {
       return NextResponse.json({ error: "staffId required" }, { status: 400 });
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
           reference_id: referenceId ?? null,
           amount,
           items: items ?? null,
-          processed_by: staffId,
+          processed_by: staffType === "profile" ? staffId : null,
+          staff_name: staffName ?? null,
           drawer_opened: true,
           receipt_printed: false,
           notes: notes ?? null,
@@ -37,7 +38,8 @@ export async function POST(request: NextRequest) {
 
       // Insert drawer log
       await admin.from("drawer_log").insert({
-        opened_by: staffId,
+        opened_by: staffType === "profile" ? staffId : null,
+        staff_name: staffName ?? null,
         reason: "cash_sale",
         sale_id: sale.id,
       });
@@ -55,7 +57,8 @@ export async function POST(request: NextRequest) {
 
     if (action === "open_drawer") {
       const { error } = await admin.from("drawer_log").insert({
-        opened_by: staffId,
+        opened_by: staffType === "profile" ? staffId : null,
+        staff_name: staffName ?? null,
         reason: reason ?? "manual_open",
       });
       if (error) throw error;
