@@ -27,6 +27,10 @@ function photoUrl(supabaseUrl: string, filePath: string) {
   return `${supabaseUrl}/storage/v1/object/public/marketing-photos/${filePath}`;
 }
 
+function memberLabel(m: Member): string {
+  return m.kids_names ? `${m.name} (${m.kids_names})` : m.name;
+}
+
 export default function PhotoManager({ photos: initial, members, supabaseUrl }: Props) {
   const [photos, setPhotos] = useState(initial);
   const [tab, setTab] = useState<"pending" | "approved">("pending");
@@ -36,6 +40,10 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
   const [memberId, setMemberId] = useState("");
+  // Per-photo member assignment for the pending review flow
+  const [photoMembers, setPhotoMembers] = useState<Record<number, string>>(() =>
+    Object.fromEntries(initial.filter(p => p.member_id).map(p => [p.id, String(p.member_id)]))
+  );
   const fileRef = useRef<HTMLInputElement>(null);
 
   const pending = photos.filter(p => !p.approved);
@@ -97,10 +105,11 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
   }
 
   async function handleAction(id: number, action: "approve" | "unapprove" | "delete") {
+    const member_id = action === "approve" && photoMembers[id] ? Number(photoMembers[id]) : undefined;
     const res = await fetch("/api/photos", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, action }),
+      body: JSON.stringify({ id, action, member_id }),
     });
     if (!res.ok) return;
 
@@ -108,7 +117,9 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
       setPhotos(prev => prev.filter(p => p.id !== id));
     } else {
       setPhotos(prev => prev.map(p =>
-        p.id === id ? { ...p, approved: action === "approve" } : p
+        p.id === id
+          ? { ...p, approved: action === "approve", member_id: member_id ?? p.member_id }
+          : p
       ));
     }
   }
@@ -145,9 +156,7 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                 <option value="">— none —</option>
                 {members.map(m => (
-                  <option key={m.id} value={m.id}>
-                    {m.kids_names || m.name}
-                  </option>
+                  <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                 ))}
               </select>
             </div>
@@ -222,13 +231,35 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
                     <p className="text-xs text-gray-700 font-medium mb-1 truncate">{photo.caption}</p>
                   )}
                   {photo.tags && photo.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
+                    <div className="flex flex-wrap gap-1 mb-1.5">
                       {photo.tags.map(tag => (
                         <span key={tag} className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{tag}</span>
                       ))}
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mb-2">by {photo.uploader?.name ?? "Staff"}</p>
+
+                  {/* Pending: member assignment dropdown */}
+                  {!photo.approved && (
+                    <select
+                      value={photoMembers[photo.id] ?? ""}
+                      onChange={e => setPhotoMembers(prev => ({ ...prev, [photo.id]: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs mb-2 focus:outline-none focus:ring-1 focus:ring-[#1a56db] text-gray-700"
+                    >
+                      <option value="">— no member —</option>
+                      {members.map(m => (
+                        <option key={m.id} value={m.id}>{memberLabel(m)}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {/* Approved: show assigned member (read-only) */}
+                  {photo.approved && photo.member_id && (
+                    <p className="text-xs text-[#1a56db] font-medium mb-2 truncate">
+                      → {memberLabel(members.find(m => m.id === photo.member_id) ?? { id: 0, name: "Member", kids_names: null })}
+                    </p>
+                  )}
+
                   <div className="flex gap-2">
                     {photo.approved ? (
                       <button onClick={() => handleAction(photo.id, "unapprove")}

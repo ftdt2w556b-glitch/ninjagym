@@ -64,13 +64,19 @@ export async function PATCH(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { id, action } = await request.json();
+    const { id, action, member_id } = await request.json();
     const admin = createAdminClient();
 
     if (action === "approve") {
       await admin
         .from("marketing_photos")
-        .update({ approved: true, approved_by: user.id, approved_at: new Date().toISOString() })
+        .update({
+          approved: true,
+          approved_by: user.id,
+          approved_at: new Date().toISOString(),
+          // Assign member if provided during approval (may be null to clear)
+          ...(member_id !== undefined ? { member_id: member_id || null } : {}),
+        })
         .eq("id", id);
     } else if (action === "unapprove") {
       await admin
