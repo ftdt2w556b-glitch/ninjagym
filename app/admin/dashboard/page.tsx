@@ -1,8 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import DeleteQuestionButton from "@/components/admin/DeleteQuestionButton";
+import QaSubmitButton from "@/components/admin/QaSubmitButton";
 
 export default async function DashboardPage() {
   const admin = createAdminClient();
@@ -106,7 +107,7 @@ export default async function DashboardPage() {
       asker_name: p?.name ?? u.email ?? "Staff",
       question,
     });
-    redirect("/admin/dashboard");
+    revalidatePath("/admin/dashboard");
   }
 
   async function answerQuestion(formData: FormData) {
@@ -123,7 +124,7 @@ export default async function DashboardPage() {
       answered_by: u.id,
       answered_at: new Date().toISOString(),
     }).eq("id", id);
-    redirect("/admin/dashboard");
+    revalidatePath("/admin/dashboard");
   }
 
   async function addReply(formData: FormData) {
@@ -142,7 +143,7 @@ export default async function DashboardPage() {
       author_name: p?.name ?? u.email ?? "Staff",
       body,
     });
-    redirect("/admin/dashboard");
+    revalidatePath("/admin/dashboard");
   }
 
   async function toggleResolved(formData: FormData) {
@@ -151,7 +152,7 @@ export default async function DashboardPage() {
     const current = formData.get("resolved") === "true";
     const adminClient = createAdminClient();
     await adminClient.from("staff_questions").update({ resolved: !current }).eq("id", id);
-    redirect("/admin/dashboard");
+    revalidatePath("/admin/dashboard");
   }
 
   async function deleteQuestion(formData: FormData) {
@@ -165,7 +166,7 @@ export default async function DashboardPage() {
     if (p?.role !== "admin" && p?.role !== "owner") return;
     const id = formData.get("id") as string;
     await adminClient.from("staff_questions").delete().eq("id", id);
-    redirect("/admin/dashboard");
+    revalidatePath("/admin/dashboard");
   }
 
   // ── Partition questions ─────────────────────────────────────────────────────
@@ -260,10 +261,7 @@ export default async function DashboardPage() {
                           <form action={toggleResolved}>
                             <input type="hidden" name="id" value={q.id} />
                             <input type="hidden" name="resolved" value={String(!!q.resolved)} />
-                            <button type="submit"
-                              className="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-1 rounded-lg hover:bg-green-200 transition-colors">
-                              ✓ Resolve
-                            </button>
+                            <QaSubmitButton label="✓ Resolve" pendingLabel="..." className="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-1 rounded-lg hover:bg-green-200" />
                           </form>
                           <DeleteQuestionButton action={deleteQuestion} id={q.id} />
                         </div>
@@ -303,10 +301,7 @@ export default async function DashboardPage() {
                         <input type="hidden" name="id" value={q.id} />
                         <textarea name="answer" rows={2} required placeholder="Type your answer..."
                           className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none bg-white" />
-                        <button type="submit"
-                          className="self-start bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                          Post Answer
-                        </button>
+                        <QaSubmitButton label="Post Answer" pendingLabel="Posting..." className="self-start bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700" />
                       </form>
                     </div>
                   )}
@@ -318,10 +313,7 @@ export default async function DashboardPage() {
                         <input type="hidden" name="question_id" value={q.id} />
                         <input type="text" name="body" required placeholder="Follow-up reply..."
                           className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] bg-white" />
-                        <button type="submit"
-                          className="shrink-0 bg-gray-700 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
-                          Reply
-                        </button>
+                        <QaSubmitButton label="Reply" pendingLabel="..." className="shrink-0 bg-gray-700 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-800" />
                       </form>
                     </div>
                   )}
@@ -353,10 +345,7 @@ export default async function DashboardPage() {
                             <form action={toggleResolved}>
                               <input type="hidden" name="id" value={q.id} />
                               <input type="hidden" name="resolved" value={String(!!q.resolved)} />
-                              <button type="submit"
-                                className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-200 transition-colors">
-                                ↩ Reopen
-                              </button>
+                              <QaSubmitButton label="↩ Reopen" pendingLabel="..." className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-200" />
                             </form>
                             <DeleteQuestionButton action={deleteQuestion} id={q.id} />
                           </div>
@@ -392,10 +381,7 @@ export default async function DashboardPage() {
             <textarea name="question" rows={3} required
               placeholder="What would you like to know? e.g. How do I handle a refund request?"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none bg-white" />
-            <button type="submit"
-              className="self-start bg-gray-800 text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors">
-              Send Question
-            </button>
+            <QaSubmitButton label="Send Question" pendingLabel="Sending..." className="self-start bg-gray-800 text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-gray-700" />
           </form>
         </div>
       </div>
