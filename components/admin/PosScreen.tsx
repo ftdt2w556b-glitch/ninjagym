@@ -735,25 +735,6 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
             )}
           </div>
 
-          {/* Quick links */}
-          <div className="grid grid-cols-2 gap-3">
-            <a href="/admin/members"
-              className="bg-white rounded-2xl shadow p-4 text-center font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              Members
-            </a>
-            <a href="/scanner"
-              className="bg-[#1a56db] rounded-2xl shadow p-4 text-center font-semibold text-white hover:bg-blue-700 transition-colors">
-              QR Scanner
-            </a>
-            <a href="/admin/payments"
-              className="bg-white rounded-2xl shadow p-4 text-center font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              Payments
-            </a>
-            <a href="/admin/dashboard"
-              className="bg-white rounded-2xl shadow p-4 text-center font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-              Dashboard
-            </a>
-          </div>
         </div>
       </div>
     </div>
