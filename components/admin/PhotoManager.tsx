@@ -16,12 +16,10 @@ interface Photo {
 }
 
 interface Member { id: number; name: string; kids_names: string | null; }
-interface Booking { id: number; name: string; event_date: string; }
 
 interface Props {
   photos: Photo[];
   members: Member[];
-  bookings: Booking[];
   supabaseUrl: string;
 }
 
@@ -29,7 +27,7 @@ function photoUrl(supabaseUrl: string, filePath: string) {
   return `${supabaseUrl}/storage/v1/object/public/marketing-photos/${filePath}`;
 }
 
-export default function PhotoManager({ photos: initial, members, bookings, supabaseUrl }: Props) {
+export default function PhotoManager({ photos: initial, members, supabaseUrl }: Props) {
   const [photos, setPhotos] = useState(initial);
   const [tab, setTab] = useState<"pending" | "approved">("pending");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -38,7 +36,6 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState("");
   const [memberId, setMemberId] = useState("");
-  const [bookingId, setBookingId] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const pending = photos.filter(p => !p.approved);
@@ -72,7 +69,6 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
     if (caption) body.append("caption", caption);
     if (tags) body.append("tags", tags);
     if (memberId) body.append("member_id", memberId);
-    if (bookingId) body.append("booking_id", bookingId);
 
     const res = await fetch("/api/photos", { method: "POST", body });
     const data = await res.json();
@@ -89,14 +85,14 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
       file_path: data.file_path,
       caption: caption || null,
       member_id: memberId ? Number(memberId) : null,
-      booking_id: bookingId ? Number(bookingId) : null,
+      booking_id: null,
       approved: false,
       tags: tags ? tags.split(",").map(t => t.trim()) : null,
       created_at: new Date().toISOString(),
       uploader: { name: "You" },
     }, ...prev]);
 
-    setCaption(""); setTags(""); setMemberId(""); setBookingId("");
+    setCaption(""); setTags(""); setMemberId("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -152,16 +148,6 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
                   <option key={m.id} value={m.id}>
                     {m.kids_names || m.name}
                   </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Tag a Booking (optional)</label>
-              <select value={bookingId} onChange={e => setBookingId(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                <option value="">— none —</option>
-                {bookings.map(b => (
-                  <option key={b.id} value={b.id}>{b.event_date} — {b.name}</option>
                 ))}
               </select>
             </div>

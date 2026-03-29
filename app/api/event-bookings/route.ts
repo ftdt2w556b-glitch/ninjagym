@@ -91,6 +91,24 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
+    // Auto-create a member page so the guest can receive photos and check-ins
+    await admin.from("member_registrations").insert({
+      name,
+      phone: phone || null,
+      email: email || null,
+      kids_names: birthday_child_name || null,
+      kids_count: num_kids,
+      membership_type: "birthday_event",
+      payment_method,
+      amount_paid,
+      slip_image,
+      slip_status,
+      slip_uploaded_at,
+      notes: notes || null,
+      sessions_remaining: null,
+      event_booking_id: data.id,
+    });
+
     // Send confirmation email (fire-and-forget)
     if (email) {
       sendEventConfirmation({

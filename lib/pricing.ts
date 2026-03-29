@@ -8,6 +8,7 @@ export const MEMBERSHIP_TYPES: MembershipType[] = [
   { id: "day_camp",         label: "Day Camp (10am–2pm)",          perKid: true,  note: "4-hour supervised day camp. Drop-in before 3pm. Includes climbing, parkour and ninja training." },
   { id: "combo_game_train", label: "Combo Game & Train (2 hrs)",   perKid: true,  note: "2-hour session combining a guided training session with game room access." },
   { id: "all_day",          label: "All Day (max 8 hrs)",          perKid: true,  note: "Full day access up to 8 hours. Best value for a full day of ninja training." },
+  { id: "birthday_event", label: "Birthday / Event Guest", perKid: false, note: "Registered via a birthday or group event booking." },
   // ── Monthly ────────────────────────────────────────────────
   { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, note: "Unlimited access for 30 days from approval. Scan in anytime — no booking needed. Great for regulars." },
   // ── Bulk session packs (sliding discount) ──────────────────

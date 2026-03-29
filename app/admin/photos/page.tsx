@@ -16,12 +16,6 @@ export default async function PhotosPage() {
     .select("id, name, kids_names")
     .order("name");
 
-  const { data: bookings } = await admin
-    .from("event_bookings")
-    .select("id, name, event_date")
-    .order("event_date", { ascending: false })
-    .limit(50);
-
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-1">Marketing &amp; Member Photos</h1>
@@ -29,7 +23,6 @@ export default async function PhotosPage() {
       <PhotoManager
         photos={photos ?? []}
         members={members ?? []}
-        bookings={bookings ?? []}
         supabaseUrl={SUPABASE_URL}
       />
     </div>

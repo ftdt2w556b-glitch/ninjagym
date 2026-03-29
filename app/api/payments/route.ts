@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // ── Sync linked member record when an event booking changes status ──
+  if (type === "event") {
+    await admin
+      .from("member_registrations")
+      .update({ slip_status, slip_reviewed_at: new Date().toISOString() })
+      .eq("event_booking_id", id);
+  }
+
   // ── Award loyalty points on approval ──────────────────────────
   if (action === "approve") {
     try {
