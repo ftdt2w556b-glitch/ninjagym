@@ -24,8 +24,8 @@ export default async function PhotosPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-1">Marketing Photos</h1>
-      <p className="text-sm text-gray-500 mb-6">Upload, review and approve action shots for marketing use.</p>
+      <h1 className="text-xl font-bold text-gray-900 mb-1">Marketing &amp; Member Photos</h1>
+      <p className="text-sm text-gray-500 mb-6">Upload, review and approve action shots for marketing and send to members.</p>
       <PhotoManager
         photos={photos ?? []}
         members={members ?? []}

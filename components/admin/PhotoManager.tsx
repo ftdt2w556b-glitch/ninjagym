@@ -32,6 +32,7 @@ function photoUrl(supabaseUrl: string, filePath: string) {
 export default function PhotoManager({ photos: initial, members, bookings, supabaseUrl }: Props) {
   const [photos, setPhotos] = useState(initial);
   const [tab, setTab] = useState<"pending" | "approved">("pending");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
   const [caption, setCaption] = useState("");
@@ -42,7 +43,22 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
 
   const pending = photos.filter(p => !p.approved);
   const approved = photos.filter(p => p.approved);
-  const shown = tab === "pending" ? pending : approved;
+  const tabPhotos = tab === "pending" ? pending : approved;
+
+  // Unique tags across the current tab, sorted alphabetically
+  const availableTags = Array.from(
+    new Set(tabPhotos.flatMap(p => p.tags ?? []))
+  ).sort();
+
+  // Reset tag filter when switching tabs
+  function handleTabChange(t: "pending" | "approved") {
+    setTab(t);
+    setSelectedTag(null);
+  }
+
+  const shown = selectedTag
+    ? tabPhotos.filter(p => p.tags?.includes(selectedTag))
+    : tabPhotos;
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -160,9 +176,9 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
 
       {/* Gallery tabs */}
       <div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-3">
           {(["pending", "approved"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
+            <button key={t} onClick={() => handleTabChange(t)}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
                 tab === t ? "bg-[#1a56db] text-white" : "bg-white text-gray-600 hover:bg-gray-50"
               }`}>
@@ -170,6 +186,33 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
             </button>
           ))}
         </div>
+
+        {/* Tag filter bar — only shown when tags exist */}
+        {availableTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            <button
+              onClick={() => setSelectedTag(null)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                selectedTag === null
+                  ? "bg-gray-800 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}>
+              All ({tabPhotos.length})
+            </button>
+            {availableTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                  selectedTag === tag
+                    ? "bg-[#1a56db] text-white"
+                    : "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                }`}>
+                {tag} ({tabPhotos.filter(p => p.tags?.includes(tag)).length})
+              </button>
+            ))}
+          </div>
+        )}
 
         {shown.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center text-gray-400 shadow">
