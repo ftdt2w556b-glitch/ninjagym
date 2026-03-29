@@ -235,6 +235,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
     if (!res.ok) {
       setProcessing(false);
+      setScreen("main");
       setResult({ success: false });
       return;
     }
@@ -250,6 +251,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     });
 
     setProcessing(false);
+    setScreen("main");
     setResult({ success: true, saleId, printerOk, change: changeAmt });
     setCart([]);
     setNotes("");
