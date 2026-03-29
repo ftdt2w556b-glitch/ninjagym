@@ -88,7 +88,9 @@ export default async function DashboardPage() {
     { label: "Pending",          value: totalPending,                        color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
     { label: "Pending Events",   value: pendingEvents ?? 0,                  color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
     { label: "Photos to Review", value: pendingPhotos ?? 0,                  color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
-    { label: "Revenue Today",    value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
+    ...(isAdminOrOwner
+      ? [{ label: "Revenue Today", value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" }]
+      : []),
   ];
 
   // ── Server Actions ──────────────────────────────────────────────────────────
