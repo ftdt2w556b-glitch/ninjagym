@@ -13,7 +13,7 @@ export default async function PhotosPage() {
 
   const { data: members } = await admin
     .from("member_registrations")
-    .select("id, name")
+    .select("id, name, kids_names")
     .order("name");
 
   const { data: bookings } = await admin

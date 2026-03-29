@@ -15,7 +15,7 @@ interface Photo {
   uploader: { name: string | null } | null;
 }
 
-interface Member { id: number; name: string; }
+interface Member { id: number; name: string; kids_names: string | null; }
 interface Booking { id: number; name: string; event_date: string; }
 
 interface Props {
@@ -132,7 +132,11 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
               <select value={memberId} onChange={e => setMemberId(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                 <option value="">— none —</option>
-                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {members.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.kids_names || m.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
