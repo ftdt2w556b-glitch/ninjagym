@@ -1,9 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
 
 export default async function StaffPage() {
   const admin = createAdminClient();
+  const supabase = await createSupabaseServerClient();
+
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, name, email, role, pin, created_at")
@@ -51,66 +57,125 @@ export default async function StaffPage() {
     redirect("/admin/staff");
   }
 
+  async function deleteUser(formData: FormData) {
+    "use server";
+    const userId = formData.get("userId") as string;
+    if (!userId) return;
+
+    // Safety: re-verify caller is admin/owner
+    const supabaseInner = await createSupabaseServerClient();
+    const { data: { user: caller } } = await supabaseInner.auth.getUser();
+    if (!caller || caller.id === userId) return; // can't delete yourself
+
+    const adminClient = createAdminClient();
+    const { data: callerProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", caller.id)
+      .single();
+    if (!callerProfile || !["admin", "owner"].includes(callerProfile.role)) return;
+
+    // Nullify FK references so deletion doesn't fail with constraint errors
+    await Promise.allSettled([
+      adminClient.from("cash_sales").update({ processed_by: null }).eq("processed_by", userId),
+      adminClient.from("drawer_log").update({ opened_by: null }).eq("opened_by", userId),
+      adminClient.from("staff_questions").update({ asked_by: null }).eq("asked_by", userId),
+      adminClient.from("staff_questions").update({ answered_by: null }).eq("answered_by", userId),
+      adminClient.from("staff_question_replies").update({ author_id: null }).eq("author_id", userId),
+    ]);
+
+    // Delete from Supabase Auth — profile cascades automatically
+    await adminClient.auth.admin.deleteUser(userId);
+
+    redirect("/admin/staff");
+  }
+
   return (
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-6">User Accounts</h1>
 
       {/* Existing staff */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-8">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-100">
-            <tr>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">Change Role</th>
-              <th className="text-left px-4 py-3 font-semibold text-gray-600">POS PIN</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {profiles?.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{p.name ?? "—"}</td>
-                <td className="px-4 py-3 text-gray-500">{p.email}</td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    p.role === "admin" ? "bg-purple-100 text-purple-700"
-                    : p.role === "owner" ? "bg-blue-100 text-blue-700"
-                    : "bg-gray-100 text-gray-600"
-                  }`}>
-                    {p.role}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <form action={updateRole} className="flex items-center gap-2">
-                    <input type="hidden" name="id" value={p.id} />
-                    <select name="role" defaultValue={p.role}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
-                      <option value="staff">staff</option>
-                      <option value="admin">admin</option>
-                      <option value="owner">owner</option>
-                    </select>
-                    <button type="submit"
-                      className="text-xs bg-[#1a56db] text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors">
-                      Save
-                    </button>
-                  </form>
-                </td>
-                <td className="px-4 py-3">
-                  <form action={setPin} className="flex items-center gap-2">
-                    <input type="hidden" name="id" value={p.id} />
-                    <input type="password" name="pin" maxLength={8} placeholder={p.pin ? "••••" : "Set PIN"}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
-                    <button type="submit"
-                      className="text-xs bg-gray-600 text-white px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors">
-                      {p.pin ? "Change" : "Set"}
-                    </button>
-                  </form>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Email</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">Change Role</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">POS PIN</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {profiles?.map((p) => {
+                const isSelf = p.id === currentUser?.id;
+                const isOwner = p.role === "owner";
+                const canDelete = !isSelf && !isOwner;
+
+                return (
+                  <tr key={p.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      {p.name ?? "—"}
+                      {isSelf && <span className="ml-1 text-xs text-[#1a56db] font-semibold">(you)</span>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">{p.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        p.role === "admin"  ? "bg-purple-100 text-purple-700"
+                        : p.role === "owner" ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-600"
+                      }`}>
+                        {p.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={updateRole} className="flex items-center gap-2">
+                        <input type="hidden" name="id" value={p.id} />
+                        <select name="role" defaultValue={p.role}
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
+                          <option value="staff">staff</option>
+                          <option value="admin">admin</option>
+                          <option value="owner">owner</option>
+                        </select>
+                        <button type="submit"
+                          className="text-xs bg-[#1a56db] text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors">
+                          Save
+                        </button>
+                      </form>
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={setPin} className="flex items-center gap-2">
+                        <input type="hidden" name="id" value={p.id} />
+                        <input type="password" name="pin" maxLength={8}
+                          placeholder={p.pin ? "••••" : "Set PIN"}
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
+                        <button type="submit"
+                          className="text-xs bg-gray-600 text-white px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors">
+                          {p.pin ? "Change" : "Set"}
+                        </button>
+                      </form>
+                    </td>
+                    <td className="px-4 py-3">
+                      {canDelete ? (
+                        <DeleteUserButton
+                          action={deleteUser}
+                          userId={p.id}
+                          userName={p.name ?? p.email ?? "this user"}
+                        />
+                      ) : (
+                        <span className="text-xs text-gray-300">
+                          {isSelf ? "you" : "protected"}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Add new staff */}
@@ -118,9 +183,9 @@ export default async function StaffPage() {
         <h2 className="font-bold text-gray-800 mb-4">Add User Account</h2>
         <form action={createStaff} className="flex flex-col gap-4">
           {[
-            { name: "name", label: "Full Name", type: "text", placeholder: "e.g. Som Smith" },
-            { name: "email", label: "Email", type: "email", placeholder: "staff@ninjagym.com" },
-            { name: "password", label: "Password", type: "password", placeholder: "Minimum 8 characters" },
+            { name: "name",     label: "Full Name", type: "text",     placeholder: "e.g. Som Smith" },
+            { name: "email",    label: "Email",     type: "email",    placeholder: "staff@ninjagym.com" },
+            { name: "password", label: "Password",  type: "password", placeholder: "Minimum 8 characters" },
           ].map((f) => (
             <div key={f.name}>
               <label className="block text-sm font-semibold text-gray-700 mb-1">{f.label}</label>
