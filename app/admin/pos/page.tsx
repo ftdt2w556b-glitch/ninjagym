@@ -4,18 +4,18 @@ import PosScreen from "@/components/admin/PosScreen";
 export default async function PosPage() {
   const admin = createAdminClient();
 
-  const [{ data: profiles }, { data: posStaff }] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("id, name, email, role, pin")
-      .in("role", ["admin", "staff", "owner"])
-      .order("name"),
-    admin
-      .from("pos_staff")
-      .select("id, name, pin_hash")
-      .eq("active", true)
-      .order("name"),
-  ]);
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, name, email, role, pin")
+    .in("role", ["admin", "staff", "owner"])
+    .order("name");
+
+  // Fetch pos_staff separately — fails gracefully if table doesn't exist yet
+  const { data: posStaff } = await admin
+    .from("pos_staff")
+    .select("id, name, pin_hash")
+    .eq("active", true)
+    .order("name");
 
   const staff = [
     ...(profiles ?? []).map((p) => ({

@@ -10,16 +10,16 @@ export default async function StaffPage() {
 
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-  const [{ data: profiles }, { data: posStaffList }] = await Promise.all([
-    admin
-      .from("profiles")
-      .select("id, name, email, role, pin, created_at")
-      .order("created_at", { ascending: true }),
-    admin
-      .from("pos_staff")
-      .select("id, name, pin_hash, active, created_at")
-      .order("name"),
-  ]);
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id, name, email, role, pin, created_at")
+    .order("created_at", { ascending: true });
+
+  // Fetch pos_staff separately — fails gracefully if table doesn't exist yet
+  const { data: posStaffList } = await admin
+    .from("pos_staff")
+    .select("id, name, pin_hash, active, created_at")
+    .order("name");
 
   async function createStaff(formData: FormData) {
     "use server";
