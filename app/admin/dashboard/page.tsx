@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import DeleteQuestionButton from "@/components/admin/DeleteQuestionButton";
 
 export default async function DashboardPage() {
   const admin = createAdminClient();
@@ -264,14 +265,7 @@ export default async function DashboardPage() {
                               ✓ Resolve
                             </button>
                           </form>
-                          <form action={deleteQuestion}>
-                            <input type="hidden" name="id" value={q.id} />
-                            <button type="submit"
-                              className="text-xs bg-red-100 text-red-600 font-semibold px-2.5 py-1 rounded-lg hover:bg-red-200 transition-colors"
-                              onClick={(e) => { if (!confirm("Delete this question thread?")) e.preventDefault(); }}>
-                              🗑 Delete
-                            </button>
-                          </form>
+                          <DeleteQuestionButton action={deleteQuestion} id={q.id} />
                         </div>
                       )}
                     </div>
@@ -364,14 +358,7 @@ export default async function DashboardPage() {
                                 ↩ Reopen
                               </button>
                             </form>
-                            <form action={deleteQuestion}>
-                              <input type="hidden" name="id" value={q.id} />
-                              <button type="submit"
-                                className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
-                                onClick={(e) => { if (!confirm("Delete this question thread?")) e.preventDefault(); }}>
-                                🗑
-                              </button>
-                            </form>
+                            <DeleteQuestionButton action={deleteQuestion} id={q.id} />
                           </div>
                         )}
                       </div>
