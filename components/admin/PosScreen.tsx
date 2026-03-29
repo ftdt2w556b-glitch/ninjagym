@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
-import { MEMBERSHIP_TYPES, formatTHB } from "@/lib/pricing";
+import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
@@ -33,6 +33,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
   const [customAmount, setCustomAmount] = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [membershipType, setMembershipType] = useState("session_group");
+  const [bulkQty, setBulkQty] = useState(4);
   const [kidsCount, setKidsCount] = useState(1);
   const [shopItemId, setShopItemId] = useState("tshirt_kids");
   const [shopOption, setShopOption] = useState("S");
@@ -87,10 +88,26 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
   // ── Cart helpers ─────────────────────────────────────────────────
   function addMembershipToCart() {
     const mt = MEMBERSHIP_TYPES.find((m) => m.id === membershipType)!;
-    const price = mt.perKid
-      ? (BASE_PRICES[`price_${membershipType}`] ?? 0) * kidsCount
-      : (BASE_PRICES[`price_${membershipType}`] ?? 0);
-    setCart((prev) => [...prev, { label: `${mt.label}${mt.perKid ? ` x${kidsCount}` : ""}`, qty: 1, unit: price }]);
+    if (mt.bulk && mt.bulkBase) {
+      // Bulk purchase: use calcBulkPrice with quantity
+      const basePrice = BASE_PRICES[mt.bulkBase] ?? 0;
+      const total = calcBulkPrice(basePrice, bulkQty);
+      const discountPct = Math.min(bulkQty, 20);
+      setCart((prev) => [...prev, {
+        label: `${mt.label} ×${bulkQty} (${discountPct}% off)`,
+        qty: 1,
+        unit: total,
+      }]);
+    } else {
+      const price = mt.perKid
+        ? (BASE_PRICES[`price_${mt.id}`] ?? 0) * kidsCount
+        : (BASE_PRICES[`price_${mt.id}`] ?? 0);
+      setCart((prev) => [...prev, {
+        label: `${mt.label}${mt.perKid ? ` ×${kidsCount}` : ""}`,
+        qty: 1,
+        unit: price,
+      }]);
+    }
   }
 
   function addShopToCart() {
@@ -275,30 +292,70 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
           </div>
 
           {/* Membership selector */}
-          {saleType === "membership" && (
-            <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
-              <h3 className="font-bold text-gray-800">Membership</h3>
-              <select value={membershipType} onChange={(e) => setMembershipType(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                {MEMBERSHIP_TYPES.map((m) => (
-                  <option key={m.id} value={m.id}>{m.label} — {formatTHB(BASE_PRICES[`price_${m.id}`] ?? 0)}</option>
-                ))}
-              </select>
-              {MEMBERSHIP_TYPES.find((m) => m.id === membershipType)?.perKid && (
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Kids</label>
-                  <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
-                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                    {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
-                  </select>
+          {saleType === "membership" && (() => {
+            const mt = MEMBERSHIP_TYPES.find((m) => m.id === membershipType)!;
+            return (
+              <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
+                <h3 className="font-bold text-gray-800">Membership</h3>
+                <select value={membershipType} onChange={(e) => setMembershipType(e.target.value)}
+                  className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                  {MEMBERSHIP_TYPES.map((m) => {
+                    let priceLabel: string;
+                    if (m.bulk && m.bulkBase) {
+                      const base = BASE_PRICES[m.bulkBase] ?? 0;
+                      priceLabel = `${formatTHB(base)}/session (bulk)`;
+                    } else {
+                      const price = BASE_PRICES[`price_${m.id}`] ?? 0;
+                      priceLabel = `${formatTHB(price)}${m.perKid ? "/kid" : ""}`;
+                    }
+                    return <option key={m.id} value={m.id}>{m.label} — {priceLabel}</option>;
+                  })}
+                </select>
+
+                {/* Per-kid quantity */}
+                {mt?.perKid && (
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Number of Kids</label>
+                    <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                      {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* Bulk quantity + live price */}
+                {mt?.bulk && mt.bulkBase && (
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs text-gray-500 block">Number of Sessions</label>
+                    <select value={bulkQty} onChange={(e) => setBulkQty(Number(e.target.value))}
+                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                      {[2,3,4,5,6,7,8,9,10,12,14,16,18,20].map((n) => {
+                        const base = BASE_PRICES[mt.bulkBase!] ?? 0;
+                        const total = calcBulkPrice(base, n);
+                        return <option key={n} value={n}>{n} sessions — {formatTHB(total)} ({Math.min(n,20)}% off)</option>;
+                      })}
+                    </select>
+                  </div>
+                )}
+
+                {/* Live price preview */}
+                <div className="bg-gray-50 rounded-xl px-3 py-2 text-sm font-semibold text-gray-800 flex justify-between">
+                  <span>Total</span>
+                  <span className="text-[#1a56db]">
+                    {mt?.bulk && mt.bulkBase
+                      ? formatTHB(calcBulkPrice(BASE_PRICES[mt.bulkBase] ?? 0, bulkQty))
+                      : formatTHB((BASE_PRICES[`price_${mt?.id}`] ?? 0) * (mt?.perKid ? kidsCount : 1))
+                    }
+                  </span>
                 </div>
-              )}
-              <button onClick={addMembershipToCart}
-                className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-                Add to Sale
-              </button>
-            </div>
-          )}
+
+                <button onClick={addMembershipToCart}
+                  className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+                  Add to Sale
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Shop selector */}
           {saleType === "shop" && (
@@ -464,34 +521,4 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
   );
 }
 
-// Static price map for client-side calculation
-const BASE_PRICES: Record<string, number> = {
-  price_climb_unguided: 250,
-  price_session_group: 350,
-  price_session_1to1: 600,
-  price_day_camp: 450,
-  price_combo_game_train: 400,
-  price_all_day: 500,
-  price_monthly_2hr: 2500,
-  price_monthly_5hr: 5500,
-  price_sessions_4: 1200,
-  price_sessions_8: 2200,
-  price_sessions_16: 4000,
-  price_sessions_20: 4800,
-  price_day_camp_4: 1600,
-  price_day_camp_8: 3000,
-  price_day_camp_16: 5600,
-  price_day_camp_20: 6800,
-  price_sessions_1to1_4: 2200,
-  price_sessions_1to1_8: 4200,
-  price_sessions_1to1_16: 8000,
-  price_sessions_1to1_20: 9600,
-  price_all_day_4: 1800,
-  price_all_day_8: 3400,
-  price_all_day_16: 6400,
-  price_all_day_20: 7800,
-  price_combo_4: 1400,
-  price_combo_8: 2600,
-  price_combo_16: 4800,
-  price_combo_20: 5800,
-};
+// BASE_PRICES and calcBulkPrice imported from @/lib/pricing
