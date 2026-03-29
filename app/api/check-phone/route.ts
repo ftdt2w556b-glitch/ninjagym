@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     .from("member_registrations")
     .select("id, name, phone")
     .eq("slip_status", "approved")
+    .is("parent_member_id", null)  // only main cards, not top-up payment records
     .order("created_at", { ascending: false })
     .limit(50);
 
