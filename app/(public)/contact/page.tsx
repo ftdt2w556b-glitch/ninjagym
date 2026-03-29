@@ -6,11 +6,12 @@ import Image from "next/image";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 const SUBJECTS = [
-  "General Question",
   "Book a Session",
-  "Birthday / Event Enquiry",
-  "Membership Enquiry",
-  "List a Business / Partnership",
+  "Membership",
+  "Birthday / Event",
+  "School Group Discount",
+  "Adult Programs",
+  "Work at NinjaGym",
   "Report an Issue",
   "Other",
 ];
