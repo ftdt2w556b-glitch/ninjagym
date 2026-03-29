@@ -1,16 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import LanguageSwitcher from "@/components/public/LanguageSwitcher";
+import { translations, Lang } from "@/lib/i18n/translations";
 
 export default function MyMembershipPage() {
   const router = useRouter();
+  const [lang, setLang] = useState<Lang>("en");
+  const t = translations[lang];
+
   const [name,  setName]  = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ng_lang") as Lang | null;
+    if (saved) setLang(saved);
+  }, []);
+
+  function handleLang(l: Lang) {
+    setLang(l);
+    localStorage.setItem("ng_lang", l);
+  }
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +55,11 @@ export default function MyMembershipPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-5 py-10">
 
+      {/* Language switcher */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher current={lang} onChange={handleLang} />
+      </div>
+
       {/* Logo above the card */}
       <div className="mb-5">
         <Image
@@ -54,14 +74,16 @@ export default function MyMembershipPage() {
 
       {/* Frosted card */}
       <div className="w-full bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl px-6 py-8">
-        <h1 className="font-fredoka text-3xl text-center text-[#1a56db] mb-1">My Membership</h1>
+        <h1 className="font-fredoka text-3xl text-center text-[#1a56db] mb-1">
+          {t.myMembershipTitle}
+        </h1>
         <p className="text-gray-500 text-sm text-center mb-6">
-          Enter your registered name and phone number to find your QR card.
+          {t.myMembershipSubtitle}
         </p>
 
         <form onSubmit={handleLookup} className="flex flex-col gap-3">
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-1">Name</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-1">{t.nameLabel}</label>
             <input
               type="text"
               value={name}
@@ -73,7 +95,7 @@ export default function MyMembershipPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-600 mb-1">Phone Number</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-1">{t.phoneLabel}</label>
             <input
               type="tel"
               value={phone}
@@ -89,7 +111,7 @@ export default function MyMembershipPage() {
             disabled={loading}
             className="bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:brightness-110 transition-all disabled:opacity-50 mt-1"
           >
-            {loading ? "Searching..." : "Find My QR Card"}
+            {loading ? t.myMembershipSearching : t.myMembershipSearch}
           </button>
         </form>
 
@@ -100,15 +122,17 @@ export default function MyMembershipPage() {
         )}
 
         <p className="text-xs text-gray-400 text-center mt-5">
-          Both name and phone must match your registration exactly.
+          {t.myMembershipMatchNote}
         </p>
       </div>
 
       <div className="mt-6 flex flex-col items-center gap-3">
         <Link href="/join" className="text-[#ffe033] font-semibold text-sm underline drop-shadow">
-          Not a member yet? Join here →
+          {t.myMembershipNotMember}
         </Link>
-        <Link href="/" className="text-white/60 text-sm underline drop-shadow">← Back to Home</Link>
+        <Link href="/" className="text-white/60 text-sm underline drop-shadow">
+          {t.myMembershipBack}
+        </Link>
       </div>
     </div>
   );

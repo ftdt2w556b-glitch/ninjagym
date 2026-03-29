@@ -71,6 +71,14 @@ const en = {
   homeSubtitle: "Run, Jump, Kick and Climb like a Ninja",
   homeMyMembership: "MY MEMBERSHIP",
   cardOption: "Credit / Debit Card",
+  // My Membership page
+  myMembershipTitle: "My Membership",
+  myMembershipSubtitle: "Enter your name and phone number to find your QR card.",
+  myMembershipSearch: "Find My QR Card",
+  myMembershipSearching: "Searching...",
+  myMembershipMatchNote: "Name and phone must match your registration.",
+  myMembershipNotMember: "Not a member yet? Join here →",
+  myMembershipBack: "← Back to Home",
 };
 
 export const translations: Record<Lang, typeof en> = {
@@ -131,6 +139,13 @@ export const translations: Record<Lang, typeof en> = {
     homeSubtitle: "Беги, прыгай, дерись и лазай как Ниндзя",
     homeMyMembership: "МОЙ ПРОФИЛЬ",
     cardOption: "Кредитная / Дебетовая карта",
+    myMembershipTitle: "Мой Профиль",
+    myMembershipSubtitle: "Введите имя и номер телефона для поиска вашей QR-карты.",
+    myMembershipSearch: "Найти мою QR-карту",
+    myMembershipSearching: "Поиск...",
+    myMembershipMatchNote: "Имя и телефон должны совпадать с данными при регистрации.",
+    myMembershipNotMember: "Ещё не участник? Присоединяйтесь →",
+    myMembershipBack: "← На главную",
   },
   th: {
     joinTitle: "สมัครสมาชิก NinjaGym",
@@ -188,6 +203,13 @@ export const translations: Record<Lang, typeof en> = {
     homeSubtitle: "วิ่ง กระโดด เตะ และปีนป่ายแบบนินจา",
     homeMyMembership: "สมาชิกของฉัน",
     cardOption: "บัตรเครดิต / เดบิต",
+    myMembershipTitle: "สมาชิกของฉัน",
+    myMembershipSubtitle: "กรอกชื่อและเบอร์โทรเพื่อค้นหา QR Card ของคุณ",
+    myMembershipSearch: "ค้นหา QR Card ของฉัน",
+    myMembershipSearching: "กำลังค้นหา...",
+    myMembershipMatchNote: "ชื่อและเบอร์โทรต้องตรงกับที่ลงทะเบียนไว้",
+    myMembershipNotMember: "ยังไม่ได้เป็นสมาชิก? สมัครที่นี่ →",
+    myMembershipBack: "← กลับหน้าหลัก",
   },
   fr: {
     joinTitle: "Rejoindre NinjaGym",
@@ -245,6 +267,13 @@ export const translations: Record<Lang, typeof en> = {
     homeSubtitle: "Cours, Saute, Botte et Grimpe comme un Ninja",
     homeMyMembership: "MON ABONNEMENT",
     cardOption: "Carte Crédit / Débit",
+    myMembershipTitle: "Mon Abonnement",
+    myMembershipSubtitle: "Entrez votre nom et numéro de téléphone pour trouver votre carte QR.",
+    myMembershipSearch: "Trouver ma carte QR",
+    myMembershipSearching: "Recherche...",
+    myMembershipMatchNote: "Le nom et le téléphone doivent correspondre à votre inscription.",
+    myMembershipNotMember: "Pas encore membre ? Inscrivez-vous ici →",
+    myMembershipBack: "← Retour à l'accueil",
   },
   he: {
     joinTitle: "הצטרף ל-NinjaGym",
@@ -302,6 +331,13 @@ export const translations: Record<Lang, typeof en> = {
     homeSubtitle: "רוץ, קפוץ, בעט וטפס כמו נינג׳ה",
     homeMyMembership: "המנוי שלי",
     cardOption: "כרטיס אשראי / דביט",
+    myMembershipTitle: "המנוי שלי",
+    myMembershipSubtitle: "הכנס שם ומספר טלפון כדי למצוא את כרטיס ה-QR שלך.",
+    myMembershipSearch: "מצא את כרטיס ה-QR שלי",
+    myMembershipSearching: "מחפש...",
+    myMembershipMatchNote: "השם והטלפון חייבים להתאים לרישום שלך.",
+    myMembershipNotMember: "עדיין לא חבר? הצטרף כאן →",
+    myMembershipBack: "← חזרה לדף הבית",
   },
 };
 
