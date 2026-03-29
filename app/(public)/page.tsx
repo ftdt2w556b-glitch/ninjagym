@@ -222,12 +222,6 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* Staff login */}
-      <div className="mt-5 mb-2">
-        <Link href="/admin/dashboard" className="text-white/30 text-xs underline">
-          {t.homeStaffLogin}
-        </Link>
-      </div>
 
       <style jsx global>{`
         @keyframes twinkle {
