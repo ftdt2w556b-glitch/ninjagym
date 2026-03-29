@@ -12,21 +12,6 @@ const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
-const TIME_SLOTS: { id: BirthdayTimeSlot; label: string; rate: number; note: string }[] = [
-  { id: "morning",   label: "Morning / Off-Peak",  rate: 3000, note: "9:00am – 3:30pm (weekdays)" },
-  { id: "afternoon", label: "Afternoon / Peak",     rate: 5000, note: "3:30pm – 6:30pm (weekdays)" },
-  { id: "evening",   label: "Evening / Off-Peak",   rate: 3000, note: "6:30pm – 9:30pm (weekdays)" },
-  { id: "weekend",   label: "Weekend",              rate: 5000, note: "After 2:00pm (Sat / Sun)" },
-];
-
-const TERMS = [
-  "Arrival, setup, and departure must all occur within your booked time. Staff begins setup at your start time.",
-  "Please instruct guests to arrive 15–20 minutes after your start time so setup is complete.",
-  "Overtime is charged at 500 THB per 10-minute period if you exceed your reserved end time.",
-  "No refunds. We reserve your date on payment.",
-  "Regular NinjaGym policies apply for events and birthdays.",
-];
-
 const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
 const PHOTOGRAPHER_FEE = 1000;
 
@@ -34,6 +19,21 @@ export default function BirthdaysPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
+
+  const TIME_SLOTS: { id: BirthdayTimeSlot; label: string; rate: number; note: string }[] = [
+    { id: "morning",   label: t.slotMorningLabel,   rate: 3000, note: t.slotMorningNote },
+    { id: "afternoon", label: t.slotAfternoonLabel, rate: 5000, note: t.slotAfternoonNote },
+    { id: "evening",   label: t.slotEveningLabel,   rate: 3000, note: t.slotEveningNote },
+    { id: "weekend",   label: t.slotWeekendLabel,   rate: 5000, note: t.slotWeekendNote },
+  ];
+
+  const TERMS = [
+    t.birthdayTerm1,
+    t.birthdayTerm2,
+    t.birthdayTerm3,
+    t.birthdayTerm4,
+    t.birthdayTerm5,
+  ];
 
   const [form, setForm] = useState({
     name: "",
@@ -180,15 +180,15 @@ export default function BirthdaysPage() {
 
       {/* What's included */}
       <div className="bg-[#1a3a6e] border border-white/10 rounded-2xl p-5 shadow mb-4">
-        <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🎉 WHAT IS INCLUDED</h2>
+        <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">{t.birthdayWhatsIncluded}</h2>
         <ul className="flex flex-col gap-2 text-sm text-white/90">
           {[
-            "1 guided 50-minute NINJA session",
-            "Birthday banners and balloons",
-            "Staff assistance throughout",
-            "Access to training, climbing & ninja zones",
-            "Cleanup service included",
-            "5 kids free with every event",
+            t.birthdayIncluded1,
+            t.birthdayIncluded2,
+            t.birthdayIncluded3,
+            t.birthdayIncluded4,
+            t.birthdayIncluded5,
+            t.birthdayIncluded6,
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
               <span className="shrink-0">🥷</span>
@@ -201,13 +201,13 @@ export default function BirthdaysPage() {
       {/* Gaming zone notice */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 shadow mb-4">
         <p className="text-xs text-yellow-800 leading-relaxed">
-          ⚠️ <strong>Note:</strong> Booking is for the Main Physical Zones and does not include the Gaming Zones. Although your event main zone is private, we keep the game rooms open for other guests, at all hours.
+          ⚠️ <strong>Note:</strong> {t.birthdayGamingNote}
         </p>
       </div>
 
       {/* TERMS */}
       <div className="bg-[#2a1f3d] border-2 border-orange-500/40 rounded-2xl p-5 shadow mb-5">
-        <h2 className="font-bangers text-orange-400 text-lg tracking-widest mb-4">📋 TERMS</h2>
+        <h2 className="font-bangers text-orange-400 text-lg tracking-widest mb-4">{t.birthdayTermsHeader}</h2>
         <ol className="flex flex-col gap-0">
           {TERMS.map((term, i) => (
             <li key={i} className="flex items-start gap-3 py-2.5 border-b border-white/10 last:border-0">
@@ -224,13 +224,13 @@ export default function BirthdaysPage() {
 
         {/* Your details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Your Details</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.birthdayYourDetails}</h2>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.nameLabel} *</label>
             <input type="text" required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="Parent or guardian name" />
+              placeholder={t.birthdayParentNamePlaceholder} />
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.phoneLabel}</label>
@@ -250,26 +250,26 @@ export default function BirthdaysPage() {
 
         {/* Birthday child */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Birthday Child</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.birthdayChildSection}</h2>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Child&apos;s Name</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t.birthdayChildName}</label>
             <input type="text" value={form.birthday_child_name}
               onChange={(e) => setForm({ ...form, birthday_child_name: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="Child's name" />
+              placeholder={t.birthdayChildNamePlaceholder} />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Turning Age</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t.birthdayTurningAge}</label>
             <input type="number" min="1" max="18" value={form.birthday_child_age}
               onChange={(e) => setForm({ ...form, birthday_child_age: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="e.g. 7" />
+              placeholder={t.birthdayAgePlaceholder} />
           </div>
         </div>
 
         {/* Event details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Event Details</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.birthdayEventDetails}</h2>
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.eventDate} *</label>
@@ -299,12 +299,12 @@ export default function BirthdaysPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Start &amp; End Time *</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t.birthdayStartEndTime} *</label>
             <input type="text" required value={form.hours}
               onChange={(e) => setForm({ ...form, hours: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="e.g. 2:00pm – 4:00pm" />
-            <p className="text-xs text-gray-400 mt-1">Required — this reserves your exact time slot.</p>
+              placeholder={t.birthdayStartEndPlaceholder} />
+            <p className="text-xs text-gray-400 mt-1">{t.birthdayStartEndHint}</p>
           </div>
 
           <div>
@@ -323,16 +323,16 @@ export default function BirthdaysPage() {
             <input type="number" required min="1" max="20" value={form.num_kids}
               onChange={(e) => setForm({ ...form, num_kids: Number(e.target.value) })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-            <p className="text-xs text-gray-400 mt-1">First 5 kids included · 6–10 +500 THB · 11–15 +1,000 THB · 16–20 +1,500 THB</p>
+            <p className="text-xs text-gray-400 mt-1">{t.birthdayKidsNote}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">{t.birthdayNotesLabel}</label>
             <textarea value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
-              placeholder="Any special requests for staff..." />
+              placeholder={t.birthdayNotesPlaceholder} />
           </div>
         </div>
 
@@ -346,11 +346,11 @@ export default function BirthdaysPage() {
               className="mt-1 accent-[#1a56db] w-5 h-5 shrink-0" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <p className="font-bold text-gray-800">📸 Want Photos Too?</p>
+                <p className="font-bold text-gray-800">{t.birthdayPhotosTitle}</p>
                 <span className="font-bold text-[#1a56db] text-base">+1,000 THB</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                We will take periodic shots of your event. Images will be sent to your member page within a week. Higher res may be available upon request to your usb drive.
+                {t.birthdayPhotosDesc}
               </p>
             </div>
           </label>
@@ -359,7 +359,7 @@ export default function BirthdaysPage() {
         {/* Total */}
         <div className="bg-[#ffe033] rounded-2xl px-5 py-4 shadow">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-gray-800 text-base">TOTAL</span>
+            <span className="font-bold text-gray-800 text-base">{t.total}</span>
             <span className="font-bold text-gray-900 text-2xl">{formatTHB(total)}</span>
           </div>
           <p className="text-sm text-gray-700 mt-1">
@@ -376,7 +376,7 @@ export default function BirthdaysPage() {
             {[
               { value: "cash",      label: `💵 ${t.cashOption}` },
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
-              { value: "stripe",    label: "💳 Credit / Debit Card" },
+              { value: "stripe",    label: t.birthdayCardOption },
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-200"
@@ -401,17 +401,17 @@ export default function BirthdaysPage() {
                 <p className="text-xs text-gray-500">Bangkok Bank: 451-7-17573-5</p>
               </div>
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 text-center w-full">
-                <p className="text-xs text-gray-500 mb-0.5">Transfer exactly</p>
+                <p className="text-xs text-gray-500 mb-0.5">{t.birthdayPromptpay2Start}</p>
                 <p className="text-2xl font-bold text-[#1a56db]">{formatTHB(total)}</p>
               </div>
             </div>
 
             <ol className="flex flex-col gap-2 text-xs text-gray-600">
               {[
-                "Open your banking app",
-                `Transfer exactly ${formatTHB(total)} to the number above`,
-                "Take a screenshot of the confirmation",
-                "Upload your slip below",
+                t.birthdayPromptpay1,
+                `${t.birthdayPromptpay2Start} ${formatTHB(total)} ${t.birthdayPromptpay2End}`,
+                t.birthdayPromptpay3,
+                t.birthdayPromptpay4,
               ].map((step, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="shrink-0 w-5 h-5 rounded-full bg-[#1a56db] text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
@@ -442,7 +442,7 @@ export default function BirthdaysPage() {
               className="mt-1 accent-green-600 w-5 h-5 shrink-0"
             />
             <p className="text-sm text-gray-700 leading-relaxed">
-              I have read and agree to the <strong>Terms</strong> above, I will ensure setup and departure occur within my booked time or an overtime fee is charged at <strong>500 THB per 10-minutes</strong>.
+              {t.birthdayTermsCheckbox}
             </p>
           </label>
         </div>
@@ -457,7 +457,7 @@ export default function BirthdaysPage() {
         </button>
 
         {!termsAccepted && (
-          <p className="text-center text-xs text-white/60">Please accept the terms above to continue</p>
+          <p className="text-center text-xs text-white/60">{t.birthdayAcceptTerms}</p>
         )}
       </form>
 
