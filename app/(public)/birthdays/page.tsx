@@ -130,10 +130,14 @@ export default function BirthdaysPage() {
         <h1 className="font-bangers text-5xl text-white tracking-widest drop-shadow-lg mb-1">
           BIRTHDAYS &amp; EVENTS
         </h1>
-        <p className="text-white/80 text-sm mb-3">Make it a party they will never forget!</p>
-        <span className="inline-block bg-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full">
-          📍 Big C, Bophut, Koh Samui
-        </span>
+        <a
+          href="https://maps.app.goo.gl/eAfNRktaPpr9uhYi9"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block bg-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-white/30 transition-colors"
+        >
+          📍 At Rick Tew&apos;s NinjaGym Big C Mall, in Bophut
+        </a>
       </div>
 
       {/* What's included */}
