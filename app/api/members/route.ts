@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const notes = formData.get("notes") as string;
     const sessions_remaining = formData.get("sessions_remaining") ? Number(formData.get("sessions_remaining")) : null;
     const parent_member_id = formData.get("parent_member_id") ? Number(formData.get("parent_member_id")) : null;
+    const lang = (formData.get("lang") as string) || "en";
     const slipFile = formData.get("slip") as File | null;
 
     if (!name || !membership_type) {
@@ -85,6 +86,10 @@ export async function POST(request: NextRequest) {
         membershipType: membership_type,
         memberId: data.id,
         paymentMethod: payment_method,
+        kidsNames: kids_names,
+        kidsCount: kids_count,
+        registeredAt: new Date().toISOString(),
+        lang,
       }).catch((e) => console.error("Email send failed:", e));
     }
 

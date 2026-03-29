@@ -124,6 +124,7 @@ export default function JoinPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(price));
+      body.append("lang", lang);
       if (selectedMt?.bulk) body.append("sessions_remaining", String(sessionQty));
       if (sessionFocus) body.append("notes", sessionFocus ? `Focus: ${sessionFocus}${form.notes ? " | " + form.notes : ""}` : form.notes);
       if (slip && form.payment_method === "promptpay") body.append("slip", slip);
