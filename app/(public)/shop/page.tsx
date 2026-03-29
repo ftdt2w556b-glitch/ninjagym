@@ -11,18 +11,19 @@ import { formatTHB } from "@/lib/pricing";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
+// Map catalog item id → settings key (must match admin prices page keys)
+const SHOP_PRICE_KEY: Record<string, string> = {
+  tshirt_kids:  "price_shop_tshirt_kids",
+  tshirt_adult: "price_shop_tshirt_adult",
+  shake_bake:   "price_shop_shake_bake",
+};
+
 interface CartItem {
   catalogId: string;
   name: string;
   option: string;
   qty: number;
   unit_price: number;
-}
-
-function getItemPrice(catalogId: string, option: string): number {
-  if (catalogId === "gift_card") return GIFT_CARD_PRICES[option] ?? 0;
-  const item = SHOP_CATALOG.find((i) => i.id === catalogId);
-  return item?.price ?? 0;
 }
 
 function getFirstOption(item: (typeof SHOP_CATALOG)[0]): string {
@@ -46,13 +47,38 @@ export default function ShopPage() {
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
 
+  // Dynamic prices from admin settings
+  const [settingsPrices, setSettingsPrices] = useState<Record<string, number>>({});
+
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
     const init: Record<string, string> = {};
     SHOP_CATALOG.forEach((item) => { init[item.id] = getFirstOption(item); });
     setSelections(init);
+    // Fetch live prices from admin settings
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data: Record<string, string | number>) => {
+        const prices: Record<string, number> = {};
+        for (const [k, v] of Object.entries(data)) {
+          if (!k.startsWith("desc_")) {
+            const n = parseFloat(String(v));
+            if (!isNaN(n)) prices[k] = n;
+          }
+        }
+        setSettingsPrices(prices);
+      })
+      .catch(() => {}); // silently fall back to catalog defaults
   }, []);
+
+  function getItemPrice(catalogId: string, option: string): number {
+    if (catalogId === "gift_card") return GIFT_CARD_PRICES[option] ?? 0;
+    const key = SHOP_PRICE_KEY[catalogId];
+    if (key && settingsPrices[key] !== undefined) return settingsPrices[key];
+    const item = SHOP_CATALOG.find((i) => i.id === catalogId);
+    return item?.price ?? 0;
+  }
 
   function handleLang(l: Lang) { setLang(l); localStorage.setItem("ng_lang", l); }
 
@@ -181,9 +207,7 @@ export default function ShopPage() {
         {SHOP_CATALOG.map((item) => {
           const hasGroups = item.options.groups && item.options.groups.length > 0;
           const currentOption = selections[item.id] ?? getFirstOption(item);
-          const displayPrice = item.id === "gift_card"
-            ? (GIFT_CARD_PRICES[currentOption] ?? 0)
-            : item.price;
+          const displayPrice = getItemPrice(item.id, currentOption);
 
           return (
             <div key={item.id} className="bg-white rounded-2xl p-4 shadow">
@@ -195,7 +219,7 @@ export default function ShopPage() {
                   )}
                 </div>
                 <span className="font-fredoka text-lg text-[#1a56db] shrink-0">
-                  {item.id === "gift_card" ? formatTHB(displayPrice) : formatTHB(item.price)}
+                  {formatTHB(displayPrice)}
                 </span>
               </div>
               <div className="flex items-center gap-3">

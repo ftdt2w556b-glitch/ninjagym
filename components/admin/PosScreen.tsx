@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
+type InventoryRow = { item_id: string; variant: string; stock_qty: number };
 
 type Screen =
   | "select_staff"
@@ -19,9 +20,18 @@ interface CartLine {
   label: string;
   qty: number;
   unit: number;
+  item_id?: string;  // for inventory tracking
+  variant?: string;  // for inventory tracking
 }
 
-export default function PosScreen({ staff }: { staff: StaffMember[] }) {
+// Shop price key map: catalog id → settings key
+const SHOP_PRICE_KEY: Record<string, string> = {
+  tshirt_kids:  "price_shop_tshirt_kids",
+  tshirt_adult: "price_shop_tshirt_adult",
+  shake_bake:   "price_shop_shake_bake",
+};
+
+export default function PosScreen({ staff, inventory = [] }: { staff: StaffMember[]; inventory?: InventoryRow[] }) {
   const [screen, setScreen] = useState<Screen>("select_staff");
   const [activeStaff, setActiveStaff] = useState<StaffMember | null>(null);
   const [pin, setPin] = useState("");
@@ -38,6 +48,51 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
   const [shopItemId, setShopItemId] = useState("tshirt_kids");
   const [shopOption, setShopOption] = useState("S");
   const [notes, setNotes] = useState("");
+
+  // Live prices from admin settings (falls back to lib/pricing hardcoded values)
+  const [settingsPrices, setSettingsPrices] = useState<Record<string, number>>({
+    ...BASE_PRICES,
+    price_shop_tshirt_kids: 300,
+    price_shop_tshirt_adult: 300,
+    price_shop_shake_bake: 200,
+  });
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data: Record<string, string | number>) => {
+        setSettingsPrices((prev) => {
+          const updated = { ...prev };
+          for (const [k, v] of Object.entries(data)) {
+            if (!k.startsWith("desc_")) {
+              const n = parseFloat(String(v));
+              if (!isNaN(n)) updated[k] = n;
+            }
+          }
+          return updated;
+        });
+      })
+      .catch(() => {}); // silently fall back to defaults
+  }, []);
+
+  // Helpers
+  function getShopPrice(catalogId: string, option: string): number {
+    if (catalogId === "gift_card") return GIFT_CARD_PRICES[option] ?? 0;
+    const key = SHOP_PRICE_KEY[catalogId];
+    return key ? (settingsPrices[key] ?? 0) : (SHOP_CATALOG.find((i) => i.id === catalogId)?.price ?? 0);
+  }
+
+  function getStock(itemId: string, variant: string): number | null {
+    const row = inventory.find((r) => r.item_id === itemId && r.variant === variant);
+    return row ? row.stock_qty : null;
+  }
+
+  function stockBadge(qty: number | null): React.ReactNode {
+    if (qty === null) return null;
+    if (qty === 0) return <span className="text-xs font-bold text-red-500 ml-1">OUT OF STOCK</span>;
+    if (qty <= 3) return <span className="text-xs font-bold text-orange-500 ml-1">Only {qty} left</span>;
+    return <span className="text-xs text-gray-400 ml-1">{qty} in stock</span>;
+  }
 
   // Feedback state
   const [processing, setProcessing] = useState(false);
@@ -89,8 +144,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
   function addMembershipToCart() {
     const mt = MEMBERSHIP_TYPES.find((m) => m.id === membershipType)!;
     if (mt.bulk && mt.bulkBase) {
-      // Bulk purchase: use calcBulkPrice with quantity
-      const basePrice = BASE_PRICES[mt.bulkBase] ?? 0;
+      const basePrice = settingsPrices[mt.bulkBase] ?? 0;
       const total = calcBulkPrice(basePrice, bulkQty);
       const discountPct = Math.min(bulkQty, 20);
       setCart((prev) => [...prev, {
@@ -100,8 +154,8 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
       }]);
     } else {
       const price = mt.perKid
-        ? (BASE_PRICES[`price_${mt.id}`] ?? 0) * kidsCount
-        : (BASE_PRICES[`price_${mt.id}`] ?? 0);
+        ? (settingsPrices[`price_${mt.id}`] ?? 0) * kidsCount
+        : (settingsPrices[`price_${mt.id}`] ?? 0);
       setCart((prev) => [...prev, {
         label: `${mt.label}${mt.perKid ? ` ×${kidsCount}` : ""}`,
         qty: 1,
@@ -112,11 +166,15 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
 
   function addShopToCart() {
     const item = SHOP_CATALOG.find((i) => i.id === shopItemId)!;
-    // Gift cards: price comes from the selected program option
-    const unit = item.id === "gift_card"
-      ? (GIFT_CARD_PRICES[shopOption] ?? 0)
-      : item.price;
-    setCart((prev) => [...prev, { label: `${item.name} (${shopOption})`, qty: 1, unit }]);
+    const unit = getShopPrice(item.id, shopOption);
+    const isPhysical = item.id !== "gift_card";
+    setCart((prev) => [...prev, {
+      label: `${item.name} (${shopOption})`,
+      qty: 1,
+      unit,
+      item_id: isPhysical ? item.id : undefined,
+      variant: isPhysical ? shopOption : undefined,
+    }]);
   }
 
   function addCustomToCart() {
@@ -150,7 +208,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
         staffName: activeStaff!.name,
         amount: total,
         saleType,
-        items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit })),
+        items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
         notes: notes || null,
       }),
     });
@@ -306,10 +364,10 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
                   {MEMBERSHIP_TYPES.map((m) => {
                     let priceLabel: string;
                     if (m.bulk && m.bulkBase) {
-                      const base = BASE_PRICES[m.bulkBase] ?? 0;
+                      const base = settingsPrices[m.bulkBase] ?? 0;
                       priceLabel = `${formatTHB(base)}/session (bulk)`;
                     } else {
-                      const price = BASE_PRICES[`price_${m.id}`] ?? 0;
+                      const price = settingsPrices[`price_${m.id}`] ?? 0;
                       priceLabel = `${formatTHB(price)}${m.perKid ? "/kid" : ""}`;
                     }
                     return <option key={m.id} value={m.id}>{m.label} — {priceLabel}</option>;
@@ -334,7 +392,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
                     <select value={bulkQty} onChange={(e) => setBulkQty(Number(e.target.value))}
                       className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                       {[2,3,4,5,6,7,8,9,10,12,14,16,18,20].map((n) => {
-                        const base = BASE_PRICES[mt.bulkBase!] ?? 0;
+                        const base = settingsPrices[mt.bulkBase!] ?? 0;
                         const total = calcBulkPrice(base, n);
                         return <option key={n} value={n}>{n} sessions — {formatTHB(total)} ({Math.min(n,20)}% off)</option>;
                       })}
@@ -347,8 +405,8 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
                   <span>Total</span>
                   <span className="text-[#1a56db]">
                     {mt?.bulk && mt.bulkBase
-                      ? formatTHB(calcBulkPrice(BASE_PRICES[mt.bulkBase] ?? 0, bulkQty))
-                      : formatTHB((BASE_PRICES[`price_${mt?.id}`] ?? 0) * (mt?.perKid ? kidsCount : 1))
+                      ? formatTHB(calcBulkPrice(settingsPrices[mt.bulkBase] ?? 0, bulkQty))
+                      : formatTHB((settingsPrices[`price_${mt?.id}`] ?? 0) * (mt?.perKid ? kidsCount : 1))
                     }
                   </span>
                 </div>
@@ -365,9 +423,8 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
           {saleType === "shop" && (() => {
             const catalogItem = SHOP_CATALOG.find((i) => i.id === shopItemId);
             const isGiftCard = shopItemId === "gift_card";
-            const livePrice = isGiftCard
-              ? (GIFT_CARD_PRICES[shopOption] ?? 0)
-              : (catalogItem?.price ?? 0);
+            const livePrice = getShopPrice(shopItemId, shopOption);
+            const currentStock = !isGiftCard ? getStock(shopItemId, shopOption) : null;
             return (
               <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
                 <h3 className="font-bold text-gray-800">Shop Item</h3>
@@ -381,7 +438,7 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
                   className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                   {SHOP_CATALOG.map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.name}{i.id === "gift_card" ? " — price by program" : ` — ${formatTHB(i.price)}`}
+                      {i.name}{i.id === "gift_card" ? " — price by program" : ` — ${formatTHB(getShopPrice(i.id, shopItemId === i.id ? shopOption : (i.options.groups?.[0]?.values[0] ?? i.options.values?.[0] ?? "")))}`}
                     </option>
                   ))}
                 </select>
@@ -391,24 +448,38 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
                   {catalogItem?.options.groups
                     ? catalogItem.options.groups.map((g) => (
                         <optgroup key={g.label} label={g.label}>
-                          {g.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                          {g.values.map((v) => {
+                            const qty = getStock(shopItemId, v);
+                            const stockNote = qty === 0 ? " — OUT OF STOCK" : qty !== null && qty <= 3 ? ` — only ${qty} left` : qty !== null ? ` — ${qty} in stock` : "";
+                            return <option key={v} value={v}>{v}{stockNote}</option>;
+                          })}
                         </optgroup>
                       ))
-                    : (catalogItem?.options.values ?? []).map((v) => (
-                        <option key={v} value={v}>
-                          {isGiftCard ? `${v} — ${formatTHB(GIFT_CARD_PRICES[v] ?? 0)}` : v}
-                        </option>
-                      ))
+                    : (catalogItem?.options.values ?? []).map((v) => {
+                        const qty = isGiftCard ? null : getStock(shopItemId, v);
+                        const stockNote = qty === 0 ? " — OUT OF STOCK" : qty !== null && qty <= 3 ? ` — only ${qty} left` : qty !== null ? ` — ${qty} in stock` : "";
+                        const priceNote = isGiftCard ? ` — ${formatTHB(GIFT_CARD_PRICES[v] ?? 0)}` : "";
+                        return <option key={v} value={v}>{v}{priceNote}{stockNote}</option>;
+                      })
                   }
                 </select>
+                {/* Stock badge for selected variant */}
+                {!isGiftCard && (
+                  <div className="flex items-center gap-1 text-sm">
+                    <span className="text-gray-500">Stock:</span>
+                    {stockBadge(currentStock)}
+                    {currentStock === null && <span className="text-xs text-gray-400">not tracked</span>}
+                  </div>
+                )}
                 {/* Live price preview */}
                 <div className="bg-gray-50 rounded-xl px-3 py-2 text-sm font-semibold text-gray-800 flex justify-between">
                   <span>Total</span>
                   <span className="text-[#1a56db]">{formatTHB(livePrice)}</span>
                 </div>
                 <button onClick={addShopToCart}
-                  className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-                  Add to Sale
+                  disabled={currentStock === 0}
+                  className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                  {currentStock === 0 ? "Out of Stock" : "Add to Sale"}
                 </button>
               </div>
             );

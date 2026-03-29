@@ -37,7 +37,7 @@ export default async function AdminLayout({
     { href: "/admin/payments",        label: "Pending",   roles: ["admin", "staff"] },
     { href: "/admin/event-bookings",  label: "Events",    roles: ["admin", "staff", "owner"] },
     { href: "/admin/shop",            label: "Shop",      roles: ["admin", "staff"] },
-    { href: "/admin/pos",             label: "POS",       roles: ["admin", "staff"] },
+    { href: "/pos",                    label: "POS",       roles: ["admin", "staff"] },
     { href: "/scanner",               label: "Scanner",   roles: ["admin", "staff"] },
     { href: "/admin/reports/cash",    label: "Sales",     roles: ["admin", "owner"] },
     { href: "/admin/staff",           label: "Users",     roles: ["admin"] },

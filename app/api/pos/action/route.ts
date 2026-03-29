@@ -52,6 +52,24 @@ export async function POST(request: NextRequest) {
           .eq("id", referenceId);
       }
 
+      // Decrement inventory for physical shop items
+      if (saleType === "shop" && Array.isArray(items)) {
+        for (const item of items) {
+          if (!item.item_id) continue; // skip gift cards / non-inventory items
+          const { data: current } = await admin
+            .from("shop_inventory")
+            .select("stock_qty")
+            .eq("item_id", item.item_id)
+            .eq("variant", item.variant ?? "")
+            .maybeSingle();
+          const newQty = Math.max(0, (current?.stock_qty ?? 0) - (item.qty ?? 1));
+          await admin.from("shop_inventory").upsert(
+            { item_id: item.item_id, variant: item.variant ?? "", stock_qty: newQty, updated_at: new Date().toISOString() },
+            { onConflict: "item_id,variant" }
+          );
+        }
+      }
+
       return NextResponse.json({ saleId: sale.id });
     }
 
