@@ -8,13 +8,14 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const GAMING_ZONE_NOTE =
+  "Booking an Event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.";
 
 const TIME_SLOTS: { id: BirthdayTimeSlot; label: string; rate: number; note: string }[] = [
   { id: "morning",   label: "Morning / Off-Peak",  rate: 3000, note: "9:00am – 3:30pm (weekdays)" },
   { id: "afternoon", label: "Afternoon / Peak",     rate: 5000, note: "3:30pm – 6:30pm (weekdays)" },
   { id: "evening",   label: "Evening / Off-Peak",   rate: 3000, note: "6:30pm – 9:30pm (weekdays)" },
-  { id: "weekend",   label: "Weekend",              rate: 5000, note: "After 2:00pm (Sat / Sun)" },
+  { id: "weekend",   label: "Weekend (after 2pm)",  rate: 5000, note: "After 2:00pm (Sat / Sun)" },
 ];
 
 const TERMS = [
@@ -23,13 +24,13 @@ const TERMS = [
   "Overtime is charged at 500 THB per 10-minute period if you exceed your reserved end time.",
   "No refunds. We reserve your date on payment.",
   "Pay in advance to confirm your booking.",
-  "Regular NinjaGym policies apply for events and birthdays.",
+  "Regular NinjaGym policies apply for all events.",
 ];
 
 const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
 const PHOTOGRAPHER_FEE = 1000;
 
-export default function BirthdaysPage() {
+export default function EventSpacePage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
   const t = translations[lang];
@@ -43,8 +44,6 @@ export default function BirthdaysPage() {
     hours: "",
     num_hours: 2,
     num_kids: 5,
-    birthday_child_name: "",
-    birthday_child_age: "",
     payment_method: "cash",
     notes: "",
     photographer_requested: false,
@@ -81,6 +80,7 @@ export default function BirthdaysPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(total));
+      body.append("booking_type", "event_space");
       if (slip) body.append("slip", slip);
 
       const res = await fetch("/api/event-bookings", { method: "POST", body });
@@ -96,7 +96,7 @@ export default function BirthdaysPage() {
         return;
       }
 
-      router.push(`/birthdays/submitted`);
+      router.push(`/event-space/submitted`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);
@@ -111,12 +111,12 @@ export default function BirthdaysPage() {
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
-      {/* Floating hero image (same as home page style) */}
+      {/* Floating hero image */}
       <div className="flex justify-center py-4 mb-2">
-        <div style={{ animation: "floatCake 3s ease-in-out infinite" }}>
+        <div style={{ animation: "floatSpace 3s ease-in-out infinite" }}>
           <Image
-            src="/images/App4_small.png"
-            alt="Birthday party at NinjaGym"
+            src="/images/App3_small.png"
+            alt="NinjaGym Event Space"
             width={180}
             height={180}
             className="drop-shadow-2xl rounded-3xl"
@@ -128,9 +128,9 @@ export default function BirthdaysPage() {
       {/* Title */}
       <div className="text-center mb-6">
         <h1 className="font-bangers text-5xl text-white tracking-widest drop-shadow-lg mb-1">
-          BIRTHDAYS &amp; EVENTS
+          BOOK AN EVENT
         </h1>
-        <p className="text-white/80 text-sm mb-3">Make it a party they will never forget!</p>
+        <p className="text-white/80 text-sm mb-3">Reserve the NinjaGym for your private event</p>
         <span className="inline-block bg-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full">
           📍 Big C, Bophut, Koh Samui
         </span>
@@ -138,15 +138,15 @@ export default function BirthdaysPage() {
 
       {/* What's included */}
       <div className="bg-[#1a3a6e] border border-white/10 rounded-2xl p-5 shadow mb-4">
-        <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🎉 WHAT IS INCLUDED</h2>
+        <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🥷 WHAT IS INCLUDED</h2>
         <ul className="flex flex-col gap-2 text-sm text-white/90">
           {[
             "1 guided 50-minute training session",
-            "Birthday banners and balloons",
             "Staff assistance throughout",
             "Access to training, climbing & ninja zones",
             "Cleanup service included",
             "5 kids free with every event",
+            "Private use of all Main Activity Zones",
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
               <span className="shrink-0">🥷</span>
@@ -159,7 +159,7 @@ export default function BirthdaysPage() {
       {/* Gaming zone notice */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 shadow mb-4">
         <p className="text-xs text-yellow-800 leading-relaxed">
-          ⚠️ <strong>Please note:</strong> Booking an event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.
+          ⚠️ <strong>Please note:</strong> {GAMING_ZONE_NOTE}
         </p>
       </div>
 
@@ -188,7 +188,7 @@ export default function BirthdaysPage() {
             <input type="text" required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="Parent or guardian name" />
+              placeholder="Your name" />
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.phoneLabel}</label>
@@ -203,25 +203,6 @@ export default function BirthdaysPage() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
               placeholder="you@example.com" />
-          </div>
-        </div>
-
-        {/* Birthday child */}
-        <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Birthday Child</h2>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Child&apos;s Name</label>
-            <input type="text" value={form.birthday_child_name}
-              onChange={(e) => setForm({ ...form, birthday_child_name: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="Child's name" />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Turning Age</label>
-            <input type="number" min="1" max="18" value={form.birthday_child_age}
-              onChange={(e) => setForm({ ...form, birthday_child_age: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="e.g. 7" />
           </div>
         </div>
 
@@ -290,7 +271,7 @@ export default function BirthdaysPage() {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
-              placeholder="Any special requests for staff..." />
+              placeholder="Any special requests, theme, or details for staff..." />
           </div>
         </div>
 
@@ -308,7 +289,7 @@ export default function BirthdaysPage() {
                 <span className="font-bold text-[#1a56db] text-base">+1,000 THB</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Staff will capture periodic shots of your event. Digital images will be delivered to your member page within a few days. Higher res may be available upon request to your usb drive. Available for birthdays, events and day camps only.
+                Staff will capture periodic shots of your event. Digital images will be delivered to your member page within a few days. Higher res may be available upon request to your USB drive.
               </p>
             </div>
           </label>
@@ -421,7 +402,7 @@ export default function BirthdaysPage() {
       </form>
 
       <style jsx global>{`
-        @keyframes floatCake {
+        @keyframes floatSpace {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-14px); }
         }

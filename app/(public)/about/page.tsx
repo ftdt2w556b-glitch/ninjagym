@@ -1,20 +1,27 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 
+const GAMING_ZONE_NOTE =
+  "Booking an Event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.";
+
 export default function AboutPage() {
+  const [minecraftOpen, setMinecraftOpen] = useState(false);
+
   return (
     <div className="px-4 py-6 text-white">
       <PublicPageHeader />
 
       <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">About NinjaGym</h1>
-      <p className="text-[#ffe033] font-bold tracking-wide mb-6">RICK TEW&apos;S DOJO, KOH SAMUI</p>
+      <p className="text-[#ffe033] font-bold tracking-wide mb-6">RICK TEW&apos;S NINJAGYM, KOH SAMUI</p>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { stat: "30+", label: "Years Teaching" },
-          { stat: "5", label: "Winjitsu Books" },
+          { stat: "5",   label: "Winjitsu Books" },
           { stat: "1,000s", label: "Kids Trained" },
         ].map((s) => (
           <div key={s.stat} className="bg-white/15 rounded-2xl p-3 text-center">
@@ -94,7 +101,6 @@ export default function AboutPage() {
         {/* Programs */}
         <div className="bg-[#1a56db] rounded-2xl p-5 shadow text-white">
           <h2 className="font-bold text-lg mb-4">Programs</h2>
-
           <div className="flex flex-col gap-4">
             <div>
               <p className="font-bold text-[#ffe033] text-sm mb-1">Kids Training</p>
@@ -140,21 +146,43 @@ export default function AboutPage() {
           </p>
 
           <div className="flex flex-col gap-3">
+            {/* Video Game Room */}
             <div className="bg-blue-50 rounded-xl p-4">
               <p className="font-bold text-[#1a56db] text-sm mb-1">Video Game Room</p>
               <p className="text-sm text-gray-600 leading-relaxed mb-2">
                 Gaming consoles and computers, including Minecraft. Kids can play, build and explore in a fun supervised space.
               </p>
-              <a
-                href="https://www.ricktew.com/ninjagym/ninja-day-camp"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block text-xs text-[#1a56db] font-semibold underline"
+
+              {/* Minecraft expandable — in-app, no external link */}
+              <button
+                onClick={() => setMinecraftOpen((o) => !o)}
+                className="inline-flex items-center gap-1 text-xs text-[#1a56db] font-semibold underline"
               >
-                Why Minecraft is great for kids
-              </a>
+                {minecraftOpen ? "▲ Hide" : "▶ Why Minecraft is great for kids"}
+              </button>
+
+              {minecraftOpen && (
+                <div className="mt-3 bg-white rounded-xl p-4 border border-blue-100 text-sm text-gray-600 flex flex-col gap-2">
+                  <p className="font-bold text-[#1a56db]">Why Minecraft is great for kids</p>
+                  <p>Minecraft isn&apos;t just a game — it&apos;s a creative and educational platform that develops real-world skills:</p>
+                  <ul className="flex flex-col gap-1.5 pl-1">
+                    {[
+                      "🧱 Creativity & problem solving — building from scratch develops spatial thinking and design skills",
+                      "🤝 Teamwork — multiplayer modes teach kids to collaborate, delegate and plan together",
+                      "📐 Math & geometry — calculating areas, volumes and resources is built into gameplay",
+                      "💡 Logical thinking — redstone circuits introduce kids to basic engineering and coding concepts",
+                      "🌍 Exploration & curiosity — open-world environments encourage discovery and risk-taking",
+                      "😌 Safe digital space — no violence or harmful content; staff supervised at all times",
+                    ].map((item) => (
+                      <li key={item} className="leading-snug">{item}</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-gray-400 mt-1">Available during Game Room hours for eligible members.</p>
+                </div>
+              )}
             </div>
 
+            {/* Creative Learning Room */}
             <div className="bg-green-50 rounded-xl p-4">
               <p className="font-bold text-green-700 text-sm mb-1">Creative Learning Room</p>
               <p className="text-sm text-gray-600 leading-relaxed">
@@ -164,16 +192,24 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Event Space */}
+        {/* Event Space Rental */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <h2 className="font-bold text-[#1a56db] text-lg mb-1">Event Space Rental</h2>
           <p className="text-xs text-orange-600 font-semibold mb-3 bg-orange-50 rounded-lg px-3 py-2">
             Weekends and holidays: available after 2pm only (Day Camps run until 2pm)
           </p>
-          <div className="flex flex-col gap-2 text-sm">
+
+          {/* Gaming zone notice */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4">
+            <p className="text-xs text-yellow-800 leading-relaxed">
+              ⚠️ {GAMING_ZONE_NOTE}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 text-sm mb-4">
             {[
               { label: "Weekends and holidays (after 2pm)", price: "5,000 THB/hr" },
-              { label: "Weekdays 3:30pm to 6:30pm", price: "5,000 THB/hr" },
+              { label: "Weekdays 3:30pm to 6:30pm",         price: "5,000 THB/hr" },
               { label: "Weekdays 9am to 3pm and 6:30pm to 9:30pm", price: "3,000 THB/hr" },
             ].map(r => (
               <div key={r.label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
@@ -182,8 +218,12 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-          <Link href="/birthdays" className="block mt-4 text-center text-sm text-[#1a56db] font-semibold underline">
-            Book an Event
+
+          <Link
+            href="/event-space"
+            className="block text-center bg-[#1a56db] text-white font-bold text-sm rounded-xl py-3 hover:bg-blue-700 transition-colors"
+          >
+            Book an Event Space →
           </Link>
         </div>
 
