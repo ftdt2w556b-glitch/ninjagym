@@ -48,9 +48,12 @@ export default async function DashboardPage() {
       .eq("approved", false),
     admin
       .from("staff_questions")
-      .select("id, asker_name, question, answer, answered_at, answered_by")
+      .select(`
+        id, asker_name, question, answer, answered_at, answered_by, resolved, created_at,
+        staff_question_replies ( id, author_name, body, created_at )
+      `)
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(30),
     admin
       .from("member_registrations")
       .select("amount_paid")
@@ -60,7 +63,6 @@ export default async function DashboardPage() {
   ]);
 
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
-
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0);
 
   const stats = [
@@ -71,7 +73,8 @@ export default async function DashboardPage() {
     { label: "Revenue Today",    value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
   ];
 
-  // Server actions
+  // ── Server Actions ──────────────────────────────────────────────────────────
+
   async function askQuestion(formData: FormData) {
     "use server";
     const question = (formData.get("question") as string)?.trim();
@@ -106,29 +109,79 @@ export default async function DashboardPage() {
     redirect("/admin/dashboard");
   }
 
-  const unanswered = questions?.filter((q) => !q.answer) ?? [];
-  const answered   = questions?.filter((q) => !!q.answer) ?? [];
+  async function addReply(formData: FormData) {
+    "use server";
+    const question_id = Number(formData.get("question_id"));
+    const body = (formData.get("body") as string)?.trim();
+    if (!body || !question_id) return;
+    const supabaseInner = await createSupabaseServerClient();
+    const { data: { user: u } } = await supabaseInner.auth.getUser();
+    if (!u) return;
+    const adminClient = createAdminClient();
+    const { data: p } = await adminClient.from("profiles").select("name").eq("id", u.id).single();
+    await adminClient.from("staff_question_replies").insert({
+      question_id,
+      author_id: u.id,
+      author_name: p?.name ?? u.email ?? "Staff",
+      body,
+    });
+    redirect("/admin/dashboard");
+  }
+
+  async function toggleResolved(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    const current = formData.get("resolved") === "true";
+    const adminClient = createAdminClient();
+    await adminClient.from("staff_questions").update({ resolved: !current }).eq("id", id);
+    redirect("/admin/dashboard");
+  }
+
+  async function deleteQuestion(formData: FormData) {
+    "use server";
+    // re-verify role server-side
+    const supabaseInner = await createSupabaseServerClient();
+    const { data: { user: u } } = await supabaseInner.auth.getUser();
+    if (!u) return;
+    const adminClient = createAdminClient();
+    const { data: p } = await adminClient.from("profiles").select("role").eq("id", u.id).single();
+    if (p?.role !== "admin" && p?.role !== "owner") return;
+    const id = formData.get("id") as string;
+    await adminClient.from("staff_questions").delete().eq("id", id);
+    redirect("/admin/dashboard");
+  }
+
+  // ── Partition questions ─────────────────────────────────────────────────────
+  type Reply = { id: number; author_name: string; body: string; created_at: string };
+  type Question = {
+    id: number; asker_name: string; question: string;
+    answer: string | null; answered_at: string | null; answered_by: string | null;
+    resolved: boolean | null; created_at: string;
+    staff_question_replies: Reply[];
+  };
+
+  const allQuestions = (questions ?? []) as Question[];
+  const openQuestions     = allQuestions.filter((q) => !q.resolved);
+  const resolvedQuestions = allQuestions.filter((q) => !!q.resolved);
+
+  function formatDate(iso: string) {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Daily Dashboard</h1>
       <p className="text-gray-500 text-sm mb-6">
         {new Date().toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+          weekday: "long", year: "numeric", month: "long", day: "numeric",
         })}
       </p>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 gap-4 mb-8">
         {stats.map((stat) => (
-          <Link
-            key={stat.label}
-            href={stat.href}
-            className={`rounded-2xl p-5 ${stat.color} flex flex-col hover:opacity-80 transition-opacity`}
-          >
+          <Link key={stat.label} href={stat.href}
+            className={`rounded-2xl p-5 ${stat.color} flex flex-col hover:opacity-80 transition-opacity`}>
             <span className="text-3xl font-bold">{stat.value}</span>
             <span className="text-sm font-medium mt-1">{stat.label}</span>
           </Link>
@@ -137,120 +190,213 @@ export default async function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid gap-4 sm:grid-cols-2 mb-10">
-        <a
-          href="/scanner"
-          className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors"
-        >
+        <a href="/scanner"
+          className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
           📷 QR Scanner
         </a>
-        <a
-          href="/admin/pos"
-          className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors"
-        >
+        <a href="/admin/pos"
+          className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors">
           🛒 POS Counter
         </a>
-        <a
-          href="/join"
-          className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors"
-        >
+        <a href="/join"
+          className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors">
           ➕ New Registration
         </a>
-        <a
-          href="/admin/payments"
-          className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors"
-        >
+        <a href="/admin/payments"
+          className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors">
           💳 Review Pending
         </a>
       </div>
 
       {/* ── Q&A Widget ── */}
       <div className="border-t border-gray-200 pt-8">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Staff Q&amp;A</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-5">Staff Q&amp;A</h2>
 
-        {/* Admin: unanswered questions to answer */}
-        {isAdminOrOwner && unanswered.length > 0 && (
-          <div className="mb-6 flex flex-col gap-3">
-            <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
-              {unanswered.length} question{unanswered.length !== 1 ? "s" : ""} waiting for your answer
-            </p>
-            {unanswered.map((q) => (
-              <div key={q.id} className="bg-orange-50 border border-orange-200 rounded-2xl p-4">
-                <p className="text-xs text-gray-500 mb-1 font-medium">{q.asker_name} asked:</p>
-                <p className="text-sm text-gray-800 font-medium mb-3">{q.question}</p>
-                <form action={answerQuestion} className="flex flex-col gap-2">
-                  <input type="hidden" name="id" value={q.id} />
-                  <textarea
-                    name="answer"
-                    rows={2}
-                    placeholder="Type your answer..."
-                    required
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
-                  />
-                  <button
-                    type="submit"
-                    className="self-start bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Post Answer
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Staff: pending questions notice */}
-        {!isAdminOrOwner && unanswered.length > 0 && (
-          <div className="mb-4 flex flex-col gap-2">
-            {unanswered.map((q) => (
-              <div key={q.id} className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
-                <p className="text-xs text-gray-500 mb-1">{q.asker_name} asked:</p>
-                <p className="text-sm text-gray-700">{q.question}</p>
-                <p className="text-xs text-yellow-600 mt-2 font-medium">⏳ Waiting for admin reply...</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Answered questions */}
-        {answered.length > 0 && (
-          <div className="flex flex-col gap-3 mb-6">
-            {answered.map((q) => (
-              <div key={q.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">{q.asker_name} asked:</p>
-                <p className="text-sm text-gray-700 mb-2 font-medium">{q.question}</p>
-                <div className="bg-blue-50 rounded-xl p-3">
-                  <p className="text-xs text-[#1a56db] font-semibold mb-1">Admin answer:</p>
-                  <p className="text-sm text-gray-800">{q.answer}</p>
-                  {q.answered_at && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {new Date(q.answered_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {questions?.length === 0 && (
+        {/* Open threads */}
+        {openQuestions.length === 0 && resolvedQuestions.length === 0 && (
           <p className="text-sm text-gray-400 italic mb-6">No questions yet. Be the first to ask!</p>
         )}
 
-        {/* Ask a question form */}
+        {openQuestions.length > 0 && (
+          <div className="flex flex-col gap-4 mb-6">
+            {openQuestions.map((q) => {
+              const replies = [...(q.staff_question_replies ?? [])].sort(
+                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+              );
+              const isAnswered = !!q.answer;
+
+              return (
+                <div key={q.id} className={`rounded-2xl border shadow-sm overflow-hidden ${
+                  isAnswered ? "border-gray-200 bg-white" : "border-orange-200 bg-orange-50"
+                }`}>
+                  {/* Question header */}
+                  <div className="px-4 pt-4 pb-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-semibold text-gray-500">{q.asker_name}</span>
+                        <span className="text-xs text-gray-400">{formatDate(q.created_at)}</span>
+                        {!isAnswered && (
+                          <span className="text-xs bg-orange-100 text-orange-600 font-semibold px-2 py-0.5 rounded-full">
+                            ⏳ Awaiting answer
+                          </span>
+                        )}
+                      </div>
+                      {/* Admin controls */}
+                      {isAdminOrOwner && (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <form action={toggleResolved}>
+                            <input type="hidden" name="id" value={q.id} />
+                            <input type="hidden" name="resolved" value={String(!!q.resolved)} />
+                            <button type="submit"
+                              className="text-xs bg-green-100 text-green-700 font-semibold px-2.5 py-1 rounded-lg hover:bg-green-200 transition-colors">
+                              ✓ Resolve
+                            </button>
+                          </form>
+                          <form action={deleteQuestion}>
+                            <input type="hidden" name="id" value={q.id} />
+                            <button type="submit"
+                              className="text-xs bg-red-100 text-red-600 font-semibold px-2.5 py-1 rounded-lg hover:bg-red-200 transition-colors"
+                              onClick={(e) => { if (!confirm("Delete this question thread?")) e.preventDefault(); }}>
+                              🗑 Delete
+                            </button>
+                          </form>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-800 font-medium">{q.question}</p>
+                  </div>
+
+                  {/* Admin answer */}
+                  {isAnswered && (
+                    <div className="mx-4 mb-3 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                      <p className="text-xs font-semibold text-[#1a56db] mb-1">Admin answer</p>
+                      <p className="text-sm text-gray-800">{q.answer}</p>
+                      {q.answered_at && (
+                        <p className="text-xs text-gray-400 mt-1">{formatDate(q.answered_at)}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Follow-up replies */}
+                  {replies.length > 0 && (
+                    <div className="mx-4 mb-3 flex flex-col gap-2 pl-3 border-l-2 border-gray-200">
+                      {replies.map((r) => (
+                        <div key={r.id} className="text-sm">
+                          <span className="font-semibold text-gray-700 text-xs">{r.author_name}</span>
+                          <span className="text-gray-400 text-xs ml-2">{formatDate(r.created_at)}</span>
+                          <p className="text-gray-700 mt-0.5">{r.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Admin: answer form (if unanswered) */}
+                  {isAdminOrOwner && !isAnswered && (
+                    <div className="px-4 pb-4">
+                      <form action={answerQuestion} className="flex flex-col gap-2">
+                        <input type="hidden" name="id" value={q.id} />
+                        <textarea name="answer" rows={2} required placeholder="Type your answer..."
+                          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none bg-white" />
+                        <button type="submit"
+                          className="self-start bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          Post Answer
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Follow-up reply form (everyone, shown after an answer exists) */}
+                  {isAnswered && (
+                    <div className="px-4 pb-4">
+                      <form action={addReply} className="flex gap-2">
+                        <input type="hidden" name="question_id" value={q.id} />
+                        <input type="text" name="body" required placeholder="Follow-up reply..."
+                          className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] bg-white" />
+                        <button type="submit"
+                          className="shrink-0 bg-gray-700 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors">
+                          Reply
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Resolved threads (collapsed) */}
+        {resolvedQuestions.length > 0 && (
+          <details className="mb-6">
+            <summary className="text-xs font-semibold text-gray-400 uppercase tracking-wide cursor-pointer hover:text-gray-600 mb-3 select-none">
+              ✓ {resolvedQuestions.length} Resolved Thread{resolvedQuestions.length !== 1 ? "s" : ""}
+            </summary>
+            <div className="flex flex-col gap-3 mt-3">
+              {resolvedQuestions.map((q) => {
+                const replies = [...(q.staff_question_replies ?? [])].sort(
+                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
+                return (
+                  <div key={q.id} className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden opacity-75">
+                    <div className="px-4 pt-4 pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-xs text-gray-400">{q.asker_name} · {formatDate(q.created_at)}</span>
+                          <p className="text-sm text-gray-600 mt-0.5">{q.question}</p>
+                        </div>
+                        {isAdminOrOwner && (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <form action={toggleResolved}>
+                              <input type="hidden" name="id" value={q.id} />
+                              <input type="hidden" name="resolved" value={String(!!q.resolved)} />
+                              <button type="submit"
+                                className="text-xs text-gray-400 hover:text-gray-700 px-2 py-1 rounded-lg hover:bg-gray-200 transition-colors">
+                                ↩ Reopen
+                              </button>
+                            </form>
+                            <form action={deleteQuestion}>
+                              <input type="hidden" name="id" value={q.id} />
+                              <button type="submit"
+                                className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                                onClick={(e) => { if (!confirm("Delete this question thread?")) e.preventDefault(); }}>
+                                🗑
+                              </button>
+                            </form>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {q.answer && (
+                      <div className="mx-4 mb-2 bg-blue-50 rounded-xl px-3 py-2">
+                        <p className="text-xs text-[#1a56db] font-semibold mb-0.5">Answer</p>
+                        <p className="text-xs text-gray-700">{q.answer}</p>
+                      </div>
+                    )}
+                    {replies.length > 0 && (
+                      <div className="mx-4 mb-3 pl-3 border-l-2 border-gray-200 flex flex-col gap-1">
+                        {replies.map((r) => (
+                          <div key={r.id} className="text-xs text-gray-500">
+                            <span className="font-semibold">{r.author_name}:</span> {r.body}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        )}
+
+        {/* Ask a new question */}
         <div className="bg-gray-50 rounded-2xl p-5">
           <p className="text-sm font-semibold text-gray-700 mb-3">Ask Admin a Question</p>
           <form action={askQuestion} className="flex flex-col gap-3">
-            <textarea
-              name="question"
-              rows={3}
-              required
+            <textarea name="question" rows={3} required
               placeholder="What would you like to know? e.g. How do I handle a refund request?"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none bg-white"
-            />
-            <button
-              type="submit"
-              className="self-start bg-gray-800 text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors"
-            >
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none bg-white" />
+            <button type="submit"
+              className="self-start bg-gray-800 text-white text-sm font-bold px-5 py-2 rounded-xl hover:bg-gray-700 transition-colors">
               Send Question
             </button>
           </form>
