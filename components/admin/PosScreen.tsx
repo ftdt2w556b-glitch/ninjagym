@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
-import { SHOP_CATALOG } from "@/lib/shop";
+import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 
@@ -112,7 +112,11 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
 
   function addShopToCart() {
     const item = SHOP_CATALOG.find((i) => i.id === shopItemId)!;
-    setCart((prev) => [...prev, { label: `${item.name} (${shopOption})`, qty: 1, unit: item.price }]);
+    // Gift cards: price comes from the selected program option
+    const unit = item.id === "gift_card"
+      ? (GIFT_CARD_PRICES[shopOption] ?? 0)
+      : item.price;
+    setCart((prev) => [...prev, { label: `${item.name} (${shopOption})`, qty: 1, unit }]);
   }
 
   function addCustomToCart() {
@@ -358,44 +362,57 @@ export default function PosScreen({ staff }: { staff: StaffMember[] }) {
           })()}
 
           {/* Shop selector */}
-          {saleType === "shop" && (
-            <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
-              <h3 className="font-bold text-gray-800">Shop Item</h3>
-              <select value={shopItemId} onChange={(e) => {
-                setShopItemId(e.target.value);
-                const item = SHOP_CATALOG.find((i) => i.id === e.target.value);
-                const firstOpt = item?.options.groups?.[0]?.values[0] ?? item?.options.values?.[0] ?? "";
-                setShopOption(firstOpt);
-              }}
-                className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                {SHOP_CATALOG.map((i) => (
-                  <option key={i.id} value={i.id}>{i.name} — {formatTHB(i.price)}</option>
-                ))}
-              </select>
-              {/* Option/size select — supports flat values or optgroups */}
-              <select value={shopOption} onChange={(e) => setShopOption(e.target.value)}
-                className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                {(() => {
-                  const catalogItem = SHOP_CATALOG.find((i) => i.id === shopItemId);
-                  if (!catalogItem) return null;
-                  if (catalogItem.options.groups) {
-                    return catalogItem.options.groups.map((g) => (
-                      <optgroup key={g.label} label={g.label}>
-                        {g.values.map((v) => <option key={v} value={v}>{v}</option>)}
-                      </optgroup>
-                    ));
+          {saleType === "shop" && (() => {
+            const catalogItem = SHOP_CATALOG.find((i) => i.id === shopItemId);
+            const isGiftCard = shopItemId === "gift_card";
+            const livePrice = isGiftCard
+              ? (GIFT_CARD_PRICES[shopOption] ?? 0)
+              : (catalogItem?.price ?? 0);
+            return (
+              <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
+                <h3 className="font-bold text-gray-800">Shop Item</h3>
+                {/* Item selector */}
+                <select value={shopItemId} onChange={(e) => {
+                  setShopItemId(e.target.value);
+                  const item = SHOP_CATALOG.find((i) => i.id === e.target.value);
+                  const firstOpt = item?.options.groups?.[0]?.values[0] ?? item?.options.values?.[0] ?? "";
+                  setShopOption(firstOpt);
+                }}
+                  className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                  {SHOP_CATALOG.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name}{i.id === "gift_card" ? " — price by program" : ` — ${formatTHB(i.price)}`}
+                    </option>
+                  ))}
+                </select>
+                {/* Option/size/program select */}
+                <select value={shopOption} onChange={(e) => setShopOption(e.target.value)}
+                  className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                  {catalogItem?.options.groups
+                    ? catalogItem.options.groups.map((g) => (
+                        <optgroup key={g.label} label={g.label}>
+                          {g.values.map((v) => <option key={v} value={v}>{v}</option>)}
+                        </optgroup>
+                      ))
+                    : (catalogItem?.options.values ?? []).map((v) => (
+                        <option key={v} value={v}>
+                          {isGiftCard ? `${v} — ${formatTHB(GIFT_CARD_PRICES[v] ?? 0)}` : v}
+                        </option>
+                      ))
                   }
-                  return (catalogItem.options.values ?? []).map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                  ));
-                })()}
-              </select>
-              <button onClick={addShopToCart}
-                className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">
-                Add to Sale
-              </button>
-            </div>
-          )}
+                </select>
+                {/* Live price preview */}
+                <div className="bg-gray-50 rounded-xl px-3 py-2 text-sm font-semibold text-gray-800 flex justify-between">
+                  <span>Total</span>
+                  <span className="text-[#1a56db]">{formatTHB(livePrice)}</span>
+                </div>
+                <button onClick={addShopToCart}
+                  className="bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors">
+                  Add to Sale
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Walk-in / custom amount */}
           {saleType === "walkin" && (
