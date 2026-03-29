@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
@@ -10,6 +10,12 @@ export default async function MembersPage({
 }) {
   const { q, status } = await searchParams;
   const admin = createAdminClient();
+
+  // Get current user role to control what they can see/do
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
+  const isAdminOrOwner = ["admin", "owner"].includes(profile?.role ?? "");
 
   let query = admin
     .from("member_registrations")
@@ -147,12 +153,14 @@ export default async function MembersPage({
                         >
                           QR Card
                         </Link>
-                        <Link
-                          href={`/admin/members/${m.id}`}
-                          className="text-xs text-gray-500 hover:underline"
-                        >
-                          Edit
-                        </Link>
+                        {isAdminOrOwner && (
+                          <Link
+                            href={`/admin/members/${m.id}`}
+                            className="text-xs text-gray-500 hover:underline"
+                          >
+                            Edit
+                          </Link>
+                        )}
                         {m.slip_status === "pending_review" && (
                           <Link href={`/admin/payments?member=${m.id}`} className="text-xs text-yellow-600 hover:underline">
                             Review

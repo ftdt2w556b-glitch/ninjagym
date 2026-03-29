@@ -7,17 +7,17 @@ export default async function PosKioskPage() {
   // Check kiosk cookie — no Supabase auth required
   const cookieStore = await cookies();
   const posAuth = cookieStore.get("pos_auth")?.value;
-  const expected = process.env.POS_PASSWORD;
 
-  const isUnlocked = expected
-    ? posAuth === expected
-    : posAuth === "unlocked";
+  // Check against settings table first, env var as fallback
+  const admin = createAdminClient();
+  const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+  const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
+
+  const isUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
 
   if (!isUnlocked) {
     redirect("/pos/unlock");
   }
-
-  const admin = createAdminClient();
 
   const { data: profiles } = await admin
     .from("profiles")

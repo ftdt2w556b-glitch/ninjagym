@@ -1,19 +1,27 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/server";
+
+async function getPosPassword(): Promise<string | null> {
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+    if (data?.value) return data.value;
+  } catch {}
+  return process.env.POS_PASSWORD ?? null;
+}
 
 async function unlockKiosk(formData: FormData) {
   "use server";
   const password = formData.get("password") as string;
-  const expected = process.env.POS_PASSWORD;
+  const expected = await getPosPassword();
 
   if (!expected) {
-    // If no password is set in env, allow through (development fallback)
+    // No password set anywhere — allow through
     const cookieStore = await cookies();
     cookieStore.set("pos_auth", "unlocked", {
-      httpOnly: true,
-      sameSite: "strict",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 365, // 1 year — tablet stays unlocked
+      httpOnly: true, sameSite: "strict", path: "/",
+      maxAge: 60 * 60 * 24 * 365,
     });
     redirect("/pos");
   }
@@ -24,10 +32,8 @@ async function unlockKiosk(formData: FormData) {
 
   const cookieStore = await cookies();
   cookieStore.set("pos_auth", expected, {
-    httpOnly: true,
-    sameSite: "strict",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1 year — tablet stays unlocked
+    httpOnly: true, sameSite: "strict", path: "/",
+    maxAge: 60 * 60 * 24 * 365,
   });
   redirect("/pos");
 }
