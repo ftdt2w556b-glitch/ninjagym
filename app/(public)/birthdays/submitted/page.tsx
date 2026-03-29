@@ -1,7 +1,10 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/useLanguage";
 
 export default function BirthdaySubmittedPage() {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-4 py-10 text-white text-center">
       <div className="mb-5">
@@ -10,15 +13,15 @@ export default function BirthdaySubmittedPage() {
 
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mb-6">
         <div className="text-6xl mb-4">🎉</div>
-        <h1 className="font-fredoka text-2xl text-[#1a56db] mb-2">Booking Received!</h1>
+        <h1 className="font-fredoka text-2xl text-[#1a56db] mb-2">{t.successTitle}</h1>
         <p className="text-gray-600 text-sm mb-5">
-          Your birthday event booking is in. Staff will review your payment and confirm your date shortly.
+          {t.successMsg}
         </p>
 
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-left mb-6">
-          <p className="text-xs font-bold text-yellow-800 mb-1">⏳ Payment Pending</p>
+          <p className="text-xs font-bold text-yellow-800 mb-1">{t.paymentPending}</p>
           <p className="text-xs text-yellow-700 leading-relaxed">
-            If you paid by PromptPay, your slip is under review. If paying by cash, please pay cash now. Staff will confirm via email once approved.
+            {t.slipInstructions}
           </p>
         </div>
 
@@ -27,13 +30,13 @@ export default function BirthdaySubmittedPage() {
             href="/"
             className="bg-[#1a56db] text-white font-bold rounded-2xl py-3 text-center hover:bg-blue-700 transition-colors"
           >
-            Back to Home
+            {t.backHome}
           </Link>
           <Link
             href="/birthdays"
             className="bg-gray-100 text-gray-700 font-semibold rounded-2xl py-3 text-center hover:bg-gray-200 transition-colors"
           >
-            Make Another Booking
+            {t.bookAnother}
           </Link>
         </div>
       </div>

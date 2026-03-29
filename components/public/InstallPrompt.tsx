@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -8,6 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export default function InstallPrompt() {
+  const { t } = useLanguage();
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -59,15 +61,13 @@ export default function InstallPrompt() {
         <div className="flex items-start gap-3">
           <span className="text-2xl">🥷</span>
           <div className="flex-1">
-            <p className="font-bold text-sm">Install NinjaGym App</p>
+            <p className="font-bold text-sm">{t.installTitle}</p>
             {isIOS ? (
               <p className="text-xs text-white/80 mt-0.5">
-                Tap <strong>Share</strong> then <strong>Add to Home Screen</strong> for quick QR check-in access.
+                Tap <strong>Share</strong> then <strong>{t.qrSaveHintBold}</strong> for quick QR check-in access.
               </p>
             ) : (
-              <p className="text-xs text-white/80 mt-0.5">
-                Install for quick QR check-in access. Works offline too.
-              </p>
+              <p className="text-xs text-white/80 mt-0.5">{t.installHint}</p>
             )}
           </div>
           <button onClick={dismiss} className="text-white/60 hover:text-white text-lg leading-none">✕</button>
@@ -77,7 +77,7 @@ export default function InstallPrompt() {
             onClick={install}
             className="mt-3 w-full bg-white text-[#1a56db] font-bold py-2 rounded-xl text-sm hover:bg-blue-50 transition-colors"
           >
-            Install App
+            {t.installBtn}
           </button>
         )}
       </div>
