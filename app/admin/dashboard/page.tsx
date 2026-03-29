@@ -81,13 +81,16 @@ export default async function DashboardPage() {
   }
 
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
-  const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0);
+  // Events merged into the single Pending count for everyone
+  const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0) + (pendingEvents ?? 0);
 
   const stats = [
-    { label: "Check-ins Today",  value: todayCheckIns ?? 0,                 color: "bg-blue-100 text-blue-800",     href: "/scanner" },
-    { label: "Pending",          value: totalPending,                        color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
-    { label: "Pending Events",   value: pendingEvents ?? 0,                  color: "bg-purple-100 text-purple-800", href: "/admin/event-bookings" },
-    { label: "Photos to Review", value: pendingPhotos ?? 0,                  color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
+    // Check-ins stat only useful for admin/owner (staff just use the Scanner button)
+    ...(isAdminOrOwner
+      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/scanner" }]
+      : []),
+    { label: "Pending",          value: totalPending,   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
+    { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
     ...(isAdminOrOwner
       ? [{ label: "Revenue Today", value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" }]
       : []),
@@ -212,18 +215,22 @@ export default async function DashboardPage() {
           className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
           📷 QR Scanner
         </a>
-        <a href="/admin/pos"
-          className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors">
-          🛒 POS Counter
-        </a>
+        {isAdminOrOwner && (
+          <a href="/admin/pos"
+            className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors">
+            🛒 POS Counter
+          </a>
+        )}
         <a href="/join"
           className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors">
           ➕ New Registration
         </a>
-        <a href="/admin/payments"
-          className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors">
-          💳 Review Pending
-        </a>
+        {isAdminOrOwner && (
+          <a href="/admin/payments"
+            className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors">
+            💳 Review Pending
+          </a>
+        )}
       </div>
 
       {/* ── Q&A Widget ── */}
