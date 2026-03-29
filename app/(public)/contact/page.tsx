@@ -6,14 +6,12 @@ import Image from "next/image";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 const SUBJECTS = [
-  "Book a Session",
-  "Membership",
+  "Question or Tip",
   "Birthday / Event",
+  "Business / Partnership",
   "School Group Discount",
   "Adult Programs",
   "Work at NinjaGym",
-  "Report an Issue",
-  "Other",
 ];
 
 export default function ContactPage() {
