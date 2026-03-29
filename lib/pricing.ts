@@ -28,6 +28,17 @@ export const BASE_PRICES: Record<string, number> = {
   price_combo_game_train:  550,
   price_all_day:           1000,
   price_monthly_flex:      6000,
+
+  // Birthday / event booking rates (THB per hour)
+  birthday_rate_morning:   3000,
+  birthday_rate_afternoon: 5000,
+  birthday_rate_evening:   3000,
+  birthday_rate_weekend:   5000,
+
+  // Birthday extra kids surcharge (flat fee per booking)
+  birthday_extra_6_10:     500,
+  birthday_extra_11_15:    1000,
+  birthday_extra_16_20:    1500,
 };
 
 /**
