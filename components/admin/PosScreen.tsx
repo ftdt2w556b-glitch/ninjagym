@@ -12,6 +12,7 @@ type Screen =
   | "select_staff"
   | "pin_entry"
   | "main"
+  | "change_calc"
   | "cash_sale"
   | "quick_member"
   | "quick_shop";
@@ -96,8 +97,26 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
   // Feedback state
   const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; saleId?: number; printerOk?: boolean } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; saleId?: number; printerOk?: boolean; change?: number } | null>(null);
   const [drawerMsg, setDrawerMsg] = useState("");
+
+  // Change calculator state
+  const [cashInput, setCashInput] = useState("");
+
+  // Auto-logout countdown after successful sale
+  const [countdown, setCountdown] = useState<number | null>(null);
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      setScreen("select_staff");
+      setActiveStaff(null);
+      setResult(null);
+      setCountdown(null);
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => (c ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
 
   // ── Staff selection ──────────────────────────────────────────────
   function selectStaff(s: StaffMember) {
@@ -192,7 +211,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
   const total = cart.reduce((s, l) => s + l.unit * l.qty, 0);
 
   // ── Process sale ─────────────────────────────────────────────────
-  async function processSale() {
+  async function processSale(changeAmt: number) {
     if (total <= 0) return;
     setProcessing(true);
     setResult(null);
@@ -231,9 +250,11 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     });
 
     setProcessing(false);
-    setResult({ success: true, saleId, printerOk });
+    setResult({ success: true, saleId, printerOk, change: changeAmt });
     setCart([]);
     setNotes("");
+    setCashInput("");
+    setCountdown(6); // auto-logout after 6 seconds
   }
 
   async function manualOpenDrawer() {
@@ -308,6 +329,125 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
         <button onClick={() => setScreen("select_staff")} className="text-gray-500 text-sm hover:text-gray-400">
           Back
         </button>
+      </div>
+    );
+  }
+
+  // ── Change calculator screen ──────────────────────────────────────
+  if (screen === "change_calc") {
+    const cashGiven = parseInt(cashInput) || 0;
+    const change = cashGiven - total;
+    const isEnough = cashGiven >= total;
+
+    function calcDigit(d: string) {
+      setCashInput((prev) => (prev === "0" ? d : prev + d));
+    }
+    function calcBackspace() {
+      setCashInput((prev) => prev.slice(0, -1));
+    }
+    function calcQuick(amt: number) {
+      setCashInput(String(amt));
+    }
+
+    // Build smart quick-amount suggestions based on total
+    const quickAmounts: number[] = [];
+    // Always include exact
+    quickAmounts.push(total);
+    // Next common bills above total
+    const bills = [20, 50, 100, 200, 500, 1000];
+    for (const b of bills) {
+      const rounded = Math.ceil(total / b) * b;
+      if (rounded > total && !quickAmounts.includes(rounded)) quickAmounts.push(rounded);
+      if (quickAmounts.length >= 5) break;
+    }
+
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4 py-6">
+        {/* Header */}
+        <div className="w-full max-w-sm mb-6">
+          <p className="text-gray-400 text-sm text-center mb-1">{activeStaff?.name}</p>
+          <h1 className="font-fredoka text-3xl text-white text-center">Cash Payment</h1>
+        </div>
+
+        <div className="w-full max-w-sm flex flex-col gap-4">
+          {/* Totals display */}
+          <div className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 text-sm">Amount owed</span>
+              <span className="font-fredoka text-2xl text-white">{total.toLocaleString()} THB</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 text-sm">Cash given</span>
+              <span className={`font-fredoka text-2xl ${cashInput ? "text-[#ffe033]" : "text-gray-500"}`}>
+                {cashInput ? parseInt(cashInput).toLocaleString() + " THB" : "—"}
+              </span>
+            </div>
+            <div className="border-t border-gray-700 pt-3 flex justify-between items-center">
+              <span className="text-gray-300 font-bold text-sm">Change to give</span>
+              <span className={`font-fredoka text-3xl font-bold ${
+                !cashInput ? "text-gray-600"
+                : isEnough ? "text-[#22c55e]"
+                : "text-red-400"
+              }`}>
+                {!cashInput ? "—" : isEnough ? `${change.toLocaleString()} THB` : "Not enough"}
+              </span>
+            </div>
+          </div>
+
+          {/* Quick amount buttons */}
+          <div className="flex gap-2 flex-wrap">
+            {quickAmounts.map((amt) => (
+              <button
+                key={amt}
+                onClick={() => calcQuick(amt)}
+                className={`flex-1 min-w-[80px] py-3 rounded-xl font-bold text-sm transition-colors ${
+                  cashInput === String(amt)
+                    ? "bg-[#ffe033] text-gray-900"
+                    : amt === total
+                    ? "bg-gray-700 text-[#ffe033] border border-[#ffe033]/40"
+                    : "bg-gray-700 text-white hover:bg-gray-600"
+                }`}
+              >
+                {amt === total ? "Exact" : `${amt.toLocaleString()}`}
+              </button>
+            ))}
+          </div>
+
+          {/* Numpad */}
+          <div className="grid grid-cols-3 gap-2">
+            {[1,2,3,4,5,6,7,8,9].map((d) => (
+              <button key={d} onClick={() => calcDigit(String(d))}
+                className="bg-gray-700 text-white font-bold text-2xl py-5 rounded-2xl hover:bg-gray-600 active:bg-gray-500 transition-colors">
+                {d}
+              </button>
+            ))}
+            <button onClick={() => setCashInput("")}
+              className="bg-gray-800 text-gray-400 font-bold text-sm py-5 rounded-2xl hover:bg-gray-700 transition-colors">
+              CLR
+            </button>
+            <button onClick={() => calcDigit("0")}
+              className="bg-gray-700 text-white font-bold text-2xl py-5 rounded-2xl hover:bg-gray-600 active:bg-gray-500 transition-colors">
+              0
+            </button>
+            <button onClick={calcBackspace}
+              className="bg-gray-800 text-gray-300 font-bold text-xl py-5 rounded-2xl hover:bg-gray-700 transition-colors">
+              ⌫
+            </button>
+          </div>
+
+          {/* Confirm / Back */}
+          <button
+            onClick={() => processSale(change)}
+            disabled={!isEnough || processing}
+            className="w-full bg-[#22c55e] text-white font-bold text-xl py-5 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
+          >
+            {processing ? "Processing..." : isEnough ? `Confirm — give ${change.toLocaleString()} THB change` : "Enter cash amount"}
+          </button>
+          <button onClick={() => { setScreen("main"); setCashInput(""); }}
+            className="text-gray-500 text-sm text-center hover:text-gray-400 transition-colors">
+            ← Back to cart
+          </button>
+        </div>
       </div>
     );
   }
@@ -519,20 +659,32 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
             <div className={`rounded-2xl p-5 ${result.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
               {result.success ? (
                 <>
-                  <p className="font-bold text-lg">Sale #{result.saleId} recorded</p>
+                  <p className="font-bold text-lg">✓ Sale #{result.saleId} complete</p>
+                  {result.change !== undefined && result.change > 0 && (
+                    <div className="my-2 bg-white/20 rounded-xl px-4 py-3 flex justify-between items-center">
+                      <span className="font-bold text-sm">Change to give customer</span>
+                      <span className="font-fredoka text-2xl">{result.change.toLocaleString()} THB</span>
+                    </div>
+                  )}
                   {result.printerOk ? (
                     <p className="text-green-100 text-sm">Receipt printed, drawer opened.</p>
                   ) : (
                     <p className="text-yellow-200 text-sm font-semibold">Printer offline — open drawer manually.</p>
                   )}
-                  <button onClick={resetSale} className="mt-3 bg-white/20 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/30 transition-colors">
-                    New Sale
-                  </button>
+                  <div className="mt-3 flex items-center justify-between">
+                    <button onClick={() => { setCountdown(null); setResult(null); }}
+                      className="bg-white/20 text-white font-bold px-4 py-2 rounded-xl hover:bg-white/30 transition-colors text-sm">
+                      New Sale
+                    </button>
+                    <span className="text-green-200 text-xs">
+                      Logging out in {countdown}s…
+                    </span>
+                  </div>
                 </>
               ) : (
                 <>
                   <p className="font-bold">Sale failed — check connection</p>
-                  <button onClick={resetSale} className="mt-2 bg-white/20 text-white font-bold px-4 py-2 rounded-xl">Try Again</button>
+                  <button onClick={() => setResult(null)} className="mt-2 bg-white/20 text-white font-bold px-4 py-2 rounded-xl">Try Again</button>
                 </>
               )}
             </div>
@@ -570,11 +722,10 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
                 </div>
 
                 <button
-                  onClick={processSale}
-                  disabled={processing}
-                  className="w-full bg-[#22c55e] text-white font-bold text-xl py-5 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-50 shadow-lg"
+                  onClick={() => { setCashInput(""); setScreen("change_calc"); }}
+                  className="w-full bg-[#22c55e] text-white font-bold text-xl py-5 rounded-2xl hover:bg-green-500 transition-colors shadow-lg"
                 >
-                  {processing ? "Processing..." : "Collect Cash + Print"}
+                  Collect Cash + Print
                 </button>
                 <button onClick={() => setCart([])}
                   className="w-full text-gray-400 text-sm mt-2 hover:text-gray-600 transition-colors">
