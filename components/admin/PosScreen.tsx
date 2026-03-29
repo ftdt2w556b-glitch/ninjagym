@@ -256,7 +256,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     setCart([]);
     setNotes("");
     setCashInput("");
-    setCountdown(6); // auto-logout after 6 seconds
+    setCountdown(10); // auto-logout after 10 seconds
   }
 
   async function manualOpenDrawer() {
