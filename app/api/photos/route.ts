@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ id: data.id });
+    return NextResponse.json({ id: data.id, file_path: fileName });
   } catch (err: unknown) {
     console.error("POST /api/photos error:", err);
     return NextResponse.json(

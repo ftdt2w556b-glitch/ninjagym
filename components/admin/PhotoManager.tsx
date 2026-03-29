@@ -67,10 +67,10 @@ export default function PhotoManager({ photos: initial, members, bookings, supab
       return;
     }
 
-    // Optimistic add to pending
+    // Optimistic add to pending — use the server-generated file_path so the image URL is correct
     setPhotos(prev => [{
       id: data.id,
-      file_path: file.name,
+      file_path: data.file_path,
       caption: caption || null,
       member_id: memberId ? Number(memberId) : null,
       booking_id: bookingId ? Number(bookingId) : null,
