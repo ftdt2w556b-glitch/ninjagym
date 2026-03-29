@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
+
+const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
@@ -22,7 +24,6 @@ const TERMS = [
   "Please instruct guests to arrive 15–20 minutes after your start time so setup is complete.",
   "Overtime is charged at 500 THB per 10-minute period if you exceed your reserved end time.",
   "No refunds. We reserve your date on payment.",
-  "Pay in advance to confirm your booking.",
   "Regular NinjaGym policies apply for events and birthdays.",
 ];
 
@@ -53,6 +54,8 @@ export default function BirthdaysPage() {
   const [slip, setSlip] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [stripeStep, setStripeStep] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -96,11 +99,46 @@ export default function BirthdaysPage() {
         return;
       }
 
+      if (form.payment_method === "stripe") {
+        setPendingBookingId(data.id);
+        setStripeStep(true);
+        setSubmitting(false);
+        return;
+      }
+
       router.push(`/birthdays/submitted`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setSubmitting(false);
     }
+  }
+
+  if (stripeStep && pendingBookingId) {
+    return (
+      <div className="px-4 py-6">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => setStripeStep(false)} className="text-white/70 hover:text-white text-2xl leading-none">←</button>
+          <h1 className="font-bangers text-3xl text-white tracking-widest drop-shadow">Card Payment</h1>
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+            <span className="text-gray-600 text-sm">Birthday / Event booking</span>
+            <span className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(total)}</span>
+          </div>
+          <Suspense fallback={<p className="text-gray-400 text-sm text-center py-4 animate-pulse">Loading...</p>}>
+            <StripePayment
+              amount={total}
+              description="NinjaGym birthday/event booking"
+              referenceId={pendingBookingId}
+              referenceType="event"
+              onSuccess={() => router.push("/birthdays/submitted")}
+              onError={(msg) => setError(msg)}
+            />
+          </Suspense>
+          {error && <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm mt-3">{error}</div>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -145,7 +183,7 @@ export default function BirthdaysPage() {
         <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🎉 WHAT IS INCLUDED</h2>
         <ul className="flex flex-col gap-2 text-sm text-white/90">
           {[
-            "1 guided 50-minute training session",
+            "1 guided 50-minute NINJA session",
             "Birthday banners and balloons",
             "Staff assistance throughout",
             "Access to training, climbing & ninja zones",
@@ -163,7 +201,7 @@ export default function BirthdaysPage() {
       {/* Gaming zone notice */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 shadow mb-4">
         <p className="text-xs text-yellow-800 leading-relaxed">
-          ⚠️ <strong>Please note:</strong> Booking an event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.
+          ⚠️ <strong>Note:</strong> Booking is for the Main Physical Zones and does not include the Gaming Zones. Although your event main zone is private, we keep the game rooms open for other guests, at all hours.
         </p>
       </div>
 
@@ -312,7 +350,7 @@ export default function BirthdaysPage() {
                 <span className="font-bold text-[#1a56db] text-base">+1,000 THB</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Staff will capture periodic shots of your event. Digital images will be delivered to your member page within a few days. Higher res may be available upon request to your usb drive. Available for birthdays, events and day camps only.
+                We will take periodic shots of your event. Images will be sent to your member page within a week. Higher res may be available upon request to your usb drive.
               </p>
             </div>
           </label>
@@ -338,6 +376,7 @@ export default function BirthdaysPage() {
             {[
               { value: "cash",      label: `💵 ${t.cashOption}` },
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
+              { value: "stripe",    label: "💳 Credit / Debit Card" },
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-200"
@@ -403,9 +442,7 @@ export default function BirthdaysPage() {
               className="mt-1 accent-green-600 w-5 h-5 shrink-0"
             />
             <p className="text-sm text-gray-700 leading-relaxed">
-              I have read and agree to the <strong>Terms</strong> above, including that{" "}
-              <strong>setup, event, and departure must occur within my booked time</strong>, and that{" "}
-              <strong>overtime is charged at 500 THB per 10-minute period</strong>.
+              I have read and agree to the <strong>Terms</strong> above, I will ensure setup and departure occur within my booked time or an overtime fee is charged at <strong>500 THB per 10-minutes</strong>.
             </p>
           </label>
         </div>
