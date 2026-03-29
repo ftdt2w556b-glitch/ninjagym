@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,6 +14,7 @@ export default function InstallPrompt() {
   const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isIOSSafari, setIsIOSSafari] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -24,12 +26,15 @@ export default function InstallPrompt() {
     // iOS detection
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as unknown as Record<string, unknown>).MSStream;
     if (ios) {
+      // Detect if running in Safari specifically (not Chrome/Firefox on iOS)
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       setIsIOS(true);
+      setIsIOSSafari(isSafari);
       setTimeout(() => setShow(true), 3000);
       return;
     }
 
-    // Android/Chrome
+    // Android/Chrome — native install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setPrompt(e as BeforeInstallPromptEvent);
@@ -59,19 +64,41 @@ export default function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">
       <div className="bg-[#1a56db] rounded-2xl shadow-2xl p-4 text-white">
         <div className="flex items-start gap-3">
-          <span className="text-2xl">🥷</span>
+          {/* NinjaGym PWA icon */}
+          <div className="shrink-0 w-12 h-12 rounded-xl overflow-hidden shadow-md">
+            <Image
+              src="/icons/icon-192.png"
+              alt="NinjaGym"
+              width={48}
+              height={48}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
           <div className="flex-1">
             <p className="font-bold text-sm">{t.installTitle}</p>
             {isIOS ? (
-              <p className="text-xs text-white/80 mt-0.5">
-                Tap <strong>Share</strong> then <strong>{t.qrSaveHintBold}</strong> for quick QR check-in access.
-              </p>
+              isIOSSafari ? (
+                /* Safari on iOS — can install via Share sheet */
+                <p className="text-xs text-white/80 mt-0.5">
+                  Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong> to save your card.
+                </p>
+              ) : (
+                /* Chrome / Firefox on iOS — must switch to Safari */
+                <p className="text-xs text-white/80 mt-0.5">
+                  Open this page in <strong>Safari</strong> to add NinjaGym to your home screen.
+                </p>
+              )
             ) : (
+              /* Android / Chrome / Edge — native install prompt */
               <p className="text-xs text-white/80 mt-0.5">{t.installHint}</p>
             )}
           </div>
+
           <button onClick={dismiss} className="text-white/60 hover:text-white text-lg leading-none">✕</button>
         </div>
+
+        {/* Show install button on Android/Chrome only (native prompt) */}
         {!isIOS && (
           <button
             onClick={install}
