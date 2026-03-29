@@ -5,6 +5,7 @@ import Image from "next/image";
 import QRCode from "react-qr-code";
 import ShareButton from "@/components/public/ShareButton";
 import TopUpSection from "@/components/public/TopUpSection";
+import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface CheckIn {
@@ -51,7 +52,7 @@ export default function QrCardClient({
   checkIns,
   photos,
 }: Props) {
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
 
   const isApproved = member.slip_status === "approved";
   const isRejected = member.slip_status === "rejected";
@@ -62,17 +63,20 @@ export default function QrCardClient({
     <div className="px-4 py-6">
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        {fromAdmin ? (
-          <Link href="/admin/members" className="text-white/70 text-sm hover:text-white">
-            ← Members
-          </Link>
-        ) : (
-          <Link href="/" className="text-white/70 text-sm hover:text-white">
-            {t.back}
-          </Link>
-        )}
-        <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          {fromAdmin ? (
+            <Link href="/admin/members" className="text-white/70 text-sm hover:text-white">
+              ← Members
+            </Link>
+          ) : (
+            <Link href="/" className="text-white/70 text-sm hover:text-white">
+              {t.back}
+            </Link>
+          )}
+          <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
+        </div>
+        <LanguageSwitcher current={lang} onChange={setLang} />
       </div>
 
       {/* Welcome hero */}
