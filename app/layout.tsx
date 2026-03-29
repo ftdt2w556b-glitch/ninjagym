@@ -27,8 +27,11 @@ export const metadata: Metadata = {
   description: "Rick Tew's NinjaGym — Koh Samui, Thailand. Kids ninja training, parkour, climbing and more.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
+    icon: [
+      { url: "/favicon.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/favicon.png",
+    apple: "/icons/icon-192.png",
   },
   appleWebApp: {
     capable: true,
