@@ -40,12 +40,30 @@ export default async function AdminPosPage({
   const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
   const currentPassword = pwSetting?.value ?? process.env.POS_PASSWORD ?? "(not set)";
 
-  // Recent POS activity — last 15 cash sales
+  // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
     .from("cash_sales")
-    .select("id, created_at, amount, sale_type, staff_name, notes")
-    .order("created_at", { ascending: false })
-    .limit(15);
+    .select("id, processed_at, amount, sale_type, staff_name, notes")
+    .order("processed_at", { ascending: false })
+    .limit(20);
+
+  // Today's cash by staff
+  const today = new Date().toISOString().split("T")[0];
+  const { data: todaySales } = await admin
+    .from("cash_sales")
+    .select("amount, staff_name")
+    .gte("processed_at", `${today}T00:00:00`)
+    .lte("processed_at", `${today}T23:59:59`);
+
+  const staffMap = new Map<string, { total: number; count: number }>();
+  for (const s of todaySales ?? []) {
+    const key = s.staff_name ?? "⚠️ Unattributed";
+    const prev = staffMap.get(key) ?? { total: 0, count: 0 };
+    staffMap.set(key, { total: prev.total + Number(s.amount), count: prev.count + 1 });
+  }
+  const staffBreakdown = [...staffMap.entries()].sort((a, b) => b[1].total - a[1].total);
+  const todayTotal = (todaySales ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const hasUnattributed = staffMap.has("⚠️ Unattributed");
 
   const posUrl = "https://ninjagym.com/pos";
 
@@ -117,13 +135,54 @@ export default async function AdminPosPage({
         </p>
       </div>
 
-      {/* Recent Activity */}
+      {/* Today's cash by staff */}
+      <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-800">Today&apos;s Cash by Staff</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Cross-check against physical drawer at end of shift</p>
+          </div>
+          {hasUnattributed && (
+            <span className="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">⚠️ Unattributed cash</span>
+          )}
+        </div>
+        {staffBreakdown.length === 0 ? (
+          <p className="px-5 py-5 text-gray-400 text-sm">No cash sales recorded today.</p>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {staffBreakdown.map(([name, { total, count }]) => {
+              const isUnattributed = name === "⚠️ Unattributed";
+              const pct = todayTotal > 0 ? (total / todayTotal) * 100 : 0;
+              return (
+                <div key={name} className="px-5 py-3 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`font-semibold text-sm ${isUnattributed ? "text-red-600" : "text-gray-800"}`}>{name}</span>
+                      <span className="text-xs text-gray-400">{count} payment{count !== 1 ? "s" : ""}</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${isUnattributed ? "bg-red-400" : "bg-green-500"}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <span className={`font-bold text-lg tabular-nums ${isUnattributed ? "text-red-600" : "text-gray-900"}`}>
+                    ฿{total.toLocaleString()}
+                  </span>
+                </div>
+              );
+            })}
+            <div className="px-5 py-3 flex items-center justify-between bg-gray-50">
+              <span className="text-sm font-semibold text-gray-600">Total cash collected today</span>
+              <span className="font-bold text-lg text-gray-900">฿{todayTotal.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Recent POS sales */}
       <div className="bg-white rounded-2xl shadow overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-bold text-gray-800">Recent POS Sales</h2>
-          <a href="/admin/reports/cash" className="text-xs text-[#1a56db] hover:underline">
-            View all in Sales →
-          </a>
+          <a href="/admin/reports/cash" className="text-xs text-[#1a56db] hover:underline">View all in Sales →</a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -138,37 +197,25 @@ export default async function AdminPosPage({
             </thead>
             <tbody className="divide-y divide-gray-50">
               {(recentSales ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
-                    No POS sales yet.
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No POS sales yet.</td></tr>
               )}
               {(recentSales ?? []).map((s) => {
-                const dt = new Date(s.created_at);
+                const dt = new Date(s.processed_at as string);
                 const dateStr = dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
                 const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
                 return (
                   <tr key={s.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">
-                      {dateStr} {timeStr}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-gray-800">
-                      {s.staff_name ?? "—"}
-                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{dateStr} {timeStr}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{s.staff_name ?? "—"}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
                         s.sale_type === "membership" ? "bg-blue-100 text-blue-700"
                         : s.sale_type === "shop" ? "bg-purple-100 text-purple-700"
                         : "bg-gray-100 text-gray-600"
-                      }`}>
-                        {s.sale_type}
-                      </span>
+                      }`}>{s.sale_type}</span>
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                      {s.amount.toLocaleString()} THB
-                    </td>
+                    <td className="px-4 py-3 text-right font-semibold text-gray-900">{Number(s.amount).toLocaleString()} THB</td>
                   </tr>
                 );
               })}

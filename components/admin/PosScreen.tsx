@@ -618,7 +618,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
                 <h3 className="font-bold text-gray-800">Membership</h3>
                 <select value={membershipType} onChange={(e) => setMembershipType(e.target.value)}
                   className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                  {MEMBERSHIP_TYPES.map((m) => {
+                  {MEMBERSHIP_TYPES.filter((m) => m.id !== "birthday_event").map((m) => {
                     let priceLabel: string;
                     if (m.bulk && m.bulkBase) {
                       const base = settingsPrices[m.bulkBase] ?? 0;
