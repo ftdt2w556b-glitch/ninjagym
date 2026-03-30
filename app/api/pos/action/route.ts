@@ -18,20 +18,23 @@ export async function POST(request: NextRequest) {
       }
 
       // Insert cash sale
+      const salePayload: Record<string, unknown> = {
+        sale_type: saleType ?? "walkin",
+        reference_id: referenceId ?? null,
+        amount,
+        items: items ?? null,
+        processed_by: staffType === "profile" ? staffId : null,
+        staff_name: staffName ?? null,
+        drawer_opened: true,
+        receipt_printed: false,
+        notes: notes ?? null,
+      };
+      // notes_1k column added via migration — only include if provided to avoid insert errors if column missing
+      if (typeof notes1k === "number") salePayload.notes_1k = notes1k;
+
       const { data: sale, error: saleError } = await admin
         .from("cash_sales")
-        .insert({
-          sale_type: saleType ?? "walkin",
-          reference_id: referenceId ?? null,
-          amount,
-          items: items ?? null,
-          processed_by: staffType === "profile" ? staffId : null,
-          staff_name: staffName ?? null,
-          drawer_opened: true,
-          receipt_printed: false,
-          notes: notes ?? null,
-          notes_1k: notes1k ?? 0,
-        })
+        .insert(salePayload)
         .select("id")
         .single();
 

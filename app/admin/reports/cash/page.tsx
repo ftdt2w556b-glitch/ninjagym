@@ -54,13 +54,23 @@ export default async function RevenuePage({
 
   const admin = createAdminClient();
 
-  // POS / walk-in cash sales — include staff_name and notes_1k for attribution + drawer split
+  // POS / walk-in cash sales
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name, notes_1k, profiles(name)")
+    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name, profiles(name)")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
+
+  // notes_1k is a newer column — fetch separately so a missing column doesn't break the whole report
+  const { data: tallyRows } = await admin
+    .from("cash_sales")
+    .select("id, notes_1k")
+    .gte("processed_at", from)
+    .lte("processed_at", to);
+  const notes1kMap = new Map<number, number>(
+    (tallyRows ?? []).map((r) => [r.id as number, Number(r.notes_1k ?? 0)])
+  );
 
   // Approved member registrations (by approval date)
   const { data: memberPayments } = await admin
@@ -117,7 +127,7 @@ export default async function RevenuePage({
   const walkinCount    = allTx.filter((t) => t.isWalkin).length;
 
   // Drawer vs box split (POS sales only — registration approvals don't go through POS)
-  const boxTotal    = (cashSales ?? []).reduce((s, r) => s + (Number(r.notes_1k ?? 0) * 1000), 0);
+  const boxTotal    = (cashSales ?? []).reduce((s, r) => s + ((notes1kMap.get(r.id as number) ?? 0) * 1000), 0);
   const drawerTotal = cashTotal - boxTotal;
 
   // ── Staff breakdown (cash only — the accountability view) ───────────
