@@ -10,7 +10,7 @@ export const MEMBERSHIP_TYPES: MembershipType[] = [
   { id: "all_day",          label: "All Day (max 8 hrs)",          perKid: true,  note: "Full day access up to 8 hours. Best value for a full day of ninja training." },
   { id: "birthday_event", label: "Birthday / Event Guest", perKid: false, note: "Registered via a birthday or group event booking." },
   // ── Monthly ────────────────────────────────────────────────
-  { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, note: "Unlimited access for 30 days from approval. Scan in anytime — no booking needed. Great for regulars." },
+  { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, timeBased: true, note: "Unlimited access for 30 days from approval. Scan in anytime — no booking needed. Great for regulars." },
   // ── Bulk session packs (sliding discount) ──────────────────
   { id: "group_bulk",   label: "Group Sessions (bulk)",    perKid: false, bulk: true, bulkBase: "price_session_group",    note: "Buy 2–20 sessions upfront. 1% off per session — buy 10, save 10%. Max 20% off." },
   { id: "daycamp_bulk", label: "Day Camp Sessions (bulk)", perKid: false, bulk: true, bulkBase: "price_day_camp",         note: "Buy 2–20 day camp sessions upfront. 1% off per session purchased. Max 20% off." },

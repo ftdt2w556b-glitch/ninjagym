@@ -187,8 +187,9 @@ export interface MembershipType {
   label: string;
   perKid: boolean;
   note?: string;
-  bulk?: boolean;      // true = bulk session purchase with sliding discount
-  bulkBase?: string;   // key in BASE_PRICES for the per-session base price
+  bulk?: boolean;       // true = bulk session purchase with sliding discount
+  bulkBase?: string;    // key in BASE_PRICES for the per-session base price
+  timeBased?: boolean;  // true = validity period (expires_at), not session count
 }
 
 export interface SaleData {

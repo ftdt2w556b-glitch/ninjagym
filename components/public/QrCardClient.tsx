@@ -28,6 +28,8 @@ interface ActivePackage {
   membership_type: string;
   membership_label: string;
   sessions_remaining: number | null;
+  expires_at: string | null;
+  time_based: boolean;
   created_at: string;
 }
 
@@ -195,7 +197,21 @@ export default function QrCardClient({
                     {pkg.membership_label}
                   </span>
                   <span className="flex items-center gap-2">
-                    {pkg.sessions_remaining !== null && (
+                    {pkg.time_based ? (
+                      pkg.expires_at ? (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          new Date(pkg.expires_at) < new Date(Date.now() + 3 * 86400000)
+                            ? "bg-orange-100 text-orange-600"
+                            : "bg-green-100 text-green-700"
+                        }`}>
+                          Exp {new Date(pkg.expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
+                          Pending activation
+                        </span>
+                      )
+                    ) : pkg.sessions_remaining !== null ? (
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
                         pkg.sessions_remaining <= 2
                           ? "bg-orange-100 text-orange-600"
@@ -203,7 +219,7 @@ export default function QrCardClient({
                       }`}>
                         {pkg.sessions_remaining} left
                       </span>
-                    )}
+                    ) : null}
                     {selectedId === pkg.id && (
                       <span className="text-[#1a56db] text-sm">✓</span>
                     )}
@@ -229,13 +245,28 @@ export default function QrCardClient({
           {t.qrCardNote}
         </p>
 
-        {/* Member ID + sessions row */}
+        {/* Member ID + sessions/expiry row */}
         <div className="px-5 pb-5 flex items-center justify-between">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrMemberId}</p>
             <p className="font-bold text-gray-700 text-lg">#{member.id}</p>
           </div>
-          {selectedPkg?.sessions_remaining !== null && selectedPkg?.sessions_remaining !== undefined && (
+          {selectedPkg?.time_based ? (
+            selectedPkg.expires_at ? (
+              <div className="text-center">
+                <p className="text-xs text-gray-400 uppercase tracking-wide">Expires</p>
+                <p className={`font-bold text-sm ${
+                  new Date(selectedPkg.expires_at) < new Date(Date.now() + 3 * 86400000)
+                    ? "text-orange-500"
+                    : "text-[#1a56db]"
+                }`}>
+                  {new Date(selectedPkg.expires_at).toLocaleDateString("en-US", {
+                    month: "short", day: "numeric", year: "numeric",
+                  })}
+                </p>
+              </div>
+            ) : null
+          ) : selectedPkg?.sessions_remaining !== null && selectedPkg?.sessions_remaining !== undefined ? (
             <div className="text-center">
               <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrSessionsLeft}</p>
               <p className={`font-bold text-2xl ${
@@ -244,7 +275,7 @@ export default function QrCardClient({
                 {selectedPkg.sessions_remaining}
               </p>
             </div>
-          )}
+          ) : null}
           <div className="text-right">
             <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrRegistered}</p>
             <p className="text-xs font-semibold text-gray-600">

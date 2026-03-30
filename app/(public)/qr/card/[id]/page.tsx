@@ -17,7 +17,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id")
+    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at")
     .eq("id", id)
     .single();
 
@@ -31,28 +31,49 @@ export default async function QrCardPage({
   // Fetch all approved top-up registrations for this member
   const { data: topUps } = await admin
     .from("member_registrations")
-    .select("id, membership_type, sessions_remaining, slip_status, created_at")
+    .select("id, membership_type, sessions_remaining, slip_status, created_at, expires_at")
     .eq("parent_member_id", Number(id))
     .eq("slip_status", "approved")
     .order("created_at", { ascending: false });
 
+  const now = new Date();
+
   // Build active packages: parent + approved top-ups with sessions remaining
   const allRelated = [
-    { id: member.id, membership_type: member.membership_type, sessions_remaining: member.sessions_remaining, slip_status: member.slip_status, created_at: member.created_at },
-    ...(topUps ?? []),
+    {
+      id: member.id,
+      membership_type: member.membership_type,
+      sessions_remaining: member.sessions_remaining,
+      slip_status: member.slip_status,
+      created_at: member.created_at,
+      expires_at: member.expires_at ?? null,
+    },
+    ...(topUps ?? []).map((r) => ({ ...r, expires_at: r.expires_at ?? null })),
   ];
 
   const activePackages = allRelated
     .filter((r) => r.slip_status === "approved")
-    .filter((r) => r.sessions_remaining === null || r.sessions_remaining > 0)
-    .map((r) => ({
-      id: r.id,
-      membership_type: r.membership_type,
-      membership_label:
-        MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type)?.label ?? r.membership_type,
-      sessions_remaining: r.sessions_remaining,
-      created_at: r.created_at,
-    }));
+    .filter((r) => {
+      const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
+      if (mt?.timeBased) {
+        // Time-based: active if no expiry set yet, or expiry is in the future
+        return !r.expires_at || new Date(r.expires_at) > now;
+      }
+      // Session-based: active if sessions_remaining is null (unlimited) or > 0
+      return r.sessions_remaining === null || r.sessions_remaining > 0;
+    })
+    .map((r) => {
+      const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
+      return {
+        id: r.id,
+        membership_type: r.membership_type,
+        membership_label: mt?.label ?? r.membership_type,
+        sessions_remaining: r.sessions_remaining,
+        expires_at: r.expires_at,
+        time_based: !!mt?.timeBased,
+        created_at: r.created_at,
+      };
+    });
 
   // Attendance across ALL related registrations (parent + top-ups)
   const allIds = allRelated.map((r) => r.id);

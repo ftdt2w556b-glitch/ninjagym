@@ -84,7 +84,10 @@ export default function TopUpSection({
     body.append("kids_count", String(kidsCount));
     body.append("payment_method", paymentMethod);
     body.append("amount_paid", String(price));
-    body.append("sessions_remaining", isBulk ? String(bulkQty) : "1");
+    // Time-based memberships (monthly_flex) don't use sessions_remaining — expiry is set on approval
+    if (!selectedMt?.timeBased) {
+      body.append("sessions_remaining", isBulk ? String(bulkQty) : "1");
+    }
     body.append("parent_member_id", String(memberId));
     body.append("notes", `Top-up from member card #${memberId}`);
 
