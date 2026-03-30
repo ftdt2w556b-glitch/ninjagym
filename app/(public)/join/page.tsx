@@ -289,7 +289,7 @@ export default function JoinPage() {
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.membershipTypeLabel} *</label>
           <div className="flex flex-col gap-1 max-h-72 overflow-y-auto pr-0.5">
-            {MEMBERSHIP_TYPES.map((mt: MembershipType) => {
+            {MEMBERSHIP_TYPES.filter((mt: MembershipType) => mt.id !== "birthday_event").map((mt: MembershipType) => {
               const isBulk = !!mt.bulk;
               const p = isBulk
                 ? calcBulkPrice(BASE_PRICES[mt.bulkBase!] ?? 0, sessionQty)
