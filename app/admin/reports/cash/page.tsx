@@ -62,17 +62,6 @@ export default async function RevenuePage({
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
 
-  // notes_1k is a newer column — fetch separately so a missing column doesn't break the whole report
-  const { data: tallyRows } = await admin
-    .from("cash_sales")
-    .select("id, notes_1k")
-    .gte("processed_at", from)
-    .lte("processed_at", to);
-  // notes_1k map retained for potential future use (drawer/box split moved to POS page)
-  void new Map<number, number>(
-    (tallyRows ?? []).map((r) => [r.id as number, Number(r.notes_1k ?? 0)])
-  );
-
   // Approved member registrations (by approval date)
   const { data: memberPayments } = await admin
     .from("member_registrations")

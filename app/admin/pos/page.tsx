@@ -22,10 +22,32 @@ async function savePosPassword(formData: FormData) {
   redirect("/admin/pos?saved=1");
 }
 
+async function saveDrawerFloat(formData: FormData) {
+  "use server";
+  const raw = (formData.get("float") as string)?.trim();
+  const val = parseInt(raw, 10);
+  if (isNaN(val) || val < 0) redirect("/admin/pos?floaterror=1");
+
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!profile || !["admin", "owner"].includes(profile.role)) redirect("/admin/pos");
+
+  await admin.from("settings").upsert(
+    { key: "drawer_float", value: String(val), label: "Cash Drawer Opening Float" },
+    { onConflict: "key" }
+  );
+  redirect("/admin/pos?floatsaved=1");
+}
+
 export default async function AdminPosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; floatsaved?: string; floaterror?: string }>;
 }) {
   const params = await searchParams;
   const admin = createAdminClient();
@@ -39,6 +61,10 @@ export default async function AdminPosPage({
   // Current POS password (settings table → env var fallback)
   const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
   const currentPassword = pwSetting?.value ?? process.env.POS_PASSWORD ?? "(not set)";
+
+  // Opening float
+  const { data: floatSetting } = await admin.from("settings").select("value").eq("key", "drawer_float").maybeSingle();
+  const currentFloat = floatSetting?.value ? parseInt(floatSetting.value, 10) : 500;
 
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
@@ -132,6 +158,55 @@ export default async function AdminPosPage({
         </form>
         <p className="text-xs text-gray-400 mt-2">
           After changing, the tablet will need to unlock again with the new password.
+        </p>
+      </div>
+
+      {/* Opening Float */}
+      <div className="bg-white rounded-2xl shadow p-5">
+        <h2 className="font-bold text-gray-800 mb-1">Cash Drawer Opening Float</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          The starting cash in the drawer at the beginning of each shift. Used to calculate end-of-shift expected balance.
+        </p>
+
+        {params.floatsaved === "1" && (
+          <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4 font-semibold">
+            ✓ Opening float updated.
+          </div>
+        )}
+        {params.floaterror === "1" && (
+          <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-4">
+            Please enter a valid amount (0 or more).
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono text-gray-800">
+            ฿{currentFloat.toLocaleString()}
+          </div>
+          <span className="text-sm text-gray-400">current float</span>
+        </div>
+
+        <form action={saveDrawerFloat} className="flex gap-3">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">฿</span>
+            <input
+              type="number"
+              name="float"
+              min="0"
+              step="100"
+              placeholder="e.g. 500"
+              className="pl-7 border border-gray-200 rounded-xl px-3 py-2.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-gray-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap"
+          >
+            Update Float
+          </button>
+        </form>
+        <p className="text-xs text-gray-400 mt-2">
+          This is used by the POS tally banner to show expected end-of-shift drawer balance.
         </p>
       </div>
 
