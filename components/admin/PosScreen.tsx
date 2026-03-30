@@ -678,7 +678,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
               <span className="text-gray-600">|</span>
               {floatEditing ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-xs">Float</span>
+                  <span className="text-gray-400 text-xs">Start</span>
                   <span className="text-gray-400 text-xs">฿</span>
                   <input
                     type="number"
@@ -698,17 +698,19 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                 </div>
               ) : (
                 <>
-                  <button
-                    onClick={() => { setFloatInput(String(drawerFloat)); setFloatEditing(true); }}
-                    className="flex items-center gap-1 group"
-                    title="Tap to update float"
-                  >
-                    <span className="text-gray-400">Float </span>
+                  <span className="flex items-center gap-1">
+                    <span className="text-gray-400">Start </span>
                     <span className={`font-bold ${drawerFloat > 0 ? "text-green-400" : "text-yellow-400"}`}>
                       {drawerFloat > 0 ? `฿${drawerFloat.toLocaleString()}` : "⚠️ Not set"}
                     </span>
-                    <span className="text-gray-600 text-xs ml-0.5 group-hover:text-gray-400">✎</span>
-                  </button>
+                    {["admin", "owner"].includes(activeStaff?.role ?? "") && (
+                      <button
+                        onClick={() => { setFloatInput(String(drawerFloat)); setFloatEditing(true); }}
+                        className="text-gray-600 text-xs ml-0.5 hover:text-gray-400"
+                        title="Update starting amount"
+                      >✎</button>
+                    )}
+                  </span>
                   <span className="text-gray-600">|</span>
                   <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-white"}`}>
                     ฿{drawerExpected.toLocaleString()} expected in drawer
