@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
@@ -116,6 +116,35 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
   useEffect(() => {
     if (screen === "main") fetchTally();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
+  // ── Inactivity auto-logout (2 min idle on main screen) ───────────
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const IDLE_MS = 2 * 60 * 1000;
+
+  useEffect(() => {
+    if (screen !== "main") return;
+
+    function resetIdle() {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      idleTimer.current = setTimeout(() => {
+        setScreen("select_staff");
+        setActiveStaff(null);
+        setResult(null);
+        setCart([]);
+        setNotes("");
+      }, IDLE_MS);
+    }
+
+    resetIdle();
+    window.addEventListener("pointerdown", resetIdle);
+    window.addEventListener("keydown", resetIdle);
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      window.removeEventListener("pointerdown", resetIdle);
+      window.removeEventListener("keydown", resetIdle);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen]);
 
@@ -361,6 +390,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     const cashGiven = parseInt(cashInput) || 0;
     const change = cashGiven - total;
     const isEnough = cashGiven >= total;
+    const maxNotes1k = Math.floor(cashGiven / 1000);
 
     function calcDigit(d: string) {
       setCashInput((prev) => (prev === "0" ? d : prev + d));
@@ -458,14 +488,15 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
             </button>
           </div>
 
-          {/* ฿1,000 note tracker — goes to separate box, not drawer */}
-          {isEnough && (
+          {/* ฿1,000 note tracker — only shown if customer paid with 1K notes */}
+          {isEnough && maxNotes1k > 0 && (
             <div className="bg-gray-800 rounded-2xl p-4">
-              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-2">
-                ฿1,000 notes received → put in box
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                ฿1,000 notes received → put in separate box
               </p>
+              <p className="text-gray-500 text-xs mb-3">How many ฿1,000 notes did customer give?</p>
               <div className="flex gap-2">
-                {[0, 1, 2, 3, 4, 5].map((n) => (
+                {Array.from({ length: maxNotes1k + 1 }, (_, n) => (
                   <button
                     key={n}
                     onClick={() => setNotes1k(n)}
@@ -480,15 +511,11 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
                 ))}
               </div>
               {notes1k > 0 && (
-                <div className="mt-3 flex justify-between text-sm">
-                  <span className="text-gray-400">In box (1K notes)</span>
+                <div className="mt-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2 flex justify-between text-sm">
+                  <span className="text-yellow-400">→ Put in box</span>
                   <span className="text-[#ffe033] font-bold">฿{(notes1k * 1000).toLocaleString()}</span>
                 </div>
               )}
-              <div className="mt-1 flex justify-between text-sm">
-                <span className="text-gray-400">In drawer (change + sub-1K)</span>
-                <span className="text-green-400 font-bold">฿{(total - notes1k * 1000).toLocaleString()}</span>
-              </div>
             </div>
           )}
 
@@ -534,30 +561,37 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
       </div>
 
       {/* Today's cash tally banner */}
-      {tally !== null && (
-        <div className="bg-gray-800 border-b border-gray-700 px-4 py-2.5 flex items-center justify-center gap-6 flex-wrap text-sm">
-          <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
-          <span className="text-gray-500">|</span>
-          <span>
-            <span className="text-gray-400">Drawer </span>
-            <span className="text-green-400 font-bold">฿{tally.drawerTotal.toLocaleString()}</span>
-          </span>
-          {tally.boxTotal > 0 && (
-            <>
-              <span className="text-gray-500">|</span>
-              <span>
-                <span className="text-gray-400">Box </span>
-                <span className="text-[#ffe033] font-bold">฿{tally.boxTotal.toLocaleString()}</span>
-              </span>
-            </>
-          )}
-          <span className="text-gray-500">|</span>
-          <span>
-            <span className="text-gray-400">Total </span>
-            <span className="text-white font-bold">฿{tally.total.toLocaleString()}</span>
-          </span>
-        </div>
-      )}
+      {tally !== null && (() => {
+        const drawerFloat = settingsPrices["drawer_float"] ?? 0;
+        const drawerExpected = drawerFloat + tally.drawerTotal;
+        return (
+          <div className="bg-gray-800 border-b border-gray-700 px-4 py-2.5 flex items-center justify-center gap-5 flex-wrap text-sm">
+            <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
+            <span className="text-gray-600">|</span>
+            <span>
+              <span className="text-gray-400">Drawer </span>
+              <span className="text-green-400 font-bold">฿{drawerExpected.toLocaleString()}</span>
+              {drawerFloat > 0 && (
+                <span className="text-gray-500 text-xs ml-1">(+฿{drawerFloat.toLocaleString()} float)</span>
+              )}
+            </span>
+            {tally.boxTotal > 0 && (
+              <>
+                <span className="text-gray-600">|</span>
+                <span>
+                  <span className="text-gray-400">Box </span>
+                  <span className="text-[#ffe033] font-bold">฿{tally.boxTotal.toLocaleString()}</span>
+                </span>
+              </>
+            )}
+            <span className="text-gray-600">|</span>
+            <span>
+              <span className="text-gray-400">Total </span>
+              <span className="text-white font-bold">฿{(drawerFloat + tally.total).toLocaleString()}</span>
+            </span>
+          </div>
+        );
+      })()}
 
       <div className="max-w-[900px] mx-auto px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 

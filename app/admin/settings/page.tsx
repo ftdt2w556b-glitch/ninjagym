@@ -34,11 +34,16 @@ const SHOP_ROWS = [
   { key: "price_shop_shake_bake",   label: "Shake and Bake" },
 ];
 
+const CASH_DRAWER_ROWS = [
+  { key: "drawer_float", label: "Opening Float (change put in drawer at start of each day)" },
+];
+
 const STATIC_BASE: Record<string, number> = {
   ...BASE_PRICES,
   price_shop_tshirt_kids:  300,
   price_shop_tshirt_adult: 300,
   price_shop_shake_bake:   200,
+  drawer_float:            500,
 };
 
 // ── Sub-components ────────────────────────────────────────────
@@ -234,6 +239,21 @@ export default function AdminSettingsPage() {
               key={key}
               label={label}
               value={prices[key] ?? 0}
+              onChange={(v) => handlePrice(key, v)}
+            />
+          ))}
+        </SectionCard>
+
+        {/* Cash Drawer */}
+        <SectionCard title="Cash Drawer">
+          <div className="px-5 py-2 text-xs text-gray-400 border-b border-gray-50">
+            The float is the starting change placed in the drawer each morning. It is included in the POS tally so staff can see the correct expected total at end of shift.
+          </div>
+          {CASH_DRAWER_ROWS.map(({ key, label }) => (
+            <PriceRow
+              key={key}
+              label={label}
+              value={prices[key] ?? 500}
               onChange={(v) => handlePrice(key, v)}
             />
           ))}
