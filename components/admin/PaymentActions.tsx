@@ -37,6 +37,7 @@ export default function PaymentActions({
   const [justApproved, setJustApproved] = useState(false);
   const [checkInDone, setCheckInDone]   = useState(false);
   const [checkInBusy, setCheckInBusy]   = useState(false);
+  const [confirmCashApprove, setConfirmCashApprove] = useState(false);
 
   async function doAction(action: string, nextStatus: SlipStatus) {
     setBusy(action);
@@ -107,10 +108,16 @@ export default function PaymentActions({
       {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        {isPending && (
+        {isPending && !confirmCashApprove && (
           <>
             <button
-              onClick={() => doAction("approve", "approved")}
+              onClick={() => {
+                if (status === "cash_pending") {
+                  setConfirmCashApprove(true);
+                } else {
+                  doAction("approve", "approved");
+                }
+              }}
               disabled={!!busy}
               className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 disabled:opacity-50 transition-colors"
             >
@@ -124,6 +131,30 @@ export default function PaymentActions({
               ✕ Reject
             </button>
           </>
+        )}
+
+        {confirmCashApprove && (
+          <div className="w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+            <p className="text-xs font-bold text-orange-800 mb-1">⚠️ Cash payment — not collected at POS</p>
+            <p className="text-xs text-orange-700 mb-3">
+              Approving here will not record a cash sale in the drawer. Only approve if you have confirmed payment by other means.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setConfirmCashApprove(false); doAction("approve", "approved"); }}
+                disabled={!!busy}
+                className="bg-orange-500 text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              >
+                Approve anyway
+              </button>
+              <button
+                onClick={() => setConfirmCashApprove(false)}
+                className="bg-white text-gray-600 font-semibold text-xs px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
 
         {(isApproved || isRejected) && (
