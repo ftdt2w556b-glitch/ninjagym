@@ -23,6 +23,7 @@ export default async function PosKioskPage() {
     .from("profiles")
     .select("id, name, email, role, pin")
     .in("role", ["admin", "staff", "owner"])
+    .eq("show_on_pos", true)
     .order("name");
 
   const { data: posStaff } = await admin

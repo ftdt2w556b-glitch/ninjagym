@@ -4,7 +4,12 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
 
-export default async function StaffPage() {
+export default async function StaffPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; created?: string }>;
+}) {
+  const params = await searchParams;
   const admin = createAdminClient();
   const supabase = await createSupabaseServerClient();
 
@@ -12,7 +17,7 @@ export default async function StaffPage() {
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id, name, email, role, pin, created_at")
+    .select("id, name, email, role, pin, show_on_pos, created_at")
     .order("created_at", { ascending: true });
 
   // Fetch pos_staff separately — fails gracefully if table doesn't exist yet
@@ -23,10 +28,12 @@ export default async function StaffPage() {
 
   async function createStaff(formData: FormData) {
     "use server";
-    const email = formData.get("email") as string;
+    const email = (formData.get("email") as string)?.trim();
     const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
+    const name = (formData.get("name") as string)?.trim();
     const role = formData.get("role") as string;
+
+    if (!email || !password || !name) redirect("/admin/staff?error=missing");
 
     const adminClient = createAdminClient();
     const { data: user, error } = await adminClient.auth.admin.createUser({
@@ -34,12 +41,24 @@ export default async function StaffPage() {
       password,
       email_confirm: true,
     });
-    if (!error && user.user) {
+    if (error) {
+      redirect(`/admin/staff?error=${encodeURIComponent(error.message)}`);
+    }
+    if (user.user) {
       await adminClient
         .from("profiles")
         .update({ name, role })
         .eq("id", user.user.id);
     }
+    redirect("/admin/staff?created=1");
+  }
+
+  async function togglePosRoster(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    const current = formData.get("current") === "true";
+    const adminClient = createAdminClient();
+    await adminClient.from("profiles").update({ show_on_pos: !current }).eq("id", id);
     redirect("/admin/staff");
   }
 
@@ -129,6 +148,17 @@ export default async function StaffPage() {
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-6">User Accounts</h1>
 
+      {params.created === "1" && (
+        <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 mb-6 font-semibold">
+          ✓ Account created successfully.
+        </div>
+      )}
+      {params.error && (
+        <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-3 mb-6">
+          {params.error === "missing" ? "Please fill in all fields." : `Error: ${params.error}`}
+        </div>
+      )}
+
       {/* Existing staff */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-8">
         <div className="overflow-x-auto">
@@ -140,6 +170,7 @@ export default async function StaffPage() {
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Role</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Change Role</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">POS PIN</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600">On POS</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600"></th>
               </tr>
             </thead>
@@ -189,6 +220,22 @@ export default async function StaffPage() {
                         <button type="submit"
                           className="text-xs bg-gray-600 text-white px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors">
                           {p.pin ? "Change" : "Set"}
+                        </button>
+                      </form>
+                    </td>
+                    <td className="px-4 py-3">
+                      <form action={togglePosRoster} className="flex items-center">
+                        <input type="hidden" name="id" value={p.id} />
+                        <input type="hidden" name="current" value={String(p.show_on_pos ?? false)} />
+                        <button
+                          type="submit"
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                            p.show_on_pos ? "bg-green-500" : "bg-gray-200"
+                          }`}
+                        >
+                          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                            p.show_on_pos ? "translate-x-4" : "translate-x-1"
+                          }`} />
                         </button>
                       </form>
                     </td>
