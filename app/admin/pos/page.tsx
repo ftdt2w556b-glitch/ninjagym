@@ -69,7 +69,7 @@ export default async function AdminPosPage({
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
     .from("cash_sales")
-    .select("id, processed_at, amount, sale_type, staff_name, notes")
+    .select("id, processed_at, amount, sale_type, staff_name, notes, items")
     .order("processed_at", { ascending: false })
     .limit(20);
 
@@ -80,6 +80,17 @@ export default async function AdminPosPage({
     .select("amount, staff_name")
     .gte("processed_at", `${today}T00:00:00`)
     .lte("processed_at", `${today}T23:59:59`);
+
+  // Today's box total (notes_1k fetched separately — column may not exist yet)
+  let todayBoxTotal = 0;
+  const { data: todayNotes1kRows } = await admin
+    .from("cash_sales")
+    .select("notes_1k")
+    .gte("processed_at", `${today}T00:00:00`)
+    .lte("processed_at", `${today}T23:59:59`);
+  if (todayNotes1kRows) {
+    todayBoxTotal = todayNotes1kRows.reduce((s, r) => s + (Number((r as Record<string, unknown>).notes_1k ?? 0) * 1000), 0);
+  }
 
   const staffMap = new Map<string, { total: number; count: number }>();
   for (const s of todaySales ?? []) {
@@ -208,6 +219,36 @@ export default async function AdminPosPage({
         <p className="text-xs text-gray-400 mt-2">
           This is used by the POS tally banner to show expected end-of-shift drawer balance.
         </p>
+
+        {/* Today's drawer tally */}
+        {todayTotal > 0 && (
+          <div className="mt-5 pt-5 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Today&apos;s Drawer Check</p>
+            <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-gray-400 text-xs mb-0.5">Opening Float</p>
+                <p className="font-bold text-gray-800">฿{currentFloat.toLocaleString()}</p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-3">
+                <p className="text-gray-400 text-xs mb-0.5">Collected Today</p>
+                <p className="font-bold text-green-700">฿{todayTotal.toLocaleString()}</p>
+              </div>
+              {todayBoxTotal > 0 && (
+                <div className="bg-yellow-50 rounded-xl p-3">
+                  <p className="text-gray-400 text-xs mb-0.5">In Box (1K notes)</p>
+                  <p className="font-bold text-yellow-700">฿{todayBoxTotal.toLocaleString()}</p>
+                </div>
+              )}
+              <div className="bg-blue-50 rounded-xl p-3">
+                <p className="text-gray-400 text-xs mb-0.5">Expected in Drawer</p>
+                <p className="font-bold text-blue-700">฿{(currentFloat + todayTotal - todayBoxTotal).toLocaleString()}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              Float ฿{currentFloat.toLocaleString()} + Collected ฿{todayTotal.toLocaleString()}{todayBoxTotal > 0 ? ` − Box ฿${todayBoxTotal.toLocaleString()}` : ""} = <strong>฿{(currentFloat + todayTotal - todayBoxTotal).toLocaleString()}</strong> expected in drawer
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Today's cash by staff */}
@@ -284,11 +325,28 @@ export default async function AdminPosPage({
                     <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{dateStr} {timeStr}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{s.staff_name ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${
-                        s.sale_type === "membership" ? "bg-blue-100 text-blue-700"
-                        : s.sale_type === "shop" ? "bg-purple-100 text-purple-700"
-                        : "bg-gray-100 text-gray-600"
-                      }`}>{s.sale_type}</span>
+                      {(() => {
+                        // Derive types from items array if available, else fall back to sale_type
+                        const itemsArr = Array.isArray(s.items) ? s.items as { type?: string; category?: string }[] : null;
+                        const types = itemsArr
+                          ? [...new Set(itemsArr.map((i) => i.type ?? i.category ?? s.sale_type).filter(Boolean))]
+                          : [s.sale_type].filter(Boolean);
+                        const colorMap: Record<string, string> = {
+                          membership: "bg-blue-100 text-blue-700",
+                          shop: "bg-purple-100 text-purple-700",
+                          event: "bg-orange-100 text-orange-700",
+                          walkin: "bg-gray-100 text-gray-600",
+                        };
+                        return (
+                          <div className="flex flex-wrap gap-1">
+                            {types.map((t) => (
+                              <span key={t} className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${colorMap[t as string] ?? "bg-gray-100 text-gray-600"}`}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">{Number(s.amount).toLocaleString()} THB</td>
                   </tr>

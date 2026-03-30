@@ -54,10 +54,10 @@ export default async function RevenuePage({
 
   const admin = createAdminClient();
 
-  // POS / walk-in cash sales
+  // POS / walk-in cash sales (no payment_method column — all POS sales are cash)
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name")
+    .select("id, amount, processed_at, sale_type, notes, staff_name")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
@@ -83,7 +83,7 @@ export default async function RevenuePage({
     ...(cashSales ?? []).map((s) => ({
       time: s.processed_at as string,
       description: (s.notes as string | null) ?? s.sale_type ?? "POS Sale",
-      method: (s.payment_method as string | null) ?? "cash",
+      method: "cash", // cash_sales are always cash
       amount: Number(s.amount),
     })),
     ...(memberPayments ?? []).map((m) => ({
