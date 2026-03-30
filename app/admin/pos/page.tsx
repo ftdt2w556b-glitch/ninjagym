@@ -172,16 +172,16 @@ export default async function AdminPosPage({
         </p>
       </div>
 
-      {/* Opening Float */}
+      {/* Starting Amount */}
       <div className="bg-white rounded-2xl shadow p-5">
-        <h2 className="font-bold text-gray-800 mb-1">Cash Drawer Opening Float</h2>
+        <h2 className="font-bold text-gray-800 mb-1">Drawer Starting Amount</h2>
         <p className="text-sm text-gray-500 mb-4">
-          The starting cash in the drawer at the beginning of each shift. Used to calculate end-of-shift expected balance.
+          The cash counted in the drawer at the start of the day. Used to calculate the expected balance on the POS.
         </p>
 
         {params.floatsaved === "1" && (
           <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4 font-semibold">
-            ✓ Opening float updated.
+            ✓ Starting amount updated.
           </div>
         )}
         {params.floaterror === "1" && (
@@ -194,7 +194,7 @@ export default async function AdminPosPage({
           <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono text-gray-800">
             ฿{currentFloat.toLocaleString()}
           </div>
-          <span className="text-sm text-gray-400">current float</span>
+          <span className="text-sm text-gray-400">current starting amount</span>
         </div>
 
         <form action={saveDrawerFloat} className="flex gap-3">
@@ -205,7 +205,7 @@ export default async function AdminPosPage({
               name="float"
               min="0"
               step="100"
-              placeholder="e.g. 500"
+              placeholder="e.g. 5000"
               className="pl-7 border border-gray-200 rounded-xl px-3 py-2.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             />
           </div>
@@ -213,11 +213,11 @@ export default async function AdminPosPage({
             type="submit"
             className="bg-gray-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap"
           >
-            Update Float
+            Update Start
           </button>
         </form>
         <p className="text-xs text-gray-400 mt-2">
-          This is used by the POS tally banner to show expected end-of-shift drawer balance.
+          Also editable directly on the POS screen (admin/manager only).
         </p>
 
         {/* Today's drawer tally */}
