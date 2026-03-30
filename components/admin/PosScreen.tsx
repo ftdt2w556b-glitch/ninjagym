@@ -7,7 +7,7 @@ import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 type InventoryRow = { item_id: string; variant: string; stock_qty: number };
-type PendingReg = { id: number; name: string; membership_type: string; amount_paid: number; notes: string | null };
+type PendingReg = { id: number; name: string; membership_type: string; amount_paid: number; kids_names?: string | null; notes: string | null };
 
 type Screen =
   | "select_staff"
@@ -170,20 +170,33 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     return () => clearTimeout(t);
   }, [countdown]);
 
+  // ── Poll for new pending cash registrations every 30s ────────────
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/pos/pending");
+        if (res.ok) {
+          const fresh: PendingReg[] = await res.json();
+          setPendingList(fresh);
+        }
+      } catch { /* non-fatal */ }
+    };
+    poll(); // immediate on mount
+    const interval = setInterval(poll, 30_000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Staff selection ──────────────────────────────────────────────
   function selectStaff(s: StaffMember) {
     setActiveStaff(s);
     setPinError("");
     setPin("");
-    if (s.staffType === "pos" && !s.hasPin) {
-      setPinError("No PIN set — contact admin");
+    if (!s.hasPin) {
+      setPinError("No PIN set — ask admin to set a PIN for this account");
       return;
     }
-    if (s.hasPin) {
-      setScreen("pin_entry");
-    } else {
-      setScreen("main");
-    }
+    setScreen("pin_entry");
   }
 
   function handlePinDigit(d: string) {
@@ -588,6 +601,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                     <div>
                       <p className="font-bold text-white text-lg">{reg.name}</p>
                       <p className="text-gray-400 text-sm mt-0.5">{memberLabel}</p>
+                      {reg.kids_names && <p className="text-gray-400 text-xs mt-0.5">Kids: {reg.kids_names}</p>}
                       {reg.notes && <p className="text-gray-500 text-xs mt-1 italic">{reg.notes}</p>}
                     </div>
                     <div className="text-right shrink-0">

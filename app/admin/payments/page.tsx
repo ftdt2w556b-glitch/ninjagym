@@ -16,7 +16,7 @@ export default async function PaymentsPage({
   // ── Members query (exclude birthday_event — managed via Events tab) ──
   let membersQuery = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
     .neq("membership_type", "birthday_event")
     .order("created_at", { ascending: false })
     .limit(100);
@@ -129,6 +129,7 @@ export default async function PaymentsPage({
                     <p className="text-sm text-gray-500 mt-0.5">
                       {typeLabel} · {m.kids_count} kid{m.kids_count !== 1 ? "s" : ""}
                     </p>
+                    {m.kids_names && <p className="text-xs text-gray-500">Kids: {m.kids_names}</p>}
                     {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                     {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                   </div>
