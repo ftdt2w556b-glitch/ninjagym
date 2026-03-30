@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import QRCode from "react-qr-code";
@@ -12,6 +13,7 @@ interface CheckIn {
   id: number;
   check_in_at: string;
   notes: string | null;
+  member_id?: number;
 }
 
 interface Photo {
@@ -21,11 +23,20 @@ interface Photo {
   tags: string[] | null;
 }
 
+interface ActivePackage {
+  id: number;
+  membership_type: string;
+  membership_label: string;
+  sessions_remaining: number | null;
+  created_at: string;
+}
+
 interface Props {
   member: {
     id: number;
     name: string;
     phone: string | null;
+    email?: string | null;
     membership_type: string;
     sessions_remaining: number | null;
     slip_status: string;
@@ -34,23 +45,23 @@ interface Props {
     created_at: string;
   };
   membershipLabel: string;
-  qrValue: string;
   siteUrl: string;
   supabaseUrl: string;
   fromAdmin: boolean;
   checkIns: CheckIn[];
   photos: Photo[];
+  activePackages: ActivePackage[];
 }
 
 export default function QrCardClient({
   member,
   membershipLabel,
-  qrValue,
   siteUrl,
   supabaseUrl,
   fromAdmin,
   checkIns,
   photos,
+  activePackages,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
 
@@ -58,6 +69,16 @@ export default function QrCardClient({
   const isRejected = member.slip_status === "rejected";
   const isPending  = !isApproved && !isRejected;
   const firstName  = member.name.split(" ")[0];
+
+  // Multi-package selection — default to first active package, or parent
+  const defaultId = activePackages.length > 0 ? activePackages[0].id : member.id;
+  const [selectedId, setSelectedId] = useState<number>(defaultId);
+
+  const selectedPkg = activePackages.find((p) => p.id === selectedId) ?? activePackages[0];
+  const hasMultiple = activePackages.length > 1;
+
+  // QR code points to the selected package's registration
+  const qrValue = `${siteUrl}/scanner?member=${selectedId}`;
 
   return (
     <div className="px-4 py-6">
@@ -142,11 +163,59 @@ export default function QrCardClient({
         {/* Member info */}
         <div className="px-5 pt-5 pb-2">
           <h2 className="font-fredoka text-2xl text-gray-900 leading-tight">{member.name}</h2>
-          <p className="text-sm text-[#1a56db] font-semibold mt-0.5">{membershipLabel}</p>
+          {/* Show selected package label, or default membership label */}
+          <p className="text-sm text-[#1a56db] font-semibold mt-0.5">
+            {selectedPkg ? selectedPkg.membership_label : membershipLabel}
+          </p>
           {member.kids_names && (
             <p className="text-xs text-gray-400 mt-1">{t.qrKids}: {member.kids_names}</p>
           )}
         </div>
+
+        {/* Multi-package selector */}
+        {hasMultiple && (
+          <div className="px-5 pb-3">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+              Today&apos;s Program
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {activePackages.map((pkg) => (
+                <button
+                  key={pkg.id}
+                  onClick={() => setSelectedId(pkg.id)}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors ${
+                    selectedId === pkg.id
+                      ? "border-[#1a56db] bg-blue-50"
+                      : "border-gray-100 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className={`text-sm font-medium ${
+                    selectedId === pkg.id ? "text-[#1a56db]" : "text-gray-700"
+                  }`}>
+                    {pkg.membership_label}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {pkg.sessions_remaining !== null && (
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        pkg.sessions_remaining <= 2
+                          ? "bg-orange-100 text-orange-600"
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
+                        {pkg.sessions_remaining} left
+                      </span>
+                    )}
+                    {selectedId === pkg.id && (
+                      <span className="text-[#1a56db] text-sm">✓</span>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-2 text-center">
+              Select the program you&apos;re using today — the QR code will update
+            </p>
+          </div>
+        )}
 
         {/* QR Code */}
         <div className="flex justify-center py-6 px-5">
@@ -166,10 +235,14 @@ export default function QrCardClient({
             <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrMemberId}</p>
             <p className="font-bold text-gray-700 text-lg">#{member.id}</p>
           </div>
-          {member.sessions_remaining !== null && (
-            <div className="text-right">
+          {selectedPkg?.sessions_remaining !== null && selectedPkg?.sessions_remaining !== undefined && (
+            <div className="text-center">
               <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrSessionsLeft}</p>
-              <p className="font-bold text-[#1a56db] text-2xl">{member.sessions_remaining}</p>
+              <p className={`font-bold text-2xl ${
+                selectedPkg.sessions_remaining <= 2 ? "text-orange-500" : "text-[#1a56db]"
+              }`}>
+                {selectedPkg.sessions_remaining}
+              </p>
             </div>
           )}
           <div className="text-right">
@@ -208,9 +281,11 @@ export default function QrCardClient({
           memberId={member.id}
           memberName={member.name}
           memberPhone={member.phone ?? null}
+          memberEmail={member.email ?? null}
           currentType={member.membership_type}
           defaultKids={member.kids_count ?? 1}
           recentCheckIns={checkIns}
+          activePackages={activePackages}
         />
       )}
 

@@ -15,24 +15,37 @@ interface CheckIn {
   id: number;
   check_in_at: string;
   notes: string | null;
+  member_id?: number;
+}
+
+interface ActivePackage {
+  id: number;
+  membership_type: string;
+  membership_label: string;
+  sessions_remaining: number | null;
+  created_at: string;
 }
 
 interface Props {
   memberId: number;
   memberName: string;
   memberPhone: string | null;
+  memberEmail?: string | null;
   currentType: string;
   defaultKids: number;
   recentCheckIns: CheckIn[];
+  activePackages?: ActivePackage[];
 }
 
 export default function TopUpSection({
   memberId,
   memberName,
   memberPhone,
+  memberEmail,
   currentType,
   defaultKids,
   recentCheckIns,
+  activePackages = [],
 }: Props) {
   const { t } = useLanguage();
 
@@ -66,6 +79,7 @@ export default function TopUpSection({
     const body = new FormData();
     body.append("name", memberName);
     if (memberPhone) body.append("phone", memberPhone);
+    if (memberEmail) body.append("email", memberEmail);
     body.append("membership_type", selectedType);
     body.append("kids_count", String(kidsCount));
     body.append("payment_method", paymentMethod);
@@ -270,20 +284,31 @@ export default function TopUpSection({
           <p className="text-sm text-gray-400 text-center py-1">{t.noCheckIns}</p>
         ) : (
           <div className="flex flex-col divide-y divide-gray-50">
-            {recentCheckIns.map((ci) => (
-              <div key={ci.id} className="flex items-center justify-between py-2">
-                <span className="text-sm text-gray-700">
-                  {new Date(ci.check_in_at).toLocaleDateString("en-US", {
-                    month: "short", day: "numeric", year: "numeric",
-                  })}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {new Date(ci.check_in_at).toLocaleTimeString("en-US", {
-                    hour: "2-digit", minute: "2-digit",
-                  })}
-                </span>
-              </div>
-            ))}
+            {recentCheckIns.map((ci) => {
+              // If check-in is against a top-up registration, show which program
+              const pkg = ci.member_id
+                ? activePackages.find((p) => p.id === ci.member_id)
+                : null;
+              return (
+                <div key={ci.id} className="flex items-center justify-between py-2 gap-2">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm text-gray-700">
+                      {new Date(ci.check_in_at).toLocaleDateString("en-US", {
+                        month: "short", day: "numeric", year: "numeric",
+                      })}
+                    </span>
+                    {pkg && (
+                      <span className="text-xs text-[#1a56db] truncate">{pkg.membership_label}</span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0">
+                    {new Date(ci.check_in_at).toLocaleTimeString("en-US", {
+                      hour: "2-digit", minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
