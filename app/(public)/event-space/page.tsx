@@ -6,29 +6,24 @@ import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
-import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
+import { formatTHB } from "@/lib/pricing";
+
+const SCHOOL_RATE = 2222;
+const PHOTOGRAPHER_FEE = 1000;
 
 const GAMING_ZONE_NOTE =
-  "Booking an Event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.";
-
-const TIME_SLOTS: { id: BirthdayTimeSlot; label: string; rate: number; note: string }[] = [
-  { id: "morning",   label: "Morning / Off-Peak",  rate: 3000, note: "9:00am – 3:30pm (weekdays)" },
-  { id: "afternoon", label: "Afternoon / Peak",     rate: 5000, note: "3:30pm – 6:30pm (weekdays)" },
-  { id: "evening",   label: "Evening / Off-Peak",   rate: 3000, note: "6:30pm – 9:30pm (weekdays)" },
-  { id: "weekend",   label: "Weekend (after 2pm)",  rate: 5000, note: "After 2:00pm (Sat / Sun)" },
-];
+  "School sessions are shared access — NinjaGym remains open to other guests during your booking. The Gaming Zones are separate and not included.";
 
 const TERMS = [
-  "Arrival, setup, and departure must all occur within your booked time. Staff begins setup at your start time.",
-  "Please instruct guests to arrive 15–20 minutes after your start time so setup is complete.",
-  "Overtime is charged at 500 THB per 10-minute period if you exceed your reserved end time.",
+  "This offer is for official school groups only — not for families, parents, or individual guests.",
+  "All students must arrive and depart as a group. No separate guests or outside participants.",
+  "Sessions are shared access. Other kids may be present during your booking.",
+  "Available weekdays before 2pm only. No weekend or holiday bookings under this rate.",
+  "Maximum 22 students. No additional kids beyond the group limit.",
+  "Arrival and departure must occur within your 2-hour booked session.",
   "No refunds. We reserve your date on payment.",
   "Pay in advance to confirm your booking.",
-  "Regular NinjaGym policies apply for all events.",
 ];
-
-const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
-const PHOTOGRAPHER_FEE = 1000;
 
 export default function EventSpacePage() {
   const router = useRouter();
@@ -40,10 +35,10 @@ export default function EventSpacePage() {
     phone: "",
     email: "",
     event_date: "",
-    time_slot: "afternoon" as BirthdayTimeSlot,
+    time_slot: "morning" as const,
     hours: "",
     num_hours: 2,
-    num_kids: 5,
+    num_kids: 10,
     payment_method: "cash",
     notes: "",
     photographer_requested: false,
@@ -63,9 +58,7 @@ export default function EventSpacePage() {
     localStorage.setItem("ng_lang", l);
   }
 
-  const baseTotal = getBirthdayAmount(form.time_slot, form.num_hours, form.num_kids);
-  const total = baseTotal + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0);
-  const selectedSlot = TIME_SLOTS.find((s) => s.id === form.time_slot)!;
+  const total = SCHOOL_RATE + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,7 +81,7 @@ export default function EventSpacePage() {
 
       if (!res.ok) {
         if (res.status === 409) {
-          setError("That date and time slot is already booked. Please choose a different slot.");
+          setError("That date is already booked. Please choose a different date.");
         } else {
           throw new Error(data.error || "Submission failed");
         }
@@ -116,7 +109,7 @@ export default function EventSpacePage() {
         <div style={{ animation: "floatSpace 3s ease-in-out infinite" }}>
           <Image
             src="/images/App3_small.png"
-            alt="NinjaGym Event Space"
+            alt="NinjaGym School Outing"
             width={180}
             height={180}
             className="drop-shadow-2xl rounded-3xl"
@@ -150,11 +143,12 @@ export default function EventSpacePage() {
 
         <ul className="flex flex-col gap-2 text-sm text-gray-700 mb-4">
           {[
-            "Up to 22 kids",
+            "Up to 22 students",
             "2 hours of NinjaGym fun",
             "Available before 2pm (weekdays only)",
-            "For official school groups",
-            "Shared access (not private)",
+            "For official school groups only",
+            "Shared access — other kids may be present",
+            "No guests, parents, or outside participants",
           ].map((item) => (
             <li key={item} className="flex items-start gap-2">
               <span className="text-[#1a56db] font-bold shrink-0">•</span>
@@ -163,16 +157,12 @@ export default function EventSpacePage() {
           ))}
         </ul>
 
-        <div className="bg-blue-50 rounded-xl px-4 py-2.5 text-center mb-3">
-          <p className="text-sm font-bold text-[#1a56db]">👉 22 kids · 2 hours · before 2pm · 2,222 THB</p>
+        <div className="bg-blue-50 rounded-xl px-4 py-2.5 text-center">
+          <p className="text-sm font-bold text-[#1a56db]">👉 22 students · 2 hours · before 2pm · 2,222 THB</p>
         </div>
-
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Make fitness exciting, social, and affordable for your students. Perfect for field trips, activity days, or rewarding your class with something unforgettable.
-        </p>
       </div>
 
-      {/* Gaming zone notice */}
+      {/* Shared access note */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 shadow mb-4">
         <p className="text-xs text-yellow-800 leading-relaxed">
           ⚠️ <strong>Please note:</strong> {GAMING_ZONE_NOTE}
@@ -196,15 +186,15 @@ export default function EventSpacePage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-        {/* Your details */}
+        {/* School details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Your Details</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">School Details</h2>
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.nameLabel} *</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">School Name &amp; Manager Name *</label>
             <input type="text" required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="Your name" />
+              placeholder="e.g. Samui International School — Ms. Nong" />
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.phoneLabel}</label>
@@ -218,13 +208,13 @@ export default function EventSpacePage() {
             <input type="email" value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="you@example.com" />
+              placeholder="school@example.com" />
           </div>
         </div>
 
-        {/* Event details */}
+        {/* Booking details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Event Details</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Booking Details</h2>
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.eventDate} *</label>
@@ -232,53 +222,31 @@ export default function EventSpacePage() {
               onChange={(e) => setForm({ ...form, event_date: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
               min={new Date().toISOString().split("T")[0]} />
+            <p className="text-xs text-gray-400 mt-1">Weekdays only — sessions must start and finish before 2pm.</p>
+          </div>
+
+          {/* Fixed time slot display */}
+          <div className="bg-blue-50 border border-[#1a56db]/20 rounded-xl px-4 py-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-0.5">Time Slot</p>
+            <p className="text-sm font-bold text-[#1a56db]">Before 2pm — Weekdays Only</p>
+            <p className="text-xs text-gray-500 mt-0.5">Your 2-hour session must conclude by 2:00pm.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">{t.timeSlot} *</label>
-            <div className="grid grid-cols-2 gap-2">
-              {TIME_SLOTS.map((slot) => (
-                <label key={slot.id} className={`flex flex-col px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
-                  form.time_slot === slot.id ? "border-[#1a56db] bg-blue-50" : "border-gray-200 hover:bg-gray-50"
-                }`}>
-                  <input type="radio" name="time_slot" value={slot.id}
-                    checked={form.time_slot === slot.id}
-                    onChange={() => setForm({ ...form, time_slot: slot.id })}
-                    className="sr-only" />
-                  <span className="text-sm font-bold text-gray-800">{slot.label}</span>
-                  <span className="text-xs text-gray-500 mt-0.5">{slot.note}</span>
-                  <span className="text-sm font-bold text-[#1a56db] mt-1">{slot.rate.toLocaleString()} THB/hr</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Start &amp; End Time *</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Preferred Start Time *</label>
             <input type="text" required value={form.hours}
               onChange={(e) => setForm({ ...form, hours: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="e.g. 2:00pm – 4:00pm" />
-            <p className="text-xs text-gray-400 mt-1">Required — this reserves your exact time slot.</p>
+              placeholder="e.g. 10:00am – 12:00pm" />
+            <p className="text-xs text-gray-400 mt-1">2-hour session — must end by 2:00pm.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.numHours} *</label>
-            <select value={form.num_hours}
-              onChange={(e) => setForm({ ...form, num_hours: Number(e.target.value) })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-              {HOUR_OPTIONS.map((h) => (
-                <option key={h} value={h}>{h} {h === 1 ? "hour" : "hours"}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.numKids} *</label>
-            <input type="number" required min="1" max="20" value={form.num_kids}
-              onChange={(e) => setForm({ ...form, num_kids: Number(e.target.value) })}
+            <label className="block text-sm font-bold text-gray-700 mb-1">Number of Students *</label>
+            <input type="number" required min="1" max="22" value={form.num_kids}
+              onChange={(e) => setForm({ ...form, num_kids: Math.min(22, Number(e.target.value)) })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-            <p className="text-xs text-gray-400 mt-1">First 5 kids included · 6–10 +500 THB · 11–15 +1,000 THB · 16–20 +1,500 THB</p>
+            <p className="text-xs text-gray-400 mt-1">Up to 22 students — flat rate of 2,222 THB regardless of group size.</p>
           </div>
 
           <div>
@@ -287,7 +255,7 @@ export default function EventSpacePage() {
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={2}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] resize-none"
-              placeholder="Any special requests, theme, or details for staff..." />
+              placeholder="Grade level, any special requirements, or details for staff..." />
           </div>
         </div>
 
@@ -301,11 +269,11 @@ export default function EventSpacePage() {
               className="mt-1 accent-[#1a56db] w-5 h-5 shrink-0" />
             <div className="flex-1">
               <div className="flex items-center justify-between mb-1">
-                <p className="font-bold text-gray-800">📸 Want Photos Too?</p>
+                <p className="font-bold text-gray-800">📸 Add Photos</p>
                 <span className="font-bold text-[#1a56db] text-base">+1,000 THB</span>
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Staff will capture periodic shots of your event. Digital images will be delivered to your member page within a few days. Higher res may be available upon request to your USB drive.
+                Staff will capture shots of your group session. Digital images delivered to your school contact within a few days.
               </p>
             </div>
           </label>
@@ -318,8 +286,7 @@ export default function EventSpacePage() {
             <span className="font-bold text-gray-900 text-2xl">{formatTHB(total)}</span>
           </div>
           <p className="text-sm text-gray-700 mt-1">
-            {selectedSlot.rate.toLocaleString()} THB/hr × {form.num_hours} hr{form.num_hours !== 1 ? "s" : ""}
-            {form.num_kids > 5 ? " + extra kids" : " (first 5 included)"}
+            2,222 THB flat rate · up to 22 students · 2 hours
             {form.photographer_requested ? " + photos (1,000 THB)" : ""}
           </p>
         </div>
@@ -331,6 +298,7 @@ export default function EventSpacePage() {
             {[
               { value: "cash",      label: `💵 ${t.cashOption}` },
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
+              { value: "stripe",    label: "💳 Credit / Debit Card" },
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-200"
@@ -343,6 +311,11 @@ export default function EventSpacePage() {
               </label>
             ))}
           </div>
+          {form.payment_method === "stripe" && (
+            <p className="text-xs text-gray-400 mt-2">
+              Card payment will be arranged by staff upon confirmation of your booking.
+            </p>
+          )}
         </div>
 
         {/* PromptPay panel */}
@@ -396,9 +369,7 @@ export default function EventSpacePage() {
               className="mt-1 accent-green-600 w-5 h-5 shrink-0"
             />
             <p className="text-sm text-gray-700 leading-relaxed">
-              I have read and agree to the <strong>Terms</strong> above, including that{" "}
-              <strong>setup, event, and departure must occur within my booked time</strong>, and that{" "}
-              <strong>overtime is charged at 500 THB per 10-minute period</strong>.
+              I confirm this is an <strong>official school group booking</strong> and I have read and agree to the <strong>Terms</strong> above, including the no-guests policy and shared-access conditions.
             </p>
           </label>
         </div>
@@ -409,7 +380,7 @@ export default function EventSpacePage() {
 
         <button type="submit" disabled={submitting || !termsAccepted}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50">
-          {submitting ? t.submitting : t.bookBtn}
+          {submitting ? t.submitting : "Book School Outing →"}
         </button>
 
         {!termsAccepted && (
