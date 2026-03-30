@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, staffId, staffType, staffName, amount, saleType, referenceId, items, notes, reason } = body;
+    const { action, staffId, staffType, staffName, amount, saleType, referenceId, items, notes, reason, notes1k } = body;
 
     if (!staffId) {
       return NextResponse.json({ error: "staffId required" }, { status: 400 });
@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
           drawer_opened: true,
           receipt_printed: false,
           notes: notes ?? null,
+          notes_1k: notes1k ?? 0,
         })
         .select("id")
         .single();

@@ -54,10 +54,10 @@ export default async function RevenuePage({
 
   const admin = createAdminClient();
 
-  // POS / walk-in cash sales — include staff_name for attribution
+  // POS / walk-in cash sales — include staff_name and notes_1k for attribution + drawer split
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name, profiles(name)")
+    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name, notes_1k, profiles(name)")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
@@ -115,6 +115,10 @@ export default async function RevenuePage({
   const cashCount      = allTx.filter((t) => t.method === "cash").length;
   const transferCount  = allTx.filter((t) => t.method !== "cash").length;
   const walkinCount    = allTx.filter((t) => t.isWalkin).length;
+
+  // Drawer vs box split (POS sales only — registration approvals don't go through POS)
+  const boxTotal    = (cashSales ?? []).reduce((s, r) => s + (Number(r.notes_1k ?? 0) * 1000), 0);
+  const drawerTotal = cashTotal - boxTotal;
 
   // ── Staff breakdown (cash only — the accountability view) ───────────
   const staffMap = new Map<string, { total: number; count: number }>();
@@ -182,17 +186,23 @@ export default async function RevenuePage({
       <p className="text-sm font-bold text-gray-700 mb-4">{label}</p>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-3xl font-bold text-green-600">฿{cashTotal.toLocaleString()}</p>
-          <p className="text-sm text-gray-500 mt-1">Cash ({cashCount} payments)</p>
+          <p className="text-2xl font-bold text-green-600">฿{drawerTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">In Drawer</p>
+          <p className="text-xs text-gray-400">sub-1K bills + change</p>
         </div>
         <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-3xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
-          <p className="text-sm text-gray-500 mt-1">Transfer / PromptPay ({transferCount})</p>
+          <p className="text-2xl font-bold text-yellow-500">฿{boxTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">In Box</p>
+          <p className="text-xs text-gray-400">฿1,000 notes</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow p-5">
+          <p className="text-2xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">PromptPay ({transferCount})</p>
         </div>
         <div className="rounded-2xl p-5 text-white bg-gray-800">
-          <p className="text-3xl font-bold">฿{grandTotal.toLocaleString()}</p>
+          <p className="text-2xl font-bold">฿{grandTotal.toLocaleString()}</p>
           <p className="text-sm opacity-80 mt-1">Grand Total · {walkinCount} walk-ins</p>
         </div>
       </div>

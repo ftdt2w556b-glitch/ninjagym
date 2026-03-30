@@ -102,6 +102,22 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
   // Change calculator state
   const [cashInput, setCashInput] = useState("");
+  const [notes1k, setNotes1k] = useState(0); // ฿1,000 notes received (go to box, not drawer)
+
+  // Today's cash tally
+  const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number } | null>(null);
+
+  async function fetchTally() {
+    try {
+      const res = await fetch("/api/pos/tally");
+      if (res.ok) setTally(await res.json());
+    } catch { /* non-fatal */ }
+  }
+
+  useEffect(() => {
+    if (screen === "main") fetchTally();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
 
   // Auto-logout countdown after successful sale
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -229,6 +245,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
         saleType,
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
         notes: notes || null,
+        notes1k,
       }),
     });
     const data = await res.json();
@@ -258,7 +275,9 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     setCart([]);
     setNotes("");
     setCashInput("");
+    setNotes1k(0);
     setCountdown(20); // auto-logout after 20 seconds
+    fetchTally(); // refresh drawer tally after sale
   }
 
   async function manualOpenDrawer() {
@@ -439,6 +458,40 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
             </button>
           </div>
 
+          {/* ฿1,000 note tracker — goes to separate box, not drawer */}
+          {isEnough && (
+            <div className="bg-gray-800 rounded-2xl p-4">
+              <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-2">
+                ฿1,000 notes received → put in box
+              </p>
+              <div className="flex gap-2">
+                {[0, 1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setNotes1k(n)}
+                    className={`flex-1 py-3 rounded-xl font-bold text-lg transition-colors ${
+                      notes1k === n
+                        ? "bg-[#ffe033] text-gray-900"
+                        : "bg-gray-700 text-white hover:bg-gray-600"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              {notes1k > 0 && (
+                <div className="mt-3 flex justify-between text-sm">
+                  <span className="text-gray-400">In box (1K notes)</span>
+                  <span className="text-[#ffe033] font-bold">฿{(notes1k * 1000).toLocaleString()}</span>
+                </div>
+              )}
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-gray-400">In drawer (change + sub-1K)</span>
+                <span className="text-green-400 font-bold">฿{(total - notes1k * 1000).toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
           {/* Confirm / Back */}
           <button
             onClick={() => processSale(change)}
@@ -479,6 +532,32 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
           </button>
         </div>
       </div>
+
+      {/* Today's cash tally banner */}
+      {tally !== null && (
+        <div className="bg-gray-800 border-b border-gray-700 px-4 py-2.5 flex items-center justify-center gap-6 flex-wrap text-sm">
+          <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
+          <span className="text-gray-500">|</span>
+          <span>
+            <span className="text-gray-400">Drawer </span>
+            <span className="text-green-400 font-bold">฿{tally.drawerTotal.toLocaleString()}</span>
+          </span>
+          {tally.boxTotal > 0 && (
+            <>
+              <span className="text-gray-500">|</span>
+              <span>
+                <span className="text-gray-400">Box </span>
+                <span className="text-[#ffe033] font-bold">฿{tally.boxTotal.toLocaleString()}</span>
+              </span>
+            </>
+          )}
+          <span className="text-gray-500">|</span>
+          <span>
+            <span className="text-gray-400">Total </span>
+            <span className="text-white font-bold">฿{tally.total.toLocaleString()}</span>
+          </span>
+        </div>
+      )}
 
       <div className="max-w-[900px] mx-auto px-4 py-6 grid grid-cols-1 gap-6 md:grid-cols-2">
 
