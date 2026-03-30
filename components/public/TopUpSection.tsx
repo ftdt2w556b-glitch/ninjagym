@@ -36,9 +36,10 @@ export default function TopUpSection({
 }: Props) {
   const { t } = useLanguage();
 
-  const safeInitial = MEMBERSHIP_TYPES.find((m) => m.id === currentType)
+  const visibleTypes = MEMBERSHIP_TYPES.filter((m) => m.id !== "birthday_event");
+  const safeInitial = visibleTypes.find((m) => m.id === currentType)
     ? currentType
-    : MEMBERSHIP_TYPES[0].id;
+    : visibleTypes[0].id;
 
   const [selectedType, setSelectedType] = useState(safeInitial);
   const [kidsCount, setKidsCount]       = useState(defaultKids);
@@ -147,7 +148,7 @@ export default function TopUpSection({
           onChange={(e) => { setSelectedType(e.target.value); setSuccess(null); setError(null); }}
           className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] mb-3"
         >
-          {MEMBERSHIP_TYPES.map((mt) => (
+          {MEMBERSHIP_TYPES.filter((mt) => mt.id !== "birthday_event").map((mt) => (
             <option key={mt.id} value={mt.id}>{mt.label}</option>
           ))}
         </select>
