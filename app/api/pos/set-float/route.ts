@@ -1,0 +1,20 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/server";
+
+export async function POST(request: NextRequest) {
+  try {
+    const { amount } = await request.json();
+    const val = parseInt(amount, 10);
+    if (isNaN(val) || val < 0) {
+      return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+    }
+    const admin = createAdminClient();
+    await admin.from("settings").upsert(
+      { key: "drawer_float", value: String(val), label: "Cash Drawer Opening Float" },
+      { onConflict: "key" }
+    );
+    return NextResponse.json({ ok: true, amount: val });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}

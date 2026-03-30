@@ -110,6 +110,31 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const [cashInput, setCashInput] = useState("");
   const [notes1k, setNotes1k] = useState(0); // ฿1,000 notes received (go to box, not drawer)
 
+  // Float editor
+  const [floatEditing, setFloatEditing] = useState(false);
+  const [floatInput, setFloatInput] = useState("");
+  const [floatSaving, setFloatSaving] = useState(false);
+
+  async function saveFloat() {
+    const val = parseInt(floatInput, 10);
+    if (isNaN(val) || val < 0) return;
+    setFloatSaving(true);
+    try {
+      const res = await fetch("/api/pos/set-float", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: val }),
+      });
+      if (res.ok) {
+        setSettingsPrices((prev) => ({ ...prev, drawer_float: val }));
+        setFloatEditing(false);
+        setFloatInput("");
+      }
+    } finally {
+      setFloatSaving(false);
+    }
+  }
+
   // Today's cash tally
   const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number } | null>(null);
 
@@ -647,27 +672,51 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         const drawerFloat = settingsPrices["drawer_float"] ?? 0;
         const drawerExpected = drawerFloat + tally.total - tally.boxTotal;
         return (
-          <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-center gap-4 flex-wrap text-sm">
-            <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
-            <span className="text-gray-600">|</span>
-            {drawerFloat > 0 ? (
-              <>
-                <span>
-                  <span className="text-gray-400">Float </span>
-                  <span className="text-green-400 font-bold">฿{drawerFloat.toLocaleString()}</span>
-                </span>
-                <span className="text-gray-600">|</span>
-                <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-white"}`}>
-                  ฿{drawerExpected.toLocaleString()} expected in drawer
-                </span>
-              </>
-            ) : (
-              <a href="/admin/pos" target="_blank"
-                className="text-yellow-400 text-xs font-semibold hover:text-yellow-300 transition-colors">
-                ⚠️ Set opening float in POS settings
-              </a>
-            )}
-          </div>
+          <>
+            <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-center gap-4 flex-wrap text-sm">
+              <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
+              <span className="text-gray-600">|</span>
+              {floatEditing ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 text-xs">Float</span>
+                  <span className="text-gray-400 text-xs">฿</span>
+                  <input
+                    type="number"
+                    value={floatInput}
+                    onChange={(e) => setFloatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") saveFloat(); if (e.key === "Escape") setFloatEditing(false); }}
+                    placeholder="e.g. 5000"
+                    autoFocus
+                    className="bg-gray-700 text-white text-sm rounded-lg px-2 py-1 w-24 focus:outline-none focus:ring-1 focus:ring-green-400"
+                  />
+                  <button onClick={saveFloat} disabled={floatSaving}
+                    className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-lg hover:bg-green-400 disabled:opacity-50">
+                    {floatSaving ? "…" : "Set"}
+                  </button>
+                  <button onClick={() => setFloatEditing(false)}
+                    className="text-gray-500 text-xs hover:text-gray-300">Cancel</button>
+                </div>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setFloatInput(String(drawerFloat)); setFloatEditing(true); }}
+                    className="flex items-center gap-1 group"
+                    title="Tap to update float"
+                  >
+                    <span className="text-gray-400">Float </span>
+                    <span className={`font-bold ${drawerFloat > 0 ? "text-green-400" : "text-yellow-400"}`}>
+                      {drawerFloat > 0 ? `฿${drawerFloat.toLocaleString()}` : "⚠️ Not set"}
+                    </span>
+                    <span className="text-gray-600 text-xs ml-0.5 group-hover:text-gray-400">✎</span>
+                  </button>
+                  <span className="text-gray-600">|</span>
+                  <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-white"}`}>
+                    ฿{drawerExpected.toLocaleString()} expected in drawer
+                  </span>
+                </>
+              )}
+            </div>
+          </>
         );
       })()}
 
