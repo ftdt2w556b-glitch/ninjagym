@@ -642,57 +642,31 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         </div>
       </div>
 
-      {/* Today's cash tally banner */}
+      {/* Today's tally banner */}
       {tally !== null && (() => {
         const drawerFloat = settingsPrices["drawer_float"] ?? 0;
-        const floatSet = drawerFloat > 0;
+        const drawerExpected = drawerFloat + tally.total - tally.boxTotal;
         return (
           <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-center gap-4 flex-wrap text-sm">
             <span className="text-gray-400 font-semibold">Today · {tally.count} sale{tally.count !== 1 ? "s" : ""}</span>
             <span className="text-gray-600">|</span>
-            <span>
-              <span className="text-gray-400">Collected </span>
-              <span className="text-white font-bold">฿{tally.total.toLocaleString()}</span>
-            </span>
-            {tally.boxTotal > 0 && (
+            {drawerFloat > 0 ? (
               <>
-                <span className="text-gray-600">|</span>
                 <span>
-                  <span className="text-gray-400">Box </span>
-                  <span className="text-[#ffe033] font-bold">฿{tally.boxTotal.toLocaleString()}</span>
-                  <span className="text-gray-500 text-xs ml-1">(1K notes)</span>
+                  <span className="text-gray-400">Float </span>
+                  <span className="text-green-400 font-bold">฿{drawerFloat.toLocaleString()}</span>
+                </span>
+                <span className="text-gray-600">|</span>
+                <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-white"}`}>
+                  ฿{drawerExpected.toLocaleString()} expected in drawer
                 </span>
               </>
-            )}
-            <span className="text-gray-600">|</span>
-            {floatSet ? (
-              <span>
-                <span className="text-gray-400">Float </span>
-                <span className="text-green-400 font-bold">฿{drawerFloat.toLocaleString()}</span>
-              </span>
             ) : (
-              <a href="/admin/settings" target="_blank"
+              <a href="/admin/pos" target="_blank"
                 className="text-yellow-400 text-xs font-semibold hover:text-yellow-300 transition-colors">
-                ⚠️ Set opening float in Settings
+                ⚠️ Set opening float in POS settings
               </a>
             )}
-          </div>
-        );
-      })()}
-
-      {/* End-of-day count guide — shown when there are sales */}
-      {tally !== null && tally.count > 0 && (() => {
-        const drawerFloat = settingsPrices["drawer_float"] ?? 0;
-        const drawerExpected = drawerFloat + tally.total - tally.boxTotal;
-        return (
-          <div className="bg-gray-900 border-b border-gray-700 px-4 py-2 text-center text-xs text-gray-500">
-            End-of-shift check:&nbsp;
-            <span className="text-gray-300">
-              Float ฿{drawerFloat.toLocaleString()} + Collected ฿{tally.total.toLocaleString()} − Box ฿{tally.boxTotal.toLocaleString()} =&nbsp;
-            </span>
-            <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-green-400"}`}>
-              ฿{drawerExpected.toLocaleString()} expected in drawer
-            </span>
           </div>
         );
       })()}
