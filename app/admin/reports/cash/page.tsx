@@ -57,7 +57,7 @@ export default async function RevenuePage({
   // POS / walk-in cash sales
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name, profiles(name)")
+    .select("id, amount, payment_method, processed_at, sale_type, notes, staff_name")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
