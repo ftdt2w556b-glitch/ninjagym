@@ -128,32 +128,48 @@ export default function EventSpacePage() {
       {/* Title */}
       <div className="text-center mb-6">
         <h1 className="font-bangers text-5xl text-white tracking-widest drop-shadow-lg mb-1">
-          BOOK AN EVENT
+          SCHOOL OUTING
         </h1>
-        <p className="text-white/80 text-sm mb-3">Reserve the NinjaGym for your private event</p>
+        <p className="text-white/80 text-sm mb-3">🎓 NinjaGym School Discount Program</p>
         <span className="inline-block bg-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full">
           📍 Big C, Bophut, Koh Samui
         </span>
       </div>
 
-      {/* What's included */}
-      <div className="bg-[#1a3a6e] border border-white/10 rounded-2xl p-5 shadow mb-4">
-        <h2 className="font-bangers text-yellow-300 text-lg tracking-widest mb-3">🥷 WHAT IS INCLUDED</h2>
-        <ul className="flex flex-col gap-2 text-sm text-white/90">
+      {/* The 2222 Special */}
+      <div className="bg-white rounded-2xl p-5 shadow mb-4">
+        <p className="text-xs font-bold text-[#1a56db] uppercase tracking-widest mb-1">The Rick Tew 2222 Special</p>
+        <p className="text-sm text-gray-600 leading-relaxed mb-4">
+          Perfect for school outings, activity days, or a reward for hard-working students — NinjaGym makes fitness fun, social, and affordable.
+        </p>
+
+        <div className="bg-[#1a56db] rounded-xl px-4 py-3 mb-4 text-center">
+          <p className="text-white/80 text-xs font-semibold mb-1">Flat rate for school groups</p>
+          <p className="font-fredoka text-4xl text-[#ffe033] tracking-wide">2,222 THB</p>
+        </div>
+
+        <ul className="flex flex-col gap-2 text-sm text-gray-700 mb-4">
           {[
-            "1 guided 50-minute training session",
-            "Staff assistance throughout",
-            "Access to training, climbing & ninja zones",
-            "Cleanup service included",
-            "5 kids free with every event",
-            "Private use of all Main Activity Zones",
+            "Up to 22 kids",
+            "2 hours of NinjaGym fun",
+            "Available before 2pm (weekdays only)",
+            "For official school groups",
+            "Shared access (not private)",
           ].map((item) => (
-            <li key={item} className="flex items-start gap-3">
-              <span className="shrink-0">🥷</span>
+            <li key={item} className="flex items-start gap-2">
+              <span className="text-[#1a56db] font-bold shrink-0">•</span>
               <span>{item}</span>
             </li>
           ))}
         </ul>
+
+        <div className="bg-blue-50 rounded-xl px-4 py-2.5 text-center mb-3">
+          <p className="text-sm font-bold text-[#1a56db]">👉 22 kids · 2 hours · before 2pm · 2,222 THB</p>
+        </div>
+
+        <p className="text-xs text-gray-500 leading-relaxed">
+          Make fitness exciting, social, and affordable for your students. Perfect for field trips, activity days, or rewarding your class with something unforgettable.
+        </p>
       </div>
 
       {/* Gaming zone notice */}

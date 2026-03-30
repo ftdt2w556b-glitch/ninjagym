@@ -4,9 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 
-const GAMING_ZONE_NOTE =
-  "Booking an Event at NinjaGym is only for the Main Activity Zones and does not include the Gaming Zones. Although your event is private for you only, we keep the game rooms open for other guests at all hours.";
-
 export default function AboutPage() {
   const [minecraftOpen, setMinecraftOpen] = useState(false);
 
@@ -14,18 +11,18 @@ export default function AboutPage() {
     <div className="px-4 py-6 text-white">
       <PublicPageHeader />
 
-      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">About NinjaGym</h1>
-      <p className="text-[#ffe033] font-bold tracking-wide mb-6">RICK TEW&apos;S NINJAGYM, KOH SAMUI</p>
+      <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">About Rick Tew&apos;s NinjaGym</h1>
+      <p className="text-[#ffe033] font-bold tracking-wide mb-6">Koh Samui, Thailand</p>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { stat: "30+", label: "Years Teaching" },
-          { stat: "5",   label: "Winjitsu Books" },
-          { stat: "1,000s", label: "Kids Trained" },
+          { stat: "Ages 3–10", label: "Learn by doing" },
+          { stat: "50 Min",    label: "Guided Course" },
+          { stat: "10:00am",   label: "Opens Daily" },
         ].map((s) => (
           <div key={s.stat} className="bg-white/15 rounded-2xl p-3 text-center">
-            <p className="font-fredoka text-2xl text-[#ffe033]">{s.stat}</p>
+            <p className="font-fredoka text-xl text-[#ffe033] leading-tight">{s.stat}</p>
             <p className="text-xs text-white/80 font-semibold mt-0.5">{s.label}</p>
           </div>
         ))}
@@ -192,38 +189,48 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Event Space Rental */}
+        {/* School Discount Program */}
         <div className="bg-white rounded-2xl p-5 shadow">
-          <h2 className="font-bold text-[#1a56db] text-lg mb-1">Event Space Rental</h2>
-          <p className="text-xs text-orange-600 font-semibold mb-3 bg-orange-50 rounded-lg px-3 py-2">
-            Weekends and holidays: available after 2pm only (Day Camps run until 2pm)
+          <h2 className="font-bold text-[#1a56db] text-lg mb-1">🎓 NinjaGym School Discount Program</h2>
+          <p className="text-xs font-bold text-[#1a56db] uppercase tracking-widest mb-3">The Rick Tew 2222 Special</p>
+
+          <p className="text-sm text-gray-600 leading-relaxed mb-4">
+            Perfect for school outings, activity days, or a reward for hard-working students — NinjaGym makes fitness fun, social, and affordable.
           </p>
 
-          {/* Gaming zone notice */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4">
-            <p className="text-xs text-yellow-800 leading-relaxed">
-              ⚠️ {GAMING_ZONE_NOTE}
-            </p>
+          <div className="bg-[#1a56db] rounded-xl px-4 py-3 mb-4 text-center">
+            <p className="text-white font-bold text-sm mb-0.5">An easy-to-remember offer for schools</p>
+            <p className="font-fredoka text-3xl text-[#ffe033] tracking-wide">2,222 THB</p>
           </div>
 
-          <div className="flex flex-col gap-2 text-sm mb-4">
+          <ul className="flex flex-col gap-2 text-sm text-gray-700 mb-4">
             {[
-              { label: "Weekends and holidays (after 2pm)", price: "5,000 THB/hr" },
-              { label: "Weekdays 3:30pm to 6:30pm",         price: "5,000 THB/hr" },
-              { label: "Weekdays 9am to 3pm and 6:30pm to 9:30pm", price: "3,000 THB/hr" },
-            ].map(r => (
-              <div key={r.label} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <span className="text-gray-600 flex-1 pr-3">{r.label}</span>
-                <span className="font-bold text-[#1a56db] shrink-0">{r.price}</span>
-              </div>
+              "Up to 22 kids",
+              "2 hours of NinjaGym fun",
+              "Available before 2pm (weekdays only)",
+              "For official school groups",
+              "Shared access (not private)",
+            ].map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="text-[#1a56db] font-bold shrink-0">•</span>
+                <span>{item}</span>
+              </li>
             ))}
+          </ul>
+
+          <div className="bg-blue-50 rounded-xl px-4 py-2.5 text-center mb-4">
+            <p className="text-sm font-bold text-[#1a56db]">👉 22 kids · 2 hours · before 2pm · 2,222 THB</p>
           </div>
+
+          <p className="text-xs text-gray-500 leading-relaxed mb-4">
+            Make fitness exciting, social, and affordable for your students with NinjaGym&apos;s school-friendly program. Perfect for field trips, activity days, or rewarding your class with something unforgettable.
+          </p>
 
           <Link
             href="/event-space"
             className="block text-center bg-[#1a56db] text-white font-bold text-sm rounded-xl py-3 hover:bg-blue-700 transition-colors"
           >
-            Book an Event Space →
+            Book a School Outing →
           </Link>
         </div>
 
