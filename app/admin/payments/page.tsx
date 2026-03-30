@@ -1,4 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import { ShopOrderItem } from "@/types";
 import PaymentActions from "@/components/admin/PaymentActions";
@@ -12,6 +12,14 @@ export default async function PaymentsPage({
   const { status, member, source = "members" } = await searchParams;
   const admin = createAdminClient();
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  // Get current user's role
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await admin.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null };
+  const userRole = profile?.role ?? "staff";
 
   // ── Members query (exclude birthday_event — managed via Events tab) ──
   let membersQuery = admin
@@ -180,6 +188,7 @@ export default async function PaymentsPage({
                   initialStatus={m.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
                   qrHref={`/qr/card/${m.id}?from=admin`}
                   memberName={m.name}
+                  userRole={userRole}
                 />
               </div>
             );
@@ -266,6 +275,7 @@ export default async function PaymentsPage({
                   id={b.id}
                   recordType="event"
                   initialStatus={b.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
+                  userRole={userRole}
                 />
               </div>
             );
@@ -346,6 +356,7 @@ export default async function PaymentsPage({
                   id={o.id}
                   recordType="shop"
                   initialStatus={o.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
+                  userRole={userRole}
                 />
               </div>
             );

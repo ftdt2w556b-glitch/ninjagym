@@ -24,13 +24,16 @@ export default function PaymentActions({
   initialStatus,
   qrHref,
   memberName,
+  userRole,
 }: {
   id: number;
   recordType: "member" | "event" | "shop";
   initialStatus: SlipStatus;
   qrHref?: string;
   memberName?: string;
+  userRole?: string;
 }) {
+  const canApproveCash = ["admin", "manager"].includes(userRole ?? "");
   const [status, setStatus]         = useState<SlipStatus>(initialStatus);
   const [busy, setBusy]             = useState<string | null>(null);
   const [err, setErr]               = useState<string | null>(null);
@@ -108,7 +111,15 @@ export default function PaymentActions({
       {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        {isPending && !confirmCashApprove && (
+        {/* Staff: cash_pending is POS-only */}
+        {isPending && status === "cash_pending" && !canApproveCash && (
+          <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-500">
+            💵 Cash payment — must be approved at the POS terminal.
+          </div>
+        )}
+
+        {/* Admin/manager: normal pending_review approve/reject */}
+        {isPending && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && (
           <>
             <button
               onClick={() => {
@@ -133,6 +144,7 @@ export default function PaymentActions({
           </>
         )}
 
+        {/* Admin/manager: cash approval confirmation */}
         {confirmCashApprove && (
           <div className="w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
             <p className="text-xs font-bold text-orange-800 mb-1">⚠️ Cash payment — not collected at POS</p>
