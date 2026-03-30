@@ -7,8 +7,7 @@ export async function GET() {
     const { data, error } = await admin
       .from("member_registrations")
       .select("id, name, membership_type, amount_paid, kids_names, notes, created_at")
-      .eq("slip_status", "pending_review")
-      .eq("payment_method", "cash")
+      .eq("slip_status", "cash_pending")
       .order("created_at", { ascending: true });
 
     if (error) throw error;

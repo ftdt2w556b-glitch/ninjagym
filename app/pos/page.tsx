@@ -39,9 +39,8 @@ export default async function PosKioskPage() {
   // Pending cash registrations — customers who self-registered and chose cash
   const { data: pendingCash } = await admin
     .from("member_registrations")
-    .select("id, name, membership_type, amount_paid, notes, created_at")
-    .eq("slip_status", "pending_review")
-    .eq("payment_method", "cash")
+    .select("id, name, membership_type, amount_paid, kids_names, notes, created_at")
+    .eq("slip_status", "cash_pending")
     .order("created_at", { ascending: true });
 
   const staff = [
