@@ -199,8 +199,15 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-start pt-10 px-4">
-      <h1 className="text-white font-fredoka text-4xl mb-2 text-center">QR Scanner</h1>
-      <p className="text-gray-400 text-sm mb-8 text-center">Scan a member QR code or enter ID manually</p>
+      <h1 className="text-white font-fredoka text-4xl mb-1 text-center">QR Scanner</h1>
+      <p className="text-gray-400 text-sm mb-3 text-center">Scan a member QR code or enter ID manually</p>
+
+      {/* Gate policy banner */}
+      <div className="w-full max-w-sm bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-2.5 mb-6 text-center">
+        <p className="text-yellow-300 text-xs font-semibold">
+          🚦 Every child entering must be registered — scan QR or use Quick Register below
+        </p>
+      </div>
 
       {/* Manual ID input */}
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-8 w-full max-w-sm">
@@ -229,31 +236,55 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
 
       {/* ── Checked in ── */}
       {checkedIn && member && (
-        <div className="bg-green-500 text-white rounded-2xl p-6 text-center max-w-sm w-full">
-          <div className="text-5xl mb-3">✓</div>
-          <h2 className="font-fredoka text-3xl mb-1">{member.name}</h2>
-          <p className="text-green-100 mb-3">Checked in successfully!</p>
-          {isSessionBased && (
-            <div className="bg-white/20 rounded-xl px-4 py-3 mb-3">
-              {sessionsLeft !== null && sessionsLeft > 0 ? (
-                <p className="text-white font-bold">
-                  {sessionsLeft} session{sessionsLeft !== 1 ? "s" : ""} remaining
-                </p>
-              ) : sessionsLeft === 0 ? (
-                <p className="text-yellow-200 font-bold">⚠️ Last session used — remind to renew!</p>
-              ) : null}
-            </div>
-          )}
-          {member.email && (
-            <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-green-100">
-              🌟 Points earned! Remind {member.name.split(" ")[0]} to always scan their QR card to keep earning loyalty points.
-            </div>
-          )}
-          {!member.email && (
-            <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-yellow-200">
-              💡 No email on file — ask them to register online to start earning loyalty points & get their QR card.
-            </div>
-          )}
+        <div className="flex flex-col gap-3 max-w-sm w-full">
+          <div className="bg-green-500 text-white rounded-2xl p-6 text-center">
+            <div className="text-5xl mb-3">✓</div>
+            <h2 className="font-fredoka text-3xl mb-1">{member.name}</h2>
+            <p className="text-green-100 mb-3">Checked in successfully!</p>
+            {isSessionBased && (
+              <div className="bg-white/20 rounded-xl px-4 py-3 mb-3">
+                {sessionsLeft !== null && sessionsLeft > 0 ? (
+                  <p className="text-white font-bold">
+                    {sessionsLeft} session{sessionsLeft !== 1 ? "s" : ""} remaining
+                  </p>
+                ) : sessionsLeft === 0 ? (
+                  <p className="text-yellow-200 font-bold">⚠️ Last session used — remind to renew!</p>
+                ) : null}
+              </div>
+            )}
+            {member.email && (
+              <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-green-100">
+                🌟 Points earned! Remind {member.name.split(" ")[0]} to always scan their QR card to keep earning loyalty points.
+              </div>
+            )}
+            {!member.email && (
+              <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-yellow-200">
+                💡 No email on file — ask them to register online to start earning loyalty points & get their QR card.
+              </div>
+            )}
+          </div>
+
+          {/* Add another session — for drop-in extras */}
+          <button
+            onClick={() => {
+              setForm((f) => ({
+                ...DEFAULT_FORM,
+                staffName: f.staffName,
+                name: member.name,
+                kidsNames: member.kids_names ?? "",
+                kidsCount: member.kids_count ?? 1,
+                membershipType: member.membership_type in WALKIN_TYPES.reduce((a, m) => ({ ...a, [m.id]: true }), {} as Record<string,boolean>)
+                  ? member.membership_type
+                  : "session_group",
+              }));
+              setQrResult(null);
+              setQrError("");
+              setShowModal(true);
+            }}
+            className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl py-3 text-sm font-semibold transition-colors"
+          >
+            + Register another session for {member.name.split(" ")[0]}
+          </button>
         </div>
       )}
 
