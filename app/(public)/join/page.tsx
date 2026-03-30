@@ -341,14 +341,14 @@ export default function JoinPage() {
                       </div>
                       <input
                         type="range"
-                        min={2}
+                        min={5}
                         max={20}
                         value={sessionQty}
                         onChange={(e) => setSessionQty(Number(e.target.value))}
                         className="w-full accent-[#1a56db]"
                       />
                       <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>2 sessions</span>
+                        <span>5 sessions (5% off)</span>
                         <span>20 sessions (20% off)</span>
                       </div>
                     </div>

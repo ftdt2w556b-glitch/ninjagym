@@ -179,14 +179,14 @@ export default function TopUpSection({
             </div>
             <input
               type="range"
-              min={2}
+              min={5}
               max={20}
               value={bulkQty}
               onChange={(e) => setBulkQty(Number(e.target.value))}
               className="w-full accent-[#1a56db]"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>2 {t.sessions}</span>
+              <span>5 {t.sessions} (5% off)</span>
               <span>20 {t.sessions} (20% off)</span>
             </div>
           </div>
