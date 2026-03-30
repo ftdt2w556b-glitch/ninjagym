@@ -44,6 +44,12 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     },
   },
   {
+    id: "water",
+    name: "Water",
+    price: 15,
+    options: { label: "Size", values: ["Regular"] },
+  },
+  {
     id: "gift_card",
     name: "NinjaGym Gift Card",
     price: 0, // price driven by program selection
