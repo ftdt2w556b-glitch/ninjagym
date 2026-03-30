@@ -703,7 +703,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                     <span className={`font-bold ${drawerFloat > 0 ? "text-green-400" : "text-yellow-400"}`}>
                       {drawerFloat > 0 ? `฿${drawerFloat.toLocaleString()}` : "⚠️ Not set"}
                     </span>
-                    {["admin", "owner"].includes(activeStaff?.role ?? "") && (
+                    {["admin", "manager"].includes(activeStaff?.role ?? "") && (
                       <button
                         onClick={() => { setFloatInput(String(drawerFloat)); setFloatEditing(true); }}
                         className="text-gray-600 text-xs ml-0.5 hover:text-gray-400"

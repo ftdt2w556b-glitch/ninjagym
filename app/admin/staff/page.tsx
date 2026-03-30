@@ -189,7 +189,8 @@ export default async function StaffPage({
                     <td className="px-4 py-3 text-gray-500">{p.email}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        p.role === "admin"  ? "bg-purple-100 text-purple-700"
+                        p.role === "admin"   ? "bg-purple-100 text-purple-700"
+                        : p.role === "manager" ? "bg-teal-100 text-teal-700"
                         : p.role === "owner" ? "bg-blue-100 text-blue-700"
                         : "bg-gray-100 text-gray-600"
                       }`}>
@@ -202,6 +203,7 @@ export default async function StaffPage({
                         <select name="role" defaultValue={p.role}
                           className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-[#1a56db]">
                           <option value="staff">staff</option>
+                          <option value="manager">manager</option>
                           <option value="admin">admin</option>
                           <option value="owner">owner</option>
                         </select>
@@ -280,6 +282,7 @@ export default async function StaffPage({
             <select name="role" defaultValue="staff"
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
               <option value="staff">staff</option>
+              <option value="manager">manager</option>
               <option value="admin">admin</option>
               <option value="owner">owner</option>
             </select>

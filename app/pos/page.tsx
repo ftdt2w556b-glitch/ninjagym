@@ -22,7 +22,7 @@ export default async function PosKioskPage() {
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, name, email, role, pin")
-    .in("role", ["admin", "staff", "owner"])
+    .in("role", ["admin", "manager", "staff", "owner"])
     .eq("show_on_pos", true)
     .order("name");
 

@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     ? await admin.from("profiles").select("role, name").eq("id", user.id).single()
     : { data: null };
 
-  const isAdminOrOwner = profile?.role === "admin" || profile?.role === "owner";
+  const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
     if (!u) return;
     const adminClient = createAdminClient();
     const { data: p } = await adminClient.from("profiles").select("role").eq("id", u.id).single();
-    if (p?.role !== "admin" && p?.role !== "owner") return;
+    if (!["admin", "manager"].includes(p?.role ?? "")) return;
     const id = formData.get("id") as string;
     await adminClient.from("staff_questions").delete().eq("id", id);
     revalidatePath("/admin/dashboard");

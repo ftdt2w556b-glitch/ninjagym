@@ -52,7 +52,7 @@ export async function PATCH(req: Request) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (!profile || !["admin", "owner"].includes(profile.role)) {
+  if (!profile || !["admin", "manager"].includes(profile.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

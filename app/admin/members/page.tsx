@@ -15,7 +15,7 @@ export default async function MembersPage({
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
-  const isAdminOrOwner = ["admin", "owner"].includes(profile?.role ?? "");
+  const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
   let query = admin
     .from("member_registrations")

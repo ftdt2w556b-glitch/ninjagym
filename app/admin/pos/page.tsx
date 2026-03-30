@@ -13,7 +13,7 @@ async function savePosPassword(formData: FormData) {
 
   const admin = makeAdmin();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-  if (!profile || !["admin", "owner"].includes(profile.role)) redirect("/admin/pos");
+  if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/pos");
 
   await admin.from("settings").upsert(
     { key: "pos_password", value: newPassword, label: "POS Kiosk Password" },
@@ -35,7 +35,7 @@ async function saveDrawerFloat(formData: FormData) {
 
   const admin = makeAdmin();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-  if (!profile || !["admin", "owner"].includes(profile.role)) redirect("/admin/pos");
+  if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/pos");
 
   await admin.from("settings").upsert(
     { key: "drawer_float", value: String(val), label: "Cash Drawer Opening Float" },
@@ -53,10 +53,10 @@ export default async function AdminPosPage({
   const admin = createAdminClient();
   const supabase = await createSupabaseServerClient();
 
-  // Admin/owner only
+  // Admin/manager only
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
-  if (!profile || !["admin", "owner"].includes(profile.role)) redirect("/admin/dashboard");
+  if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/dashboard");
 
   // Current POS password (settings table → env var fallback)
   const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();

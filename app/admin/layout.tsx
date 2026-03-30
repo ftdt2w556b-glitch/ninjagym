@@ -32,19 +32,19 @@ export default async function AdminLayout({
   const role = profile.role as string;
 
   const navLinks = [
-    { href: "/admin/dashboard",       label: "Dashboard", roles: ["admin", "staff", "owner"] },
-    { href: "/admin/members",         label: "Members",   roles: ["admin", "staff", "owner"] },
-    { href: "/admin/payments",        label: "Pending",   roles: ["admin", "staff"] },
-    { href: "/admin/event-bookings",  label: "Events",    roles: ["admin", "staff", "owner"] },
-    { href: "/admin/shop",            label: "Shop",      roles: ["admin"] },
-    { href: "/admin/pos",             label: "POS",       roles: ["admin"] },
-    { href: "/scanner",               label: "Scanner",   roles: ["admin", "staff"] },
-    { href: "/admin/reports/cash",    label: "Sales",     roles: ["admin", "owner"] },
-    { href: "/admin/staff",           label: "Users",     roles: ["admin"] },
-    { href: "/admin/photos",          label: "Photos",    roles: ["admin", "staff", "owner"] },
-    { href: "/admin/techniques",      label: "Skills",    roles: ["admin", "staff", "owner"] },
-    { href: "/admin/work-instructions", label: "Guide",   roles: ["admin", "staff", "owner"] },
-    { href: "/admin/settings",        label: "Prices",    roles: ["admin"] },
+    { href: "/admin/dashboard",         label: "Dashboard", roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/members",           label: "Members",   roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/payments",          label: "Pending",   roles: ["admin", "manager", "staff"] },
+    { href: "/admin/event-bookings",    label: "Events",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/shop",              label: "Shop",      roles: ["admin", "manager"] },
+    { href: "/admin/pos",               label: "POS",       roles: ["admin", "manager"] },
+    { href: "/scanner",                 label: "Scanner",   roles: ["admin", "manager", "staff"] },
+    { href: "/admin/reports/cash",      label: "Sales",     roles: ["admin", "manager", "owner"] },
+    { href: "/admin/staff",             label: "Users",     roles: ["admin"] },
+    { href: "/admin/photos",            label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/techniques",        label: "Skills",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/work-instructions", label: "Guide",     roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/settings",          label: "Prices",    roles: ["admin"] },
   ].filter((link) => link.roles.includes(role));
 
   return (

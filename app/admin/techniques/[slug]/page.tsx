@@ -34,7 +34,7 @@ export default async function TechniqueDetailPage({
     ? await admin.from("profiles").select("role").eq("id", user.id).single()
     : { data: null };
 
-  const isAdmin = profile?.role === "admin" || profile?.role === "owner";
+  const isAdmin = ["admin", "manager"].includes(profile?.role ?? "");
   const style = BELT_STYLE[technique.belt_color] ?? BELT_STYLE.yellow;
 
   async function saveInstructions(formData: FormData) {

@@ -11,7 +11,7 @@ export default async function WorkInstructionsPage() {
     ? await admin.from("profiles").select("role").eq("id", user.id).single()
     : { data: null };
 
-  const isAdmin = profile?.role === "admin" || profile?.role === "owner";
+  const isAdmin = ["admin", "manager"].includes(profile?.role ?? "");
 
   const { data: instructions } = await admin
     .from("work_instructions")
