@@ -7,12 +7,14 @@ import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 type InventoryRow = { item_id: string; variant: string; stock_qty: number };
+type PendingReg = { id: number; name: string; membership_type: string; amount_paid: number; notes: string | null };
 
 type Screen =
   | "select_staff"
   | "pin_entry"
   | "main"
   | "change_calc"
+  | "pending_cash"
   | "cash_sale"
   | "quick_member"
   | "quick_shop";
@@ -32,7 +34,7 @@ const SHOP_PRICE_KEY: Record<string, string> = {
   shake_bake:   "price_shop_shake_bake",
 };
 
-export default function PosScreen({ staff, inventory = [] }: { staff: StaffMember[]; inventory?: InventoryRow[] }) {
+export default function PosScreen({ staff, inventory = [], pendingCash = [] }: { staff: StaffMember[]; inventory?: InventoryRow[]; pendingCash?: PendingReg[] }) {
   const [screen, setScreen] = useState<Screen>("select_staff");
   const [activeStaff, setActiveStaff] = useState<StaffMember | null>(null);
   const [pin, setPin] = useState("");
@@ -49,6 +51,10 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
   const [shopItemId, setShopItemId] = useState("tshirt_kids");
   const [shopOption, setShopOption] = useState("S");
   const [notes, setNotes] = useState("");
+  const [referenceId, setReferenceId] = useState<number | null>(null);
+
+  // Pending cash registrations — client-side copy so we can remove approved ones instantly
+  const [pendingList, setPendingList] = useState<PendingReg[]>(pendingCash);
 
   // Live prices from admin settings (falls back to lib/pricing hardcoded values)
   const [settingsPrices, setSettingsPrices] = useState<Record<string, number>>({
@@ -134,6 +140,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
         setResult(null);
         setCart([]);
         setNotes("");
+        setReferenceId(null);
       }, IDLE_MS);
     }
 
@@ -272,6 +279,7 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
         staffName: activeStaff!.name,
         amount: total,
         saleType,
+        referenceId: referenceId ?? null,
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
         notes: notes || null,
         notes1k,
@@ -307,6 +315,11 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     setNotes1k(0);
     setCountdown(20); // auto-logout after 20 seconds
     fetchTally(); // refresh drawer tally after sale
+    // Remove approved registration from pending list
+    if (referenceId !== null) {
+      setPendingList((prev) => prev.filter((r) => r.id !== referenceId));
+      setReferenceId(null);
+    }
   }
 
   async function manualOpenDrawer() {
@@ -536,6 +549,61 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
     );
   }
 
+  // ── Pending cash screen ───────────────────────────────────────────
+  if (screen === "pending_cash") {
+    return (
+      <div className="min-h-screen bg-gray-900 flex flex-col px-4 py-8">
+        <div className="w-full max-w-md mx-auto">
+          <button onClick={() => setScreen("main")} className="text-gray-400 text-sm mb-6 hover:text-white transition-colors">
+            ← Back
+          </button>
+          <h1 className="font-fredoka text-3xl text-white mb-1">Pending Cash</h1>
+          <p className="text-gray-400 text-sm mb-6">Select a registration to collect payment</p>
+
+          {pendingList.length === 0 ? (
+            <div className="bg-gray-800 rounded-2xl p-8 text-center">
+              <p className="text-gray-400">No pending cash payments 🎉</p>
+              <button onClick={() => setScreen("main")} className="mt-4 text-[#1a56db] text-sm hover:text-blue-400">
+                Back to POS
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {pendingList.map((reg) => {
+                const memberLabel = MEMBERSHIP_TYPES.find((m) => m.id === reg.membership_type)?.label ?? reg.membership_type;
+                return (
+                  <button
+                    key={reg.id}
+                    onClick={() => {
+                      setCart([{ label: `${reg.name} — ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
+                      setSaleType("membership");
+                      setReferenceId(reg.id);
+                      setNotes(reg.name);
+                      setCashInput("");
+                      setNotes1k(0);
+                      setScreen("change_calc");
+                    }}
+                    className="bg-gray-800 hover:bg-gray-700 transition-colors rounded-2xl p-5 text-left flex items-center justify-between gap-4"
+                  >
+                    <div>
+                      <p className="font-bold text-white text-lg">{reg.name}</p>
+                      <p className="text-gray-400 text-sm mt-0.5">{memberLabel}</p>
+                      {reg.notes && <p className="text-gray-500 text-xs mt-1 italic">{reg.notes}</p>}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-fredoka text-2xl text-[#22c55e]">฿{Number(reg.amount_paid).toLocaleString()}</p>
+                      <p className="text-gray-500 text-xs mt-0.5">Tap to collect</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Main POS screen ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-100">
@@ -619,6 +687,19 @@ export default function PosScreen({ staff, inventory = [] }: { staff: StaffMembe
 
         {/* Left: Sale builder */}
         <div className="flex flex-col gap-4">
+
+          {/* Pending cash registrations */}
+          {pendingList.length > 0 && (
+            <button
+              onClick={() => setScreen("pending_cash")}
+              className="w-full bg-amber-500 hover:bg-amber-400 transition-colors text-gray-900 font-bold py-4 rounded-2xl shadow-lg flex items-center justify-between px-5"
+            >
+              <span className="text-lg">⚡ Pending Cash Payments</span>
+              <span className="bg-gray-900 text-amber-400 font-bold text-sm px-3 py-1 rounded-full">
+                {pendingList.length} waiting
+              </span>
+            </button>
+          )}
 
           {/* Sale type tabs */}
           <div className="bg-white rounded-2xl shadow p-1 flex gap-1">

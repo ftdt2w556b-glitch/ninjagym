@@ -36,6 +36,14 @@ export default async function PosKioskPage() {
     .from("shop_inventory")
     .select("item_id, variant, stock_qty");
 
+  // Pending cash registrations — customers who self-registered and chose cash
+  const { data: pendingCash } = await admin
+    .from("member_registrations")
+    .select("id, name, membership_type, amount_paid, notes, created_at")
+    .eq("slip_status", "pending_review")
+    .eq("payment_method", "cash")
+    .order("created_at", { ascending: true });
+
   const staff = [
     ...(profiles ?? []).map((p) => ({
       id: p.id as string,
@@ -57,6 +65,7 @@ export default async function PosKioskPage() {
     <PosScreen
       staff={staff}
       inventory={(inventory ?? []) as { item_id: string; variant: string; stock_qty: number }[]}
+      pendingCash={(pendingCash ?? []) as { id: number; name: string; membership_type: string; amount_paid: number; notes: string | null }[]}
     />
   );
 }
