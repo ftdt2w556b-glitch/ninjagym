@@ -1,18 +1,21 @@
-import { createAdminClient } from "@/lib/supabase/server";
-import ScannerClient from "@/components/scanner/ScannerClient";
+import { createSupabaseServerClient, createAdminClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function ScannerPage() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin");
+
   const admin = createAdminClient();
-  const { data: profiles } = await admin
+  const { data: profile } = await admin
     .from("profiles")
-    .select("name, email")
-    .in("role", ["admin", "manager", "staff"])
-    .eq("show_on_pos", true)
-    .order("name");
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-  const staffNames = (profiles ?? []).map(
-    (p) => (p.name ?? p.email ?? "Staff") as string
-  );
+  if (!profile || !["admin", "owner", "manager", "staff"].includes(profile.role)) {
+    redirect("/admin");
+  }
 
-  return <ScannerClient staffNames={staffNames} />;
+  redirect("/admin");
 }
