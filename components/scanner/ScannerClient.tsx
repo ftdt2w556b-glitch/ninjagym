@@ -1,18 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
+import { useState, useEffect, useCallback } from "react";
 import { MEMBERSHIP_TYPES, BASE_PRICES, getPriceForType } from "@/lib/pricing";
-
-// Load camera scanner client-side only — html5-qrcode is not SSR-safe
-const CameraScanner = dynamic(() => import("@/components/scanner/CameraScanner"), {
-  ssr: false,
-  loading: () => (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-      <p className="text-white text-sm">Starting camera…</p>
-    </div>
-  ),
-});
 
 // Walk-in relevant types only (no bulk, no birthday_event)
 const WALKIN_TYPES = MEMBERSHIP_TYPES.filter(
@@ -28,7 +17,6 @@ interface MemberResult {
   expires_at: string | null;
   kids_names: string | null;
   kids_count: number;
-  email: string | null;
 }
 
 interface QuickRegResult {
@@ -51,31 +39,21 @@ const DEFAULT_FORM = {
 };
 
 export default function ScannerClient({ staffNames }: { staffNames: string[] }) {
-  // ── Scanner state ─────────────────────────────────────────────────
-  const [manualId, setManualId]           = useState("");
+  // ── PIN state ──────────────────────────────────────────────────────
+  const [digits, setDigits]               = useState<string[]>([]);
   const [member, setMember]               = useState<MemberResult | null>(null);
-  const [error, setError]                 = useState("");
+  const [lookupError, setLookupError]     = useState("");
+  const [loading, setLoading]             = useState(false);
   const [checkedIn, setCheckedIn]         = useState(false);
   const [sessionsLeft, setSessionsLeft]   = useState<number | null>(null);
-  const [loading, setLoading]             = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [shake, setShake]                 = useState(false);
 
   // ── Quick register state ──────────────────────────────────────────
-  const [showCamera, setShowCamera]       = useState(false);
   const [showModal, setShowModal]         = useState(false);
   const [form, setForm]                   = useState(DEFAULT_FORM);
   const [qrLoading, setQrLoading]         = useState(false);
   const [qrError, setQrError]             = useState("");
   const [qrResult, setQrResult]           = useState<QuickRegResult | null>(null);
-
-  // ── Scanner bootstrap ─────────────────────────────────────────────
-  useEffect(() => {
-    inputRef.current?.focus();
-    const params = new URLSearchParams(window.location.search);
-    const memberId = params.get("member");
-    if (memberId) lookupMember(memberId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Auto-recalculate amount when type or kids count changes
   useEffect(() => {
@@ -83,29 +61,71 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
     setForm((f) => ({ ...f, amount: price }));
   }, [form.membershipType, form.kidsCount]);
 
-  // ── Scanner functions ─────────────────────────────────────────────
-  async function lookupMember(id: string) {
+  // ── PIN lookup ────────────────────────────────────────────────────
+  const lookupByPin = useCallback(async (pin: string) => {
     setLoading(true);
-    setError("");
+    setLookupError("");
     setMember(null);
     setCheckedIn(false);
     setSessionsLeft(null);
 
     try {
-      const res = await fetch(`/api/scanner/lookup?id=${encodeURIComponent(id)}`);
+      const res = await fetch(`/api/scanner/lookup?pin=${encodeURIComponent(pin)}`);
       const data = await res.json();
       if (!res.ok || !data) {
-        setError(`Member #${id} not found.`);
+        triggerError();
         return;
       }
       setMember(data);
     } catch {
-      setError(`Member #${id} not found.`);
+      triggerError();
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  function triggerError() {
+    setShake(true);
+    setLookupError("PIN not found");
+    setTimeout(() => {
+      setShake(false);
+      setLookupError("");
+      setDigits([]);
+    }, 1800);
   }
 
+  // ── Numpad input ──────────────────────────────────────────────────
+  function pressDigit(d: string) {
+    if (loading || member) return;
+    if (digits.length >= 4) return;
+    const next = [...digits, d];
+    setDigits(next);
+    if (next.length === 4) {
+      lookupByPin(next.join(""));
+    }
+  }
+
+  function pressBackspace() {
+    if (loading || member) return;
+    setDigits((prev) => prev.slice(0, -1));
+    setLookupError("");
+  }
+
+  function pressClear() {
+    if (loading || member) return;
+    setDigits([]);
+    setLookupError("");
+  }
+
+  function resetToNumpad() {
+    setMember(null);
+    setCheckedIn(false);
+    setSessionsLeft(null);
+    setDigits([]);
+    setLookupError("");
+  }
+
+  // ── Check in ─────────────────────────────────────────────────────
   async function handleCheckIn() {
     if (!member) return;
     setLoading(true);
@@ -120,37 +140,21 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
       if (!res.ok) throw new Error(data.error);
       setSessionsLeft(data.sessions_remaining);
       setCheckedIn(true);
+
+      // Auto-reset after 4 seconds
+      setTimeout(() => resetToNumpad(), 4000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Check-in failed");
+      setLookupError(err instanceof Error ? err.message : "Check-in failed");
     } finally {
       setLoading(false);
     }
-
-    setTimeout(() => {
-      setMember(null);
-      setCheckedIn(false);
-      setSessionsLeft(null);
-      setManualId("");
-      inputRef.current?.focus();
-    }, 5000);
   }
 
-  function handleManualSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (manualId.trim()) lookupMember(manualId.trim());
-  }
-
-  function handleCameraScan(memberId: string) {
-    setShowCamera(false);
-    setManualId(memberId);
-    lookupMember(memberId);
-  }
-
-  // ── Quick register functions ──────────────────────────────────────
+  // ── Quick register ────────────────────────────────────────────────
   function openModal() {
     setQrResult(null);
     setQrError("");
-    setForm((f) => ({ ...DEFAULT_FORM, staffName: f.staffName })); // keep staff selected
+    setForm((f) => ({ ...DEFAULT_FORM, staffName: f.staffName }));
     setShowModal(true);
   }
 
@@ -158,7 +162,6 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
     setShowModal(false);
     setQrResult(null);
     setQrError("");
-    inputRef.current?.focus();
   }
 
   async function handleQuickRegister() {
@@ -186,8 +189,6 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setQrResult(data);
-
-      // Auto-close after 6s
       setTimeout(() => closeModal(), 6000);
     } catch (err: unknown) {
       setQrError(err instanceof Error ? err.message : "Registration failed");
@@ -196,7 +197,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
     }
   }
 
-  // ── Membership display helpers ────────────────────────────────────
+  // ── Membership helpers ────────────────────────────────────────────
   const membershipLabel = member
     ? MEMBERSHIP_TYPES.find((m) => m.id === member.membership_type)?.label ?? member.membership_type
     : "";
@@ -210,143 +211,74 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
     ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     : null;
   const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+  const isPaymentPending = member && member.slip_status !== "approved";
 
   const selectedType = WALKIN_TYPES.find((m) => m.id === form.membershipType);
 
+  // ── Numpad layout ─────────────────────────────────────────────────
+  const numpadKeys = ["1","2","3","4","5","6","7","8","9","CLR","0","⌫"];
+
   // ── Render ────────────────────────────────────────────────────────
   return (
-    <div className="min-h-dvh bg-gray-900 flex flex-col items-center justify-start pt-10 px-4">
-      <h1 className="text-white font-fredoka text-4xl mb-1 text-center">QR Scanner</h1>
-      <p className="text-gray-400 text-sm mb-3 text-center">Scan a member QR code or enter ID manually</p>
+    <div className="bg-gray-900 min-h-dvh flex flex-col items-center justify-start pt-10 px-4 pb-24">
+
+      <h1 className="text-white font-fredoka text-5xl mb-1 text-center tracking-wide">NinjaGym</h1>
+      <p className="text-gray-400 text-sm mb-6 text-center">Enter your PIN to check in</p>
 
       {/* Gate policy banner */}
-      <div className="w-full max-w-sm bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-2.5 mb-6 text-center">
+      <div className="w-full max-w-sm bg-yellow-400/10 border border-yellow-400/30 rounded-xl px-4 py-2.5 mb-8 text-center">
         <p className="text-yellow-300 text-xs font-semibold">
-          🚦 Every child entering must be registered — scan QR or use Quick Register below
+          🚦 Every child entering must be registered
         </p>
       </div>
 
-      {/* Camera scan button */}
-      <button
-        onClick={() => setShowCamera(true)}
-        className="w-full max-w-sm bg-[#ffe033] text-gray-900 font-bold py-4 rounded-2xl mb-3 flex items-center justify-center gap-2 text-lg hover:bg-yellow-300 active:scale-95 transition-all shadow-lg"
-      >
-        📷 Scan with Camera
-      </button>
-
-      {/* Divider */}
-      <div className="flex items-center gap-3 w-full max-w-sm mb-3">
-        <div className="flex-1 h-px bg-gray-700" />
-        <span className="text-gray-600 text-xs uppercase tracking-widest">or enter ID</span>
-        <div className="flex-1 h-px bg-gray-700" />
-      </div>
-
-      {/* Manual ID input */}
-      <form onSubmit={handleManualSubmit} className="flex gap-2 mb-8 w-full max-w-sm">
-        <input
-          ref={inputRef}
-          type="text"
-          value={manualId}
-          onChange={(e) => setManualId(e.target.value)}
-          placeholder="Member ID"
-          className="flex-1 bg-gray-800 text-white border border-gray-600 rounded-xl px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-[#1a56db] placeholder-gray-500"
-          autoComplete="off"
-        />
-        <button type="submit"
-          className="bg-[#1a56db] text-white font-bold px-5 py-3 rounded-xl hover:bg-blue-600 transition-colors">
-          Go
-        </button>
-      </form>
-
-      {loading && <div className="text-gray-400 text-lg animate-pulse">Looking up...</div>}
-
-      {error && (
-        <div className="bg-red-900/50 text-red-300 rounded-2xl px-6 py-4 text-center max-w-sm w-full">
-          {error}
-        </div>
-      )}
-
-      {/* ── Checked in ── */}
+      {/* ── Checked in success ── */}
       {checkedIn && member && (
-        <div className="flex flex-col gap-3 max-w-sm w-full">
-          <div className="bg-green-500 text-white rounded-2xl p-6 text-center">
-            <div className="text-5xl mb-3">✓</div>
-            <h2 className="font-fredoka text-3xl mb-1">{member.name}</h2>
-            <p className="text-green-100 mb-3">Checked in successfully!</p>
-            {isSessionBased && (
-              <div className="bg-white/20 rounded-xl px-4 py-3 mb-3">
-                {sessionsLeft !== null && sessionsLeft > 0 ? (
-                  <p className="text-white font-bold">
-                    {sessionsLeft} session{sessionsLeft !== 1 ? "s" : ""} remaining
-                  </p>
-                ) : sessionsLeft === 0 ? (
-                  <p className="text-yellow-200 font-bold">⚠️ Last session used — remind to renew!</p>
-                ) : null}
-              </div>
-            )}
-            {member.email && (
-              <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-green-100">
-                🌟 Points earned! Remind {member.name.split(" ")[0]} to always scan their QR card to keep earning loyalty points.
-              </div>
-            )}
-            {!member.email && (
-              <div className="bg-white/10 rounded-xl px-3 py-2 text-xs text-yellow-200">
-                💡 No email on file — ask them to register online to start earning loyalty points & get their QR card.
-              </div>
-            )}
-          </div>
-
-          {/* Add another session — for drop-in extras */}
-          <button
-            onClick={() => {
-              setForm((f) => ({
-                ...DEFAULT_FORM,
-                staffName: f.staffName,
-                name: member.name,
-                kidsNames: member.kids_names ?? "",
-                kidsCount: member.kids_count ?? 1,
-                membershipType: member.membership_type in WALKIN_TYPES.reduce((a, m) => ({ ...a, [m.id]: true }), {} as Record<string,boolean>)
-                  ? member.membership_type
-                  : "session_group",
-              }));
-              setQrResult(null);
-              setQrError("");
-              setShowModal(true);
-            }}
-            className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl py-3 text-sm font-semibold transition-colors"
-          >
-            + Register another session for {member.name.split(" ")[0]}
-          </button>
+        <div className="w-full max-w-sm bg-green-500 text-white rounded-2xl p-6 text-center shadow-xl">
+          <div className="text-6xl mb-3">✓</div>
+          <h2 className="font-fredoka text-3xl mb-1">{member.name}</h2>
+          <p className="text-green-100 mb-3">Checked in!</p>
+          {isSessionBased && sessionsLeft !== null && (
+            <div className="bg-white/20 rounded-xl px-4 py-3">
+              {sessionsLeft > 0 ? (
+                <p className="text-white font-bold">
+                  {sessionsLeft} session{sessionsLeft !== 1 ? "s" : ""} remaining
+                </p>
+              ) : (
+                <p className="text-yellow-200 font-bold">Last session used — remind to renew!</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* ── Member found, not yet checked in ── */}
       {member && !checkedIn && (
         <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+
           {isMonthlyFlex && isExpired && (
             <div className="bg-red-100 text-red-700 rounded-xl px-3 py-2 mb-4 text-sm font-semibold text-center">
-              ⛔ Monthly membership expired — renewal required
+              Monthly membership expired — renewal required
             </div>
           )}
           {isMonthlyFlex && isExpiringSoon && (
             <div className="bg-orange-100 text-orange-700 rounded-xl px-3 py-2 mb-4 text-sm text-center">
-              ⚠️ Membership expires in <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong> — remind to renew!
+              Membership expires in <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong> — remind to renew!
             </div>
           )}
-          {member.slip_status !== "approved" && (
-            <div className="bg-yellow-100 text-yellow-800 rounded-xl px-3 py-2 mb-4 text-sm flex items-center gap-2">
+          {isPaymentPending && (
+            <div className="bg-orange-100 text-orange-700 rounded-xl px-3 py-2 mb-4 text-sm flex items-center gap-2">
               <span>⚠️</span>
-              <span>Payment <strong>{member.slip_status.replace("_", " ")}</strong> — confirm with member before checking in</span>
+              <span>Payment pending — see staff</span>
             </div>
           )}
+
           <h2 className="font-fredoka text-2xl text-gray-900 mb-1">{member.name}</h2>
           <p className="text-gray-500 text-sm mb-1">{membershipLabel}</p>
           {member.kids_names && (
-            <p className="text-xs text-gray-400 mb-1">👶 Kids: {member.kids_names}</p>
+            <p className="text-xs text-gray-400 mb-1">Kids: {member.kids_names}</p>
           )}
-          {member.email && (
-            <p className="text-xs text-gray-400 mb-1">✉ {member.email}</p>
-          )}
+
           {isSessionBased && member.sessions_remaining !== null && (
             <div className={`rounded-xl px-3 py-2 my-3 text-center ${
               member.sessions_remaining <= 1 ? "bg-orange-50 border border-orange-200" : "bg-blue-50"
@@ -360,6 +292,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
               )}
             </div>
           )}
+
           {isMonthlyFlex && expiryDate && !isExpired && (
             <div className="bg-blue-50 rounded-xl px-3 py-2 my-3 text-center">
               <p className="text-xs text-gray-500">Membership Valid Until</p>
@@ -368,15 +301,17 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
               </p>
             </div>
           )}
+
           <button
             onClick={handleCheckIn}
-            disabled={loading || (isMonthlyFlex && isExpired)}
+            disabled={loading || (isMonthlyFlex && isExpired) || !!isPaymentPending}
             className="w-full bg-[#22c55e] text-white font-bold text-xl py-4 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-50 mt-3"
           >
-            {loading ? "Checking in…" : "✓ Check In"}
+            {loading ? "Checking in..." : "✓ Check In"}
           </button>
+
           <button
-            onClick={() => { setMember(null); setManualId(""); inputRef.current?.focus(); }}
+            onClick={resetToNumpad}
             className="w-full text-gray-400 text-sm mt-3 hover:text-gray-600 transition-colors"
           >
             Cancel
@@ -384,22 +319,71 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
         </div>
       )}
 
-      {/* Hint */}
-      {!member && !loading && !error && (
-        <div className="text-gray-600 text-center text-sm mt-2 max-w-xs space-y-1">
-          <p className="text-gray-700 text-xs">Each scan earns loyalty points for the member.</p>
+      {/* ── PIN numpad ── */}
+      {!member && !checkedIn && (
+        <div className="w-full max-w-xs flex flex-col items-center gap-6">
+
+          {/* PIN dots */}
+          <div className="flex gap-4">
+            {[0,1,2,3].map((i) => {
+              const filled = i < digits.length;
+              return (
+                <div
+                  key={i}
+                  className={`w-5 h-5 rounded-full transition-all duration-150 ${
+                    shake
+                      ? "bg-red-500"
+                      : filled
+                      ? "bg-[#ffe033]"
+                      : "bg-gray-600"
+                  }`}
+                />
+              );
+            })}
+          </div>
+
+          {/* Error message */}
+          {lookupError && !shake && (
+            <p className="text-red-400 text-sm">{lookupError}</p>
+          )}
+
+          {/* Loading spinner */}
+          {loading && (
+            <div className="flex items-center gap-2 text-gray-400">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <span className="text-sm">Looking up...</span>
+            </div>
+          )}
+
+          {/* Numpad grid */}
+          {!loading && (
+            <div className="grid grid-cols-3 gap-3 w-full">
+              {numpadKeys.map((key) => (
+                <button
+                  key={key}
+                  onClick={() => {
+                    if (key === "⌫") pressBackspace();
+                    else if (key === "CLR") pressClear();
+                    else pressDigit(key);
+                  }}
+                  className={`bg-gray-700 text-white font-bold text-2xl py-5 rounded-2xl active:scale-95 transition-all select-none ${
+                    key === "CLR" || key === "⌫"
+                      ? "text-gray-300 text-lg"
+                      : "hover:bg-gray-600"
+                  }`}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Camera scanner overlay */}
-      {showCamera && (
-        <CameraScanner
-          onScan={handleCameraScan}
-          onClose={() => setShowCamera(false)}
-        />
-      )}
-
-      {/* ── Quick Register FAB ────────────────────────────────────── */}
+      {/* ── Quick Register FAB ── */}
       <button
         onClick={openModal}
         className="fixed bottom-6 right-6 bg-green-500 text-white font-bold px-5 py-3 rounded-2xl shadow-xl hover:bg-green-400 active:scale-95 transition-all text-sm flex items-center gap-2 z-40"
@@ -407,25 +391,23 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
         <span className="text-xl leading-none">+</span> Quick Register
       </button>
 
-      {/* ── Quick Register Modal ──────────────────────────────────── */}
+      {/* ── Quick Register Modal ── */}
       {showModal && (
         <div className="fixed inset-0 bg-black/80 flex items-end sm:items-center justify-center z-50 p-3">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
 
-            {/* Header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-700">
               <h2 className="text-white font-fredoka text-2xl">Quick Register</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-white text-2xl leading-none">✕</button>
             </div>
 
-            {/* Success state */}
             {qrResult ? (
               <div className={`m-5 rounded-2xl p-6 text-center ${qrResult.checked_in ? "bg-green-500" : "bg-blue-600"} text-white`}>
                 <div className="text-5xl mb-3">{qrResult.checked_in ? "✓" : "⏳"}</div>
                 <h3 className="font-fredoka text-2xl mb-1">{qrResult.name}</h3>
                 {qrResult.checked_in ? (
                   <>
-                    <p className="text-green-100 mb-2">Registered & checked in!</p>
+                    <p className="text-green-100 mb-2">Registered and checked in!</p>
                     <p className="text-xs text-green-200">Cash recorded · Drawer logged</p>
                   </>
                 ) : (
@@ -434,7 +416,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                     <p className="text-xs text-blue-200">Ask them to transfer via PromptPay and show the slip. Staff will approve in Payments.</p>
                   </>
                 )}
-                <p className="text-xs opacity-60 mt-3">Closing in a moment…</p>
+                <p className="text-xs opacity-60 mt-3">Closing in a moment...</p>
               </div>
             ) : (
               <div className="p-5 flex flex-col gap-4">
@@ -455,7 +437,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                     onChange={(e) => setForm((f) => ({ ...f, staffName: e.target.value }))}
                     className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
                   >
-                    <option value="">— Select staff —</option>
+                    <option value="">Select staff</option>
                     {staffNames.map((n) => (
                       <option key={n} value={n}>{n}</option>
                     ))}
@@ -500,13 +482,17 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, kidsCount: Math.max(1, f.kidsCount - 1) }))}
                       className="w-11 h-11 bg-gray-700 text-white rounded-xl text-xl font-bold hover:bg-gray-600 transition-colors"
-                    >−</button>
+                    >
+                      −
+                    </button>
                     <span className="text-white font-fredoka text-2xl w-8 text-center">{form.kidsCount}</span>
                     <button
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, kidsCount: f.kidsCount + 1 }))}
                       className="w-11 h-11 bg-gray-700 text-white rounded-xl text-xl font-bold hover:bg-gray-600 transition-colors"
-                    >+</button>
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
 
@@ -602,14 +588,14 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                     type="button"
                     onClick={handleQuickRegister}
                     disabled={qrLoading}
-                    className={`flex-2 flex-1 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 ${
+                    className={`flex-1 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 ${
                       form.paymentMethod === "cash"
                         ? "bg-green-500 hover:bg-green-400 text-white"
                         : "bg-blue-600 hover:bg-blue-500 text-white"
                     }`}
                   >
                     {qrLoading
-                      ? "Registering…"
+                      ? "Registering..."
                       : form.paymentMethod === "cash"
                         ? "✓ Register & Check In"
                         : "Register →"}

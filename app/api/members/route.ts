@@ -31,6 +31,18 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
+    // Generate unique 4-digit PIN
+    let pin: number | null = null;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const candidate = Math.floor(1000 + Math.random() * 9000);
+      const { data: existing } = await admin
+        .from("member_registrations")
+        .select("id")
+        .eq("pin", candidate)
+        .maybeSingle();
+      if (!existing) { pin = candidate; break; }
+    }
+
     // Upload slip if provided
     let slip_image: string | null = null;
     let slip_uploaded_at: string | null = null;
@@ -77,6 +89,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         sessions_remaining,
         parent_member_id,
+        pin,
       })
       .select("id")
       .single();

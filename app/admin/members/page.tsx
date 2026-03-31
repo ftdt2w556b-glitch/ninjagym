@@ -28,7 +28,7 @@ export default async function MembersPage({
   // Only primary registrations (no top-ups)
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at, pin")
     .is("parent_member_id", null)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -127,7 +127,14 @@ export default async function MembersPage({
                   <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-400 font-mono text-xs">#{m.id}</td>
                     <td className="px-4 py-3">
-                      <p className="font-semibold text-gray-900">{m.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900">{m.name}</p>
+                        {m.pin && (
+                          <span className="text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 font-mono">
+                            PIN: {m.pin}
+                          </span>
+                        )}
+                      </div>
                       {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                       {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                       {m.kids_names && (

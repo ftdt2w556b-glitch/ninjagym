@@ -47,6 +47,7 @@ interface Props {
     kids_names: string | null;
     kids_count: number | null;
     created_at: string;
+    pin?: number | null;
   };
   membershipLabel: string;
   siteUrl: string;
@@ -248,6 +249,26 @@ export default function QrCardClient({
         <p className="text-center text-xs text-gray-400 -mt-3 mb-3 px-6">
           {t.qrCardNote}
         </p>
+
+        {/* PIN display */}
+        {member.pin && (
+          <div className="mx-5 mb-4 bg-gray-900 rounded-2xl px-5 py-4 text-center">
+            <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest mb-2">
+              Your Check-In PIN
+            </p>
+            <div className="flex justify-center gap-3 mb-2">
+              {String(member.pin).padStart(4, "0").split("").map((d, i) => (
+                <span
+                  key={i}
+                  className="font-mono text-4xl font-bold text-[#ffe033] leading-none"
+                >
+                  {d}
+                </span>
+              ))}
+            </div>
+            <p className="text-gray-500 text-xs">Use this at the front desk kiosk</p>
+          </div>
+        )}
 
         {/* Member ID + sessions/expiry row */}
         <div className="px-5 pb-5 flex items-center justify-between">

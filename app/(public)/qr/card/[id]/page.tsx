@@ -17,7 +17,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid")
+    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin")
     .eq("id", id)
     .single();
 

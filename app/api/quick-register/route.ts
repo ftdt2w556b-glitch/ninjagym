@@ -36,6 +36,18 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const isCash = payment_method === "cash";
 
+    // Generate unique 4-digit PIN
+    let pin: number | null = null;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const candidate = Math.floor(1000 + Math.random() * 9000);
+      const { data: existing } = await admin
+        .from("member_registrations")
+        .select("id")
+        .eq("pin", candidate)
+        .maybeSingle();
+      if (!existing) { pin = candidate; break; }
+    }
+
     const sessions_remaining = SESSION_TYPES.has(membership_type) ? 1 : null;
     const expires_at =
       membership_type === "monthly_flex"
@@ -59,6 +71,7 @@ export async function POST(request: NextRequest) {
         slip_reviewed_at: isCash ? now : null,
         sessions_remaining,
         expires_at,
+        pin,
       })
       .select("id, name")
       .single();
