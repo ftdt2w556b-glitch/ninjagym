@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { MEMBERSHIP_TYPES, BASE_PRICES, getPriceForType } from "@/lib/pricing";
 import CameraScanner from "@/components/scanner/CameraScanner";
 
@@ -82,19 +81,19 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
     setCheckedIn(false);
     setSessionsLeft(null);
 
-    const supabase = createSupabaseBrowserClient();
-    const { data, error: dbError } = await supabase
-      .from("member_registrations")
-      .select("id, name, email, membership_type, slip_status, sessions_remaining, expires_at, kids_names, kids_count")
-      .eq("id", id)
-      .single();
-
-    setLoading(false);
-    if (dbError || !data) {
+    try {
+      const res = await fetch(`/api/scanner/lookup?id=${encodeURIComponent(id)}`);
+      const data = await res.json();
+      if (!res.ok || !data) {
+        setError(`Member #${id} not found.`);
+        return;
+      }
+      setMember(data);
+    } catch {
       setError(`Member #${id} not found.`);
-      return;
+    } finally {
+      setLoading(false);
     }
-    setMember(data);
   }
 
   async function handleCheckIn() {
