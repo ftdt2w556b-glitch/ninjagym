@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { MEMBERSHIP_TYPES, BASE_PRICES, getPriceForType } from "@/lib/pricing";
+import CameraScanner from "@/components/scanner/CameraScanner";
 
 // Walk-in relevant types only (no bulk, no birthday_event)
 const WALKIN_TYPES = MEMBERSHIP_TYPES.filter(
@@ -51,6 +52,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
   const inputRef = useRef<HTMLInputElement>(null);
 
   // ── Quick register state ──────────────────────────────────────────
+  const [showCamera, setShowCamera]       = useState(false);
   const [showModal, setShowModal]         = useState(false);
   const [form, setForm]                   = useState(DEFAULT_FORM);
   const [qrLoading, setQrLoading]         = useState(false);
@@ -127,6 +129,12 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (manualId.trim()) lookupMember(manualId.trim());
+  }
+
+  function handleCameraScan(memberId: string) {
+    setShowCamera(false);
+    setManualId(memberId);
+    lookupMember(memberId);
   }
 
   // ── Quick register functions ──────────────────────────────────────
@@ -209,6 +217,21 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
         </p>
       </div>
 
+      {/* Camera scan button */}
+      <button
+        onClick={() => setShowCamera(true)}
+        className="w-full max-w-sm bg-[#ffe033] text-gray-900 font-bold py-4 rounded-2xl mb-3 flex items-center justify-center gap-2 text-lg hover:bg-yellow-300 active:scale-95 transition-all shadow-lg"
+      >
+        📷 Scan with Camera
+      </button>
+
+      {/* Divider */}
+      <div className="flex items-center gap-3 w-full max-w-sm mb-3">
+        <div className="flex-1 h-px bg-gray-700" />
+        <span className="text-gray-600 text-xs uppercase tracking-widest">or enter ID</span>
+        <div className="flex-1 h-px bg-gray-700" />
+      </div>
+
       {/* Manual ID input */}
       <form onSubmit={handleManualSubmit} className="flex gap-2 mb-8 w-full max-w-sm">
         <input
@@ -216,7 +239,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
           type="text"
           value={manualId}
           onChange={(e) => setManualId(e.target.value)}
-          placeholder="Member ID or scan QR"
+          placeholder="Member ID"
           className="flex-1 bg-gray-800 text-white border border-gray-600 rounded-xl px-4 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-[#1a56db] placeholder-gray-500"
           autoComplete="off"
         />
@@ -354,10 +377,17 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
 
       {/* Hint */}
       {!member && !loading && !error && (
-        <div className="text-gray-600 text-center text-sm mt-8 max-w-xs space-y-2">
-          <p>Connect a USB or Bluetooth QR scanner — it types the member ID directly into the input above.</p>
+        <div className="text-gray-600 text-center text-sm mt-2 max-w-xs space-y-1">
           <p className="text-gray-700 text-xs">Each scan earns loyalty points for the member.</p>
         </div>
+      )}
+
+      {/* Camera scanner overlay */}
+      {showCamera && (
+        <CameraScanner
+          onScan={handleCameraScan}
+          onClose={() => setShowCamera(false)}
+        />
       )}
 
       {/* ── Quick Register FAB ────────────────────────────────────── */}
