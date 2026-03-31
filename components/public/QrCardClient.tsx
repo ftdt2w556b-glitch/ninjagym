@@ -204,7 +204,7 @@ export default function QrCardClient({
                             ? "bg-orange-100 text-orange-600"
                             : "bg-green-100 text-green-700"
                         }`}>
-                          Exp {new Date(pkg.expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          Exp {new Date(pkg.expires_at).toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric" })}
                         </span>
                       ) : (
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
@@ -261,7 +261,7 @@ export default function QrCardClient({
                     : "text-[#1a56db]"
                 }`}>
                   {new Date(selectedPkg.expires_at).toLocaleDateString("en-US", {
-                    month: "short", day: "numeric", year: "numeric",
+                    timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
                   })}
                 </p>
               </div>
@@ -280,7 +280,7 @@ export default function QrCardClient({
             <p className="text-xs text-gray-400 uppercase tracking-wide">{t.qrRegistered}</p>
             <p className="text-xs font-semibold text-gray-600">
               {new Date(member.created_at).toLocaleDateString("en-US", {
-                day: "numeric", month: "short", year: "numeric",
+                timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric",
               })}
             </p>
           </div>

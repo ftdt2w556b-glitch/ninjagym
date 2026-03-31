@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { bangkokToday } from "@/lib/timezone";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
 
-  // The Revenue page passes full ISO timestamps (e.g. 2026-03-28T00:00:00)
-  // Fall back to today if not provided
-  const today = new Date().toISOString().split("T")[0];
-  const from  = searchParams.get("from") ?? `${today}T00:00:00`;
-  const to    = searchParams.get("to")   ?? `${today}T23:59:59`;
+  // The Revenue page passes full ISO timestamps with +07:00 offset
+  // Fall back to today (Bangkok) if not provided
+  const today = bangkokToday();
+  const from  = searchParams.get("from") ?? `${today}T00:00:00+07:00`;
+  const to    = searchParams.get("to")   ?? `${today}T23:59:59+07:00`;
 
   // Extract date portion for the filename
   const fromDate = from.split("T")[0];
@@ -52,8 +53,8 @@ export async function GET(request: NextRequest) {
     const prof = s.profiles as { name?: string; email?: string } | null;
     return {
       id: s.id,
-      date: dt.toLocaleDateString("en-GB"),
-      time: dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+      date: dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }),
+      time: dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }),
       type: s.sale_type ?? "POS",
       description: s.notes ?? "",
       method: s.payment_method ?? "cash",
@@ -68,8 +69,8 @@ export async function GET(request: NextRequest) {
     const dt = m.slip_reviewed_at ? new Date(m.slip_reviewed_at) : null;
     return {
       id: `R${m.id}`,
-      date: dt ? dt.toLocaleDateString("en-GB") : "",
-      time: dt ? dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "",
+      date: dt ? dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : "",
+      time: dt ? dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }) : "",
       type: "Registration",
       description: `${m.name} — ${m.membership_type}`,
       method: m.payment_method ?? "cash",

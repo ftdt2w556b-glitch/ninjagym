@@ -332,7 +332,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
             <div className="bg-blue-50 rounded-xl px-3 py-2 my-3 text-center">
               <p className="text-xs text-gray-500">Membership Valid Until</p>
               <p className="font-fredoka text-xl text-[#1a56db]">
-                {expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                {expiryDate.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok", day: "numeric", month: "short", year: "numeric" })}
               </p>
             </div>
           )}

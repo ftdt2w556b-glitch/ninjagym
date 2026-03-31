@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 
 /**
  * GET /api/pos/tally
@@ -8,13 +9,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const admin = createAdminClient();
-    const today = new Date().toISOString().split("T")[0];
-
     const { data, error } = await admin
       .from("cash_sales")
       .select("id, amount")
-      .gte("processed_at", `${today}T00:00:00`)
-      .lte("processed_at", `${today}T23:59:59`);
+      .gte("processed_at", bangkokStartOfDay())
+      .lte("processed_at", bangkokEndOfDay());
 
     if (error) throw error;
 

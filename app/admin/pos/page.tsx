@@ -1,4 +1,5 @@
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { bangkokToday, bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 import { redirect } from "next/navigation";
 
 async function savePosPassword(formData: FormData) {
@@ -73,21 +74,21 @@ export default async function AdminPosPage({
     .order("processed_at", { ascending: false })
     .limit(20);
 
-  // Today's cash by staff
-  const today = new Date().toISOString().split("T")[0];
+  // Today's cash by staff (Bangkok time)
+  const today = bangkokToday();
   const { data: todaySales } = await admin
     .from("cash_sales")
     .select("amount, staff_name")
-    .gte("processed_at", `${today}T00:00:00`)
-    .lte("processed_at", `${today}T23:59:59`);
+    .gte("processed_at", bangkokStartOfDay())
+    .lte("processed_at", bangkokEndOfDay());
 
   // Today's box total (notes_1k fetched separately — column may not exist yet)
   let todayBoxTotal = 0;
   const { data: todayNotes1kRows } = await admin
     .from("cash_sales")
     .select("notes_1k")
-    .gte("processed_at", `${today}T00:00:00`)
-    .lte("processed_at", `${today}T23:59:59`);
+    .gte("processed_at", bangkokStartOfDay())
+    .lte("processed_at", bangkokEndOfDay());
   if (todayNotes1kRows) {
     todayBoxTotal = todayNotes1kRows.reduce((s, r) => s + (Number((r as Record<string, unknown>).notes_1k ?? 0) * 1000), 0);
   }
@@ -317,8 +318,8 @@ export default async function AdminPosPage({
               )}
               {(recentSales ?? []).map((s) => {
                 const dt = new Date(s.processed_at as string);
-                const dateStr = dt.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
-                const timeStr = dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+                const dateStr = dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short" });
+                const timeStr = dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
                 return (
                   <tr key={s.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id}</td>

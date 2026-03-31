@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import DeleteQuestionButton from "@/components/admin/DeleteQuestionButton";
@@ -16,8 +17,6 @@ export default async function DashboardPage() {
 
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
-  const today = new Date().toISOString().split("T")[0];
-
   const [
     { count: todayCheckIns },
     { count: pendingPayments },
@@ -30,8 +29,8 @@ export default async function DashboardPage() {
     admin
       .from("attendance_logs")
       .select("*", { count: "exact", head: true })
-      .gte("check_in_at", `${today}T00:00:00`)
-      .lte("check_in_at", `${today}T23:59:59`),
+      .gte("check_in_at", bangkokStartOfDay())
+      .lte("check_in_at", bangkokEndOfDay()),
     admin
       .from("member_registrations")
       .select("*", { count: "exact", head: true })
@@ -59,8 +58,8 @@ export default async function DashboardPage() {
       .from("member_registrations")
       .select("amount_paid")
       .eq("slip_status", "approved")
-      .gte("slip_reviewed_at", `${today}T00:00:00`)
-      .lte("slip_reviewed_at", `${today}T23:59:59`),
+      .gte("slip_reviewed_at", bangkokStartOfDay())
+      .lte("slip_reviewed_at", bangkokEndOfDay()),
   ]);
 
   // Fetch replies separately — fails gracefully if table doesn't exist yet

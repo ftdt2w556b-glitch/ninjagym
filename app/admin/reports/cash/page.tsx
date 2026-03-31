@@ -1,14 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { bangkokToday } from "@/lib/timezone";
 
 type Mode = "day" | "month" | "year";
 
 function buildRange(mode: Mode, date: string): { from: string; to: string; label: string } {
   if (mode === "day") {
     return {
-      from: `${date}T00:00:00`,
-      to:   `${date}T23:59:59`,
-      label: new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase(),
+      from: `${date}T00:00:00+07:00`,
+      to:   `${date}T23:59:59+07:00`,
+      label: new Date(date + "T12:00:00+07:00").toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase(),
     };
   }
   if (mode === "month") {
@@ -16,24 +17,27 @@ function buildRange(mode: Mode, date: string): { from: string; to: string; label
     const lastDay = new Date(y, m, 0).getDate();
     const mm = String(m).padStart(2, "0");
     return {
-      from: `${y}-${mm}-01T00:00:00`,
-      to:   `${y}-${mm}-${lastDay}T23:59:59`,
-      label: new Date(y, m - 1).toLocaleDateString("en-US", { month: "long", year: "numeric" }).toUpperCase(),
+      from: `${y}-${mm}-01T00:00:00+07:00`,
+      to:   `${y}-${mm}-${lastDay}T23:59:59+07:00`,
+      label: new Date(y, m - 1).toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "long", year: "numeric" }).toUpperCase(),
     };
   }
   const y = date;
   return {
-    from: `${y}-01-01T00:00:00`,
-    to:   `${y}-12-31T23:59:59`,
+    from: `${y}-01-01T00:00:00+07:00`,
+    to:   `${y}-12-31T23:59:59+07:00`,
     label: `YEAR ${y}`,
   };
 }
 
 function defaultDate(mode: Mode): string {
   const now = new Date();
-  if (mode === "day")   return now.toISOString().split("T")[0];
-  if (mode === "month") return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  return String(now.getFullYear());
+  if (mode === "day")   return bangkokToday();
+  if (mode === "month") {
+    const d = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+  return String(new Date(now.toLocaleString("en-US", { timeZone: "Asia/Bangkok" })).getFullYear());
 }
 
 function inputType(mode: Mode) {
@@ -189,7 +193,7 @@ export default async function RevenuePage({
               {allTx.map((tx, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-400 tabular-nums whitespace-nowrap">
-                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-700 max-w-[260px]">
                     <span className="line-clamp-1">{tx.description}</span>

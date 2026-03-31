@@ -343,7 +343,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     });
 
     const now = new Date();
-    const time = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const time = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", second: "2-digit" });
     setProcessing(false);
     setScreen("main");
     setResult({ success: true, saleId, printerOk, change: changeAmt, time });

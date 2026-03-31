@@ -297,7 +297,7 @@ export default function TopUpSection({
                   <div className="flex flex-col min-w-0">
                     <span className="text-sm text-gray-700">
                       {new Date(ci.check_in_at).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
+                        timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
                       })}
                     </span>
                     {pkg && (
@@ -306,7 +306,7 @@ export default function TopUpSection({
                   </div>
                   <span className="text-xs text-gray-400 shrink-0">
                     {new Date(ci.check_in_at).toLocaleTimeString("en-US", {
-                      hour: "2-digit", minute: "2-digit",
+                      timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit",
                     })}
                   </span>
                 </div>
