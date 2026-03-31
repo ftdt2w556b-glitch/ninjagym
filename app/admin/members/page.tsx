@@ -11,15 +11,16 @@ export default async function MembersPage({
   const { q, status } = await searchParams;
   const admin = createAdminClient();
 
-  // Get current user role to control what they can see/do
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
+  // Only primary registrations (no top-ups)
   let query = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at, parent_member_id")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at")
+    .is("parent_member_id", null)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -31,6 +32,21 @@ export default async function MembersPage({
   }
 
   const { data: members } = await query;
+
+  // Fetch all top-ups to show package summary per member
+  const { data: allTopUps } = await admin
+    .from("member_registrations")
+    .select("id, parent_member_id, membership_type, sessions_remaining, slip_status, expires_at, amount_paid")
+    .not("parent_member_id", "is", null)
+    .eq("slip_status", "approved");
+
+  // Group top-ups by parent id
+  const topUpsByParent = new Map<number, typeof allTopUps>();
+  for (const t of allTopUps ?? []) {
+    const pid = t.parent_member_id as number;
+    if (!topUpsByParent.has(pid)) topUpsByParent.set(pid, []);
+    topUpsByParent.get(pid)!.push(t);
+  }
 
   const statusOptions = [
     { value: "", label: "All" },
@@ -44,7 +60,7 @@ export default async function MembersPage({
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Members</h1>
-        <span className="text-sm text-gray-500">{members?.length ?? 0} records</span>
+        <span className="text-sm text-gray-500">{members?.length ?? 0} members</span>
       </div>
 
       {/* Search + filter */}
@@ -86,55 +102,57 @@ export default async function MembersPage({
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">#</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Name / Contact</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Membership</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Active Packages</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Kids</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Amount</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden lg:table-cell">Date</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {members?.map((m) => {
-                const typeLabel = MEMBERSHIP_TYPES.find((t) => t.id === m.membership_type)?.label ?? m.membership_type;
-                const isTopUp = !!(m as { parent_member_id?: number | null }).parent_member_id;
-                const parentId = (m as { parent_member_id?: number | null }).parent_member_id;
+                const primaryLabel = MEMBERSHIP_TYPES.find((t) => t.id === m.membership_type)?.label ?? m.membership_type;
+                const topUps = topUpsByParent.get(m.id) ?? [];
+
                 return (
-                  <tr key={m.id} className={`hover:bg-gray-50 transition-colors ${isTopUp ? "bg-blue-50/40" : ""}`}>
+                  <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-400 font-mono text-xs">#{m.id}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="font-semibold text-gray-900">{m.name}</p>
-                        {isTopUp && (
-                          <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">
-                            Top-up → <Link href={`/admin/members?q=${encodeURIComponent(m.name ?? "")}`} className="underline">#{parentId}</Link>
-                          </span>
-                        )}
-                      </div>
+                      <p className="font-semibold text-gray-900">{m.name}</p>
                       {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                       {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
-                      {(m as { kids_names?: string }).kids_names && (
-                        <p className="text-xs text-blue-600 mt-0.5 font-bold">{(m as { kids_names?: string }).kids_names}</p>
-                      )}
-                      {(m as { notes?: string }).notes && !isTopUp && (
-                        <p className="text-xs text-orange-500 mt-0.5 italic">📝 {(m as { notes?: string }).notes}</p>
+                      {m.kids_names && (
+                        <p className="text-xs text-blue-600 mt-0.5 font-bold">{m.kids_names}</p>
                       )}
                     </td>
-                    <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
-                      <p>{typeLabel}</p>
-                      {m.sessions_remaining !== null && (
-                        <p className="text-xs text-blue-500">{m.sessions_remaining} sessions left</p>
-                      )}
-                      {(m as { expires_at?: string | null }).expires_at && (() => {
-                        const exp = new Date((m as { expires_at: string }).expires_at);
-                        const daysLeft = Math.ceil((exp.getTime() - Date.now()) / 86400000);
-                        return (
-                          <p className={`text-xs font-medium ${daysLeft <= 0 ? "text-red-500" : daysLeft <= 7 ? "text-orange-500" : "text-gray-400"}`}>
-                            {daysLeft <= 0 ? "⛔ Expired" : daysLeft <= 7 ? `⚠️ Expires in ${daysLeft}d` : `Until ${exp.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
-                          </p>
-                        );
-                      })()}
+
+                    {/* Active packages column */}
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      {/* Primary package */}
+                      <div className="flex flex-col gap-1">
+                        <PackageRow
+                          label={primaryLabel}
+                          sessions={m.sessions_remaining}
+                          expiresAt={m.expires_at ?? null}
+                          membershipType={m.membership_type}
+                          isPrimary
+                        />
+                        {/* Top-up packages */}
+                        {topUps.map((t) => {
+                          const tLabel = MEMBERSHIP_TYPES.find((mt) => mt.id === t.membership_type)?.label ?? t.membership_type;
+                          return (
+                            <PackageRow
+                              key={t.id}
+                              label={tLabel}
+                              sessions={t.sessions_remaining}
+                              expiresAt={t.expires_at ?? null}
+                              membershipType={t.membership_type}
+                            />
+                          );
+                        })}
+                      </div>
                     </td>
+
                     <td className="px-4 py-3 hidden md:table-cell text-gray-600">{m.kids_count}</td>
                     <td className="px-4 py-3">
                       <Badge label={slipStatusLabel(m.slip_status)} variant={slipStatusVariant(m.slip_status)} />
@@ -142,13 +160,10 @@ export default async function MembersPage({
                     <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
                       {m.amount_paid ? `${Number(m.amount_paid).toLocaleString()} THB` : "-"}
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell text-gray-400">
-                      {new Date(m.created_at).toLocaleDateString()}
-                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link
-                          href={`/qr/card/${isTopUp ? parentId : m.id}?from=admin`}
+                          href={`/qr/card/${m.id}?from=admin`}
                           className="text-xs text-[#1a56db] hover:underline"
                         >
                           QR Card
@@ -173,13 +188,53 @@ export default async function MembersPage({
               })}
               {(!members || members.length === 0) && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-gray-400">No members found.</td>
+                  <td colSpan={7} className="px-4 py-10 text-center text-gray-400">No members found.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PackageRow({
+  label,
+  sessions,
+  expiresAt,
+  membershipType,
+  isPrimary = false,
+}: {
+  label: string;
+  sessions: number | null;
+  expiresAt: string | null;
+  membershipType: string;
+  isPrimary?: boolean;
+}) {
+  const isMonthly = membershipType === "monthly_flex";
+
+  let sessionBadge: React.ReactNode = null;
+  if (isMonthly && expiresAt) {
+    const daysLeft = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
+    sessionBadge = (
+      <span className={`text-xs font-medium ${daysLeft <= 0 ? "text-red-500" : daysLeft <= 7 ? "text-orange-500" : "text-blue-500"}`}>
+        {daysLeft <= 0 ? "Expired" : `${daysLeft}d left`}
+      </span>
+    );
+  } else if (sessions !== null) {
+    sessionBadge = (
+      <span className={`text-xs font-medium ${sessions <= 1 ? "text-orange-500" : "text-blue-500"}`}>
+        {sessions} left
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
+      <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
+      {sessionBadge}
     </div>
   );
 }
