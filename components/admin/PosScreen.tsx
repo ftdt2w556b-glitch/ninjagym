@@ -878,18 +878,20 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                     <div className="flex-1">
                       <label className="text-xs text-gray-500 mb-1 block">Member PIN (optional)</label>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={4}
                         value={memberPhone}
                         onChange={(e) => {
-                          const val = e.target.value.slice(0, 4);
+                          const val = e.target.value.replace(/\D/g, "").slice(0, 4);
                           setMemberPhone(val);
                           setLinkedMember(null);
                           setPhoneLookupError("");
                           setPendingTopUp(null);
                           if (val.length === 4) lookupMemberByPin(val);
                         }}
-                        placeholder="4-digit PIN"
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                        placeholder="PIN"
+                        className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
                       />
                       {phoneSearching && <p className="text-xs text-gray-400 mt-1">Looking up...</p>}
                       {linkedMember && (
