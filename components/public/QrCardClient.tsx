@@ -34,6 +34,36 @@ interface ActivePackage {
   amount_paid?: number | null;
 }
 
+// ── Belt rank system ─────────────────────────────────────────────────────────
+// Every 10 check-ins = 1 free session earned. Belt advances at thresholds.
+const BELTS = [
+  { label: "White Belt",  emoji: "🤍", min: 0,   max: 4   },
+  { label: "Yellow Belt", emoji: "💛", min: 5,   max: 9   },
+  { label: "Orange Belt", emoji: "🧡", min: 10,  max: 19  },
+  { label: "Green Belt",  emoji: "💚", min: 20,  max: 34  },
+  { label: "Blue Belt",   emoji: "💙", min: 35,  max: 49  },
+  { label: "Purple Belt", emoji: "💜", min: 50,  max: 74  },
+  { label: "Brown Belt",  emoji: "🤎", min: 75,  max: 99  },
+  { label: "Black Belt",  emoji: "🖤", min: 100, max: Infinity },
+] as const;
+
+function getBelt(totalCheckIns: number): typeof BELTS[number] {
+  let found: typeof BELTS[number] = BELTS[0];
+  for (const b of BELTS) { if (totalCheckIns >= b.min) found = b; }
+  return found;
+}
+
+function getBeltProgress(totalCheckIns: number): { pct: number; next: typeof BELTS[number] | null } {
+  const belt = getBelt(totalCheckIns);
+  if (belt.max === Infinity) return { pct: 100, next: null };
+  const range = (belt.max as number) - belt.min + 1;
+  const within = totalCheckIns - belt.min;
+  const pct = Math.min(100, Math.round((within / range) * 100));
+  const idx = BELTS.findIndex((b) => b.min === belt.min);
+  const next = (BELTS[idx + 1] ?? null) as typeof BELTS[number] | null;
+  return { pct, next };
+}
+
 interface Props {
   member: {
     id: number;
@@ -57,6 +87,8 @@ interface Props {
   activePackages: ActivePackage[];
   pastPackages?: ActivePackage[];
   cardToken: string;
+  totalCheckIns: number;
+  freeSessionsRedeemed: number;
 }
 
 export default function QrCardClient({
@@ -70,13 +102,43 @@ export default function QrCardClient({
   activePackages,
   pastPackages = [],
   cardToken,
+  totalCheckIns,
+  freeSessionsRedeemed,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemDone, setRedeemDone] = useState(false);
+  const [localRedeemed, setLocalRedeemed] = useState(freeSessionsRedeemed);
 
   const isApproved = member.slip_status === "approved";
   const isRejected = member.slip_status === "rejected";
   const isPending  = !isApproved && !isRejected;
   const firstName  = member.name.split(" ")[0];
+
+  // ── Loyalty calcs ─────────────────────────────────────────────────────────
+  const freeSessionsEarned    = Math.floor(totalCheckIns / 10);
+  const freeSessionsAvailable = Math.max(0, freeSessionsEarned - localRedeemed);
+  const belt        = getBelt(totalCheckIns);
+  const { pct: beltPct, next: nextBelt } = getBeltProgress(totalCheckIns);
+
+  async function handleRedeem() {
+    if (redeeming || freeSessionsAvailable < 1) return;
+    setRedeeming(true);
+    try {
+      const res = await fetch(`/api/members/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ free_sessions_redeemed: localRedeemed + 1 }),
+      });
+      if (res.ok) {
+        setLocalRedeemed((v) => v + 1);
+        setRedeemDone(true);
+        setTimeout(() => setRedeemDone(false), 3000);
+      }
+    } finally {
+      setRedeeming(false);
+    }
+  }
 
   // Multi-package selection — default to first active package, or parent
   const defaultId = activePackages.length > 0 ? activePackages[0].id : member.id;
@@ -300,6 +362,100 @@ export default function QrCardClient({
         url={`${siteUrl}/qr/card/${member.id}?token=${cardToken}`}
         title={`${member.name}: NinjaGym Member Card`}
       />
+
+      {/* ── Ninja Rank & Loyalty ── */}
+      {isApproved && (
+        <div className="mt-4 bg-gray-900 rounded-2xl p-5 shadow-xl">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ninja Rank</p>
+            <span className="text-xs text-gray-500">{totalCheckIns} total check-ins</span>
+          </div>
+
+          {/* Belt badge */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-3xl">{belt.emoji}</span>
+            <div className="flex-1">
+              <p className="text-white font-bold text-lg leading-tight">{belt.label}</p>
+              {nextBelt ? (
+                <p className="text-gray-400 text-xs">
+                  {nextBelt.min - totalCheckIns} more check-in{nextBelt.min - totalCheckIns !== 1 ? "s" : ""} to {nextBelt.label}
+                </p>
+              ) : (
+                <p className="text-[#ffe033] text-xs font-semibold">Master rank achieved! 🥷</p>
+              )}
+            </div>
+          </div>
+
+          {/* XP progress bar */}
+          {nextBelt && (
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                <span>{belt.label}</span>
+                <span>{nextBelt.label}</span>
+              </div>
+              <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#ffe033] to-[#ffb347] rounded-full transition-all duration-700"
+                  style={{ width: `${beltPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Free session tracker — every 10 check-ins */}
+          <div className="border-t border-gray-700 pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Free Sessions</p>
+              <p className="text-xs text-gray-500">Every 10 check-ins</p>
+            </div>
+            {/* Pip track — 10 pips, fill based on check-ins mod 10 */}
+            <div className="flex gap-1.5 mb-3">
+              {Array.from({ length: 10 }).map((_, i) => {
+                const filled = (totalCheckIns % 10) > i || (totalCheckIns > 0 && totalCheckIns % 10 === 0 && freeSessionsAvailable === 0);
+                return (
+                  <div
+                    key={i}
+                    className={`flex-1 h-2.5 rounded-full ${filled ? "bg-[#ffe033]" : "bg-gray-700"}`}
+                  />
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-400 text-center mb-3">
+              {totalCheckIns % 10 === 0 && freeSessionsAvailable > 0
+                ? "🎉 Progress reset — keep training!"
+                : `${totalCheckIns % 10}/10 toward next free session`}
+            </p>
+
+            {/* Free session available banner */}
+            {freeSessionsAvailable > 0 && (
+              <div className="bg-[#ffe033]/10 border border-[#ffe033]/30 rounded-xl px-4 py-3 flex items-center justify-between">
+                <div>
+                  <p className="text-[#ffe033] font-bold text-sm">
+                    🎁 {freeSessionsAvailable} Free Session{freeSessionsAvailable !== 1 ? "s" : ""} Ready!
+                  </p>
+                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Show this to staff at check-in</p>
+                </div>
+                {fromAdmin && (
+                  <button
+                    onClick={handleRedeem}
+                    disabled={redeeming}
+                    className="ml-3 bg-[#ffe033] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-300 disabled:opacity-50 transition-colors shrink-0"
+                  >
+                    {redeemDone ? "✓ Done!" : redeeming ? "..." : "Redeem"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {freeSessionsAvailable === 0 && (
+              <p className="text-center text-gray-600 text-xs">
+                Earned {freeSessionsEarned} free session{freeSessionsEarned !== 1 ? "s" : ""} · {localRedeemed} redeemed
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* My Sessions — full purchase history */}
       {(activePackages.length > 0 || pastPackages.length > 0) && (

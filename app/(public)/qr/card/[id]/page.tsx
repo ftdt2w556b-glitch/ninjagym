@@ -42,7 +42,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin")
+    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin, free_sessions_redeemed")
     .eq("id", id)
     .single();
 
@@ -77,8 +77,8 @@ export default async function QrCardPage({
 
   const allIds = allRelated.map((r) => r.id);
 
-  // Fetch attendance and photos in parallel
-  const [{ data: photos }, { data: checkInsRaw }] = await Promise.all([
+  // Fetch attendance, photos, and total check-in count in parallel
+  const [{ data: photos }, { data: checkInsRaw }, { count: totalCheckIns }] = await Promise.all([
     admin
       .from("marketing_photos")
       .select("id, file_path, caption, tags")
@@ -91,6 +91,10 @@ export default async function QrCardPage({
       .in("member_id", allIds)
       .order("check_in_at", { ascending: false })
       .limit(30),
+    admin
+      .from("attendance_logs")
+      .select("*", { count: "exact", head: true })
+      .in("member_id", allIds),
   ]);
 
   const checkIns = checkInsRaw ?? [];
@@ -151,6 +155,8 @@ export default async function QrCardPage({
       activePackages={activePackages}
       pastPackages={pastPackages}
       cardToken={cardToken}
+      totalCheckIns={totalCheckIns ?? 0}
+      freeSessionsRedeemed={member.free_sessions_redeemed ?? 0}
     />
   );
 }
