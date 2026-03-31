@@ -81,6 +81,10 @@ export async function DELETE(
   const { id } = await params;
   const admin = createAdminClient();
 
+  // Delete related records first to avoid FK constraint errors
+  await admin.from("attendance_logs").delete().eq("member_id", id);
+  await admin.from("cash_sales").delete().eq("reference_id", id);
+
   const { error } = await admin
     .from("member_registrations")
     .delete()
