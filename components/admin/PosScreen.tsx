@@ -248,7 +248,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       setReferenceId(null);
       setResult(null);
       setNotes1k(0);
-      setSaleType("registration");
+      setSaleType("walkin");
       setScreen("main");
       setPinError("");
     } else {
@@ -677,7 +677,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             setReferenceId(null);
             setResult(null);
             setNotes1k(0);
-            setSaleType("registration");
+            setSaleType("walkin");
           }}
             className="text-gray-400 text-sm hover:text-white transition-colors">
             Switch Staff
