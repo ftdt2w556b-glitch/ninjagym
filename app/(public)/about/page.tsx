@@ -161,15 +161,15 @@ export default function AboutPage() {
               {minecraftOpen && (
                 <div className="mt-3 bg-white rounded-xl p-4 border border-blue-100 text-sm text-gray-600 flex flex-col gap-2">
                   <p className="font-bold text-[#1a56db]">Why Minecraft is great for kids</p>
-                  <p>Minecraft isn&apos;t just a game — it&apos;s a creative and educational platform that develops real-world skills:</p>
+                  <p>Minecraft isn&apos;t just a game. It&apos;s a creative and educational platform that develops real-world skills:</p>
                   <ul className="flex flex-col gap-1.5 pl-1">
                     {[
-                      "🧱 Creativity & problem solving — building from scratch develops spatial thinking and design skills",
-                      "🤝 Teamwork — multiplayer modes teach kids to collaborate, delegate and plan together",
-                      "📐 Math & geometry — calculating areas, volumes and resources is built into gameplay",
-                      "💡 Logical thinking — redstone circuits introduce kids to basic engineering and coding concepts",
-                      "🌍 Exploration & curiosity — open-world environments encourage discovery and risk-taking",
-                      "😌 Safe digital space — no violence or harmful content; staff supervised at all times",
+                      "🧱 Creativity and problem solving: building from scratch develops spatial thinking and design skills",
+                      "🤝 Teamwork: multiplayer modes teach kids to collaborate, delegate and plan together",
+                      "📐 Math and geometry: calculating areas, volumes and resources is built into gameplay",
+                      "💡 Logical thinking: redstone circuits introduce kids to basic engineering and coding concepts",
+                      "🌍 Exploration and curiosity: open-world environments encourage discovery and risk-taking",
+                      "😌 Safe digital space: no violence or harmful content; staff supervised at all times",
                     ].map((item) => (
                       <li key={item} className="leading-snug">{item}</li>
                     ))}
@@ -195,7 +195,7 @@ export default function AboutPage() {
           <p className="text-xs font-bold text-[#1a56db] uppercase tracking-widest mb-3">The Rick Tew 2222 Special</p>
 
           <p className="text-sm text-gray-600 leading-relaxed mb-4">
-            Perfect for school outings, activity days, or a reward for hard-working students — NinjaGym makes fitness fun, social, and affordable.
+            Perfect for school outings, activity days, or a reward for hard-working students. NinjaGym makes fitness fun, social, and affordable.
           </p>
 
           <div className="bg-[#1a56db] rounded-xl px-4 py-3 mb-4 text-center">
@@ -227,7 +227,7 @@ export default function AboutPage() {
           </p>
 
           <Link
-            href="/event-space"
+            href="/schools"
             className="block text-center bg-[#1a56db] text-white font-bold text-sm rounded-xl py-3 hover:bg-blue-700 transition-colors"
           >
             Book a School Outing →
