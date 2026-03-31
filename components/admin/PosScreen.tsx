@@ -865,42 +865,40 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   })}
                 </select>
 
-                {/* Per-kid quantity + phone lookup */}
+                {/* Per-kid quantity + PIN lookup */}
                 {mt?.perKid && (
-                  <div className="flex gap-3 items-end">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Kids</label>
-                      <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
-                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                        {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex gap-3 items-end">
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Kids</label>
+                        <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
+                          className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                          {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">Member PIN</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={4}
+                          value={memberPhone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "").slice(0, 4);
+                            setMemberPhone(val);
+                            setLinkedMember(null);
+                            setPhoneLookupError("");
+                            setPendingTopUp(null);
+                            if (val.length === 4) lookupMemberByPin(val);
+                          }}
+                          placeholder="optional"
+                          className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <label className="text-xs text-gray-500 mb-1 block">Member PIN (optional)</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={4}
-                        value={memberPhone}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                          setMemberPhone(val);
-                          setLinkedMember(null);
-                          setPhoneLookupError("");
-                          setPendingTopUp(null);
-                          if (val.length === 4) lookupMemberByPin(val);
-                        }}
-                        placeholder="PIN"
-                        className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-                      />
-                      {phoneSearching && <p className="text-xs text-gray-400 mt-1">Looking up...</p>}
-                      {linkedMember && (
-                        <p className="text-xs text-green-600 font-semibold mt-1">✓ {linkedMember.name} — sessions will be added to their card</p>
-                      )}
-                      {phoneLookupError && (
-                        <p className="text-xs text-red-500 mt-1">{phoneLookupError}</p>
-                      )}
-                    </div>
+                    {phoneSearching && <p className="text-xs text-gray-400">Looking up...</p>}
+                    {linkedMember && <p className="text-xs text-green-600 font-semibold">✓ {linkedMember.name} — sessions will be added to their card</p>}
+                    {phoneLookupError && <p className="text-xs text-red-500">{phoneLookupError}</p>}
                   </div>
                 )}
 
