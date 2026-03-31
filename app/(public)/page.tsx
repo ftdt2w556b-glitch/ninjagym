@@ -189,13 +189,21 @@ export default function HomePage() {
           {t.homeJoinBtn}
         </Link>
 
-        {/* MY MEMBERSHIP */}
-        <Link
-          href="/my-membership"
-          className="bg-[#0d2d1a] border border-white/20 text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-[#133d24] transition-all active:scale-95 tracking-wide"
-        >
-          {t.homeMyMembership}
-        </Link>
+        {/* MY MEMBERSHIP + CHECK IN — side by side */}
+        <div className="flex gap-2">
+          <Link
+            href="/my-membership"
+            className="flex-1 bg-[#0d2d1a] border border-white/20 text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-[#133d24] transition-all active:scale-95 tracking-wide"
+          >
+            {t.homeMyMembership}
+          </Link>
+          <Link
+            href="/scanner"
+            className="flex-1 bg-[#1a56db] text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-blue-600 transition-all active:scale-95 tracking-wide"
+          >
+            📷 Check In
+          </Link>
+        </div>
 
         {/* Secondary nav grid */}
         <div className="grid grid-cols-3 gap-2 mt-1">
