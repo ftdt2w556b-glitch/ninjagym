@@ -81,7 +81,17 @@ export async function DELETE(
   const { id } = await params;
   const admin = createAdminClient();
 
-  // Delete related records first to avoid FK constraint errors
+  // Delete child top-up records first (linked via parent_member_id)
+  const { data: children } = await admin
+    .from("member_registrations")
+    .select("id")
+    .eq("parent_member_id", id);
+  for (const child of children ?? []) {
+    await admin.from("attendance_logs").delete().eq("member_id", child.id);
+    await admin.from("member_registrations").delete().eq("id", child.id);
+  }
+
+  // Delete remaining related records
   await admin.from("attendance_logs").delete().eq("member_id", id);
   await admin.from("cash_sales").delete().eq("reference_id", id);
 
