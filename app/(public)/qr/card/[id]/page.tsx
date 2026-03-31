@@ -109,7 +109,7 @@ export default async function QrCardPage({
     MEMBERSHIP_TYPES.find((m) => m.id === member.membership_type)?.label ??
     member.membership_type;
 
-  const siteUrl     = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const siteUrl     = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ninjagym.com";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
   return (
