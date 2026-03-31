@@ -330,20 +330,16 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     setCart((prev) => prev.filter((_, idx) => idx !== i));
   }
 
-  async function lookupMemberByPhone() {
+  async function lookupMemberByPin(pin: string) {
     setPhoneLookupError("");
     setLinkedMember(null);
-    if (memberPhone.length < 6) return;
+    if (pin.length !== 4) return;
     setPhoneSearching(true);
     try {
-      const res = await fetch("/api/pos/member-lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: memberPhone }),
-      });
+      const res = await fetch(`/api/scanner/lookup?pin=${pin}`);
       const data = await res.json();
-      if (res.ok) setLinkedMember(data);
-      else setPhoneLookupError(data.error ?? "Not found");
+      if (res.ok && data?.id) setLinkedMember({ id: data.id, name: data.name });
+      else setPhoneLookupError("PIN not found");
     } catch {
       setPhoneLookupError("Lookup failed");
     } finally {
@@ -880,21 +876,22 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                       </select>
                     </div>
                     <div className="flex-1">
-                      <label className="text-xs text-gray-500 mb-1 block">Member Phone (optional)</label>
-                      <div className="flex gap-1">
-                        <input
-                          type="tel"
-                          value={memberPhone}
-                          onChange={(e) => { setMemberPhone(e.target.value); setLinkedMember(null); setPhoneLookupError(""); setPendingTopUp(null); }}
-                          onKeyDown={(e) => e.key === "Enter" && lookupMemberByPhone()}
-                          placeholder="e.g. 0862944374"
-                          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-                        />
-                        <button onClick={lookupMemberByPhone} disabled={phoneSearching}
-                          className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-gray-200 disabled:opacity-50 transition-colors whitespace-nowrap">
-                          {phoneSearching ? "..." : "Find"}
-                        </button>
-                      </div>
+                      <label className="text-xs text-gray-500 mb-1 block">Member PIN (optional)</label>
+                      <input
+                        type="number"
+                        value={memberPhone}
+                        onChange={(e) => {
+                          const val = e.target.value.slice(0, 4);
+                          setMemberPhone(val);
+                          setLinkedMember(null);
+                          setPhoneLookupError("");
+                          setPendingTopUp(null);
+                          if (val.length === 4) lookupMemberByPin(val);
+                        }}
+                        placeholder="4-digit PIN"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                      />
+                      {phoneSearching && <p className="text-xs text-gray-400 mt-1">Looking up...</p>}
                       {linkedMember && (
                         <p className="text-xs text-green-600 font-semibold mt-1">✓ {linkedMember.name} — sessions will be added to their card</p>
                       )}
