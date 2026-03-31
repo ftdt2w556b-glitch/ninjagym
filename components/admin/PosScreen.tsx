@@ -869,7 +869,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                 {mt?.perKid && (
                   <div className="flex gap-3 items-end">
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Number of Kids</label>
+                      <label className="text-xs text-gray-500 mb-1 block">Kids</label>
                       <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
                         className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                         {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
