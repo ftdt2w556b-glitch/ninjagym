@@ -42,7 +42,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin, free_sessions_redeemed")
+    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin, free_sessions_redeemed, notify_prefs")
     .eq("id", id)
     .single();
 
@@ -90,7 +90,7 @@ export default async function QrCardPage({
       .select("id, check_in_at, notes, member_id")
       .in("member_id", allIds)
       .order("check_in_at", { ascending: false })
-      .limit(30),
+      .limit(60),
     admin
       .from("attendance_logs")
       .select("*", { count: "exact", head: true })
@@ -150,13 +150,14 @@ export default async function QrCardPage({
       siteUrl={siteUrl}
       supabaseUrl={supabaseUrl}
       fromAdmin={fromAdmin}
-      checkIns={checkIns.slice(0, 10)}
+      checkIns={checkIns}
       photos={photos ?? []}
       activePackages={activePackages}
       pastPackages={pastPackages}
       cardToken={cardToken}
       totalCheckIns={totalCheckIns ?? 0}
       freeSessionsRedeemed={member.free_sessions_redeemed ?? 0}
+      notifyPrefs={member.notify_prefs ?? null}
     />
   );
 }

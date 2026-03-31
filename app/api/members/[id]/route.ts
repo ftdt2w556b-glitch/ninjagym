@@ -50,7 +50,7 @@ export async function PATCH(
   const allowed = [
     "name", "phone", "email", "kids_names", "kids_count",
     "membership_type", "slip_status", "notes", "sessions_remaining", "amount_paid",
-    "free_sessions_redeemed",
+    "free_sessions_redeemed", "notify_prefs",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

@@ -34,6 +34,65 @@ interface ActivePackage {
   amount_paid?: number | null;
 }
 
+// ── Streak helpers ────────────────────────────────────────────────────────────
+function getWeekKey(isoStr: string): string {
+  // Convert UTC → Bangkok (UTC+7), return ISO date of that week's Monday
+  const d = new Date(new Date(isoStr).getTime() + 7 * 3600 * 1000);
+  const dow = d.getUTCDay();
+  const toMon = dow === 0 ? 6 : dow - 1;
+  const mon = new Date(d.getTime() - toMon * 86400000);
+  return mon.toISOString().slice(0, 10);
+}
+
+function computeStreak(checkIns: { check_in_at: string }[]): number {
+  if (!checkIns.length) return 0;
+  const weeks = new Set(checkIns.map((c) => getWeekKey(c.check_in_at)));
+  const thisMonday = getWeekKey(new Date().toISOString());
+  const lastMonday = new Date(new Date(thisMonday + "T12:00:00Z").getTime() - 7 * 86400000)
+    .toISOString().slice(0, 10);
+  let cur = weeks.has(thisMonday) ? thisMonday : lastMonday;
+  if (!weeks.has(cur)) return 0;
+  let streak = 0;
+  while (weeks.has(cur)) {
+    streak++;
+    cur = new Date(new Date(cur + "T12:00:00Z").getTime() - 7 * 86400000)
+      .toISOString().slice(0, 10);
+  }
+  return streak;
+}
+
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+interface CalDay { dateStr: string; hasCheckIn: boolean; isToday: boolean; isFuture: boolean }
+
+function buildCalendar(checkIns: { check_in_at: string }[]): CalDay[][] {
+  const ciDates = new Set(
+    checkIns.map((c) => {
+      const d = new Date(new Date(c.check_in_at).getTime() + 7 * 3600 * 1000);
+      return d.toISOString().slice(0, 10);
+    })
+  );
+  const bkkNow  = new Date(Date.now() + 7 * 3600 * 1000);
+  const todayStr = bkkNow.toISOString().slice(0, 10);
+  const dow      = bkkNow.getUTCDay();
+  const toMon    = dow === 0 ? 6 : dow - 1;
+  const thisMon  = bkkNow.getTime() - toMon * 86400000;
+  const startMs  = thisMon - 5 * 7 * 86400000; // 6 weeks back from this Monday
+  const days: CalDay[] = Array.from({ length: 42 }, (_, i) => {
+    const ds = new Date(startMs + i * 86400000).toISOString().slice(0, 10);
+    return { dateStr: ds, hasCheckIn: ciDates.has(ds), isToday: ds === todayStr, isFuture: ds > todayStr };
+  });
+  return Array.from({ length: 6 }, (_, i) => days.slice(i * 7, i * 7 + 7));
+}
+
+// ── Milestone helpers ─────────────────────────────────────────────────────────
+const MILESTONES = [10, 25, 50, 100, 200, 500];
+function getTopMilestone(n: number) {
+  return [...MILESTONES].reverse().find((m) => n >= m) ?? null;
+}
+function getNextMilestone(n: number) {
+  return MILESTONES.find((m) => m > n) ?? null;
+}
+
 // ── Belt rank system ─────────────────────────────────────────────────────────
 // Every 10 check-ins = 1 free session earned. Belt advances at thresholds.
 const BELTS = [
@@ -89,6 +148,7 @@ interface Props {
   cardToken: string;
   totalCheckIns: number;
   freeSessionsRedeemed: number;
+  notifyPrefs?: { checkin?: boolean; low_sessions?: boolean; milestone?: boolean } | null;
 }
 
 export default function QrCardClient({
@@ -104,16 +164,45 @@ export default function QrCardClient({
   cardToken,
   totalCheckIns,
   freeSessionsRedeemed,
+  notifyPrefs,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
-  const [redeeming, setRedeeming] = useState(false);
-  const [redeemDone, setRedeemDone] = useState(false);
+  const [redeeming, setRedeeming]       = useState(false);
+  const [redeemDone, setRedeemDone]     = useState(false);
   const [localRedeemed, setLocalRedeemed] = useState(freeSessionsRedeemed);
+  const [localPrefs, setLocalPrefs]     = useState({
+    checkin:      notifyPrefs?.checkin      ?? false,
+    low_sessions: notifyPrefs?.low_sessions ?? true,
+    milestone:    notifyPrefs?.milestone    ?? true,
+  });
+  const [savingPrefs, setSavingPrefs]   = useState(false);
+
+  async function handleTogglePref(key: keyof typeof localPrefs) {
+    const updated = { ...localPrefs, [key]: !localPrefs[key] };
+    setLocalPrefs(updated);
+    setSavingPrefs(true);
+    try {
+      await fetch(`/api/members/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notify_prefs: updated }),
+      });
+    } finally {
+      setSavingPrefs(false);
+    }
+  }
 
   const isApproved = member.slip_status === "approved";
   const isRejected = member.slip_status === "rejected";
   const isPending  = !isApproved && !isRejected;
   const firstName  = member.name.split(" ")[0];
+
+  // ── Streak / calendar / milestone calcs ──────────────────────────────────
+  const streak         = computeStreak(checkIns);
+  const calWeeks       = buildCalendar(checkIns);
+  const topMilestone   = getTopMilestone(totalCheckIns);
+  const nextMilestone  = getNextMilestone(totalCheckIns);
+  const isNewMilestone = MILESTONES.includes(totalCheckIns) && totalCheckIns > 0;
 
   // ── Loyalty calcs ─────────────────────────────────────────────────────────
   const freeSessionsEarned    = Math.floor(totalCheckIns / 10);
@@ -177,6 +266,19 @@ export default function QrCardClient({
           {t.qrWelcome} {firstName}!
         </h1>
       </div>
+
+      {/* Milestone celebration banner */}
+      {isApproved && isNewMilestone && (
+        <div className="bg-[#ffe033]/15 border border-[#ffe033]/40 rounded-2xl px-4 py-3 mb-4 text-center">
+          <p className="text-3xl mb-1">🎉</p>
+          <p className="text-[#ffe033] font-bold text-base">
+            {totalCheckIns} Session Milestone!
+          </p>
+          <p className="text-white/60 text-xs mt-0.5">
+            You&apos;ve trained {totalCheckIns} times at NinjaGym — legendary!
+          </p>
+        </div>
+      )}
 
       {/* Payment status banners */}
       {isPending && (
@@ -457,6 +559,78 @@ export default function QrCardClient({
         </div>
       )}
 
+      {/* ── Attendance Calendar & Streak ── */}
+      {isApproved && totalCheckIns > 0 && (
+        <div className="mt-4 bg-gray-900 rounded-2xl p-5 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Attendance</p>
+            <div className="flex items-center gap-2">
+              {streak > 0 && (
+                <span className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                  🔥 {streak} week{streak !== 1 ? "s" : ""} streak
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Day-of-week header */}
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {["M","T","W","T","F","S","S"].map((d, i) => (
+              <div key={i} className="text-center text-gray-600 text-xs font-bold">{d}</div>
+            ))}
+          </div>
+
+          {/* 6-week dot grid */}
+          <div className="flex flex-col gap-1">
+            {calWeeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-7 gap-1">
+                {week.map((day) => (
+                  <div
+                    key={day.dateStr}
+                    title={day.dateStr}
+                    className={`aspect-square rounded-md flex items-center justify-center ${
+                      day.isFuture
+                        ? "opacity-0"
+                        : day.isToday
+                        ? day.hasCheckIn
+                          ? "bg-[#ffe033] ring-2 ring-[#ffe033]/50"
+                          : "bg-gray-700 ring-2 ring-gray-500"
+                        : day.hasCheckIn
+                        ? "bg-[#ffe033]/80"
+                        : "bg-gray-800"
+                    }`}
+                  >
+                    {day.isToday && !day.hasCheckIn && (
+                      <div className="w-1 h-1 rounded-full bg-gray-500" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Milestone progress */}
+          <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between">
+            <div>
+              {topMilestone && (
+                <p className="text-gray-400 text-xs">
+                  🏆 Reached <span className="text-[#ffe033] font-bold">{topMilestone}</span> session milestone
+                </p>
+              )}
+              {nextMilestone && (
+                <p className="text-gray-600 text-xs mt-0.5">
+                  {nextMilestone - totalCheckIns} more to {nextMilestone}-session milestone
+                </p>
+              )}
+            </div>
+            <p className="text-gray-500 text-xs text-right">
+              {totalCheckIns}<br />
+              <span className="text-gray-600">total</span>
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* My Sessions — full purchase history */}
       {(activePackages.length > 0 || pastPackages.length > 0) && (
         <div className="mt-4 bg-white rounded-2xl p-5 shadow">
@@ -518,7 +692,7 @@ export default function QrCardClient({
           memberEmail={member.email ?? null}
           currentType={member.membership_type}
           defaultKids={member.kids_count ?? 1}
-          recentCheckIns={checkIns}
+          recentCheckIns={checkIns.slice(0, 10)}
           activePackages={activePackages}
         />
       )}
@@ -546,6 +720,41 @@ export default function QrCardClient({
             ))}
           </div>
           <p className="text-white/50 text-xs text-center mt-3">{t.qrPhotosHiRes}</p>
+        </div>
+      )}
+
+      {/* ── Notification Preferences ── */}
+      {isApproved && member.email && (
+        <div className="mt-4 bg-white rounded-2xl p-5 shadow">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">🔔 Email Notifications</p>
+            {savingPrefs && <span className="text-xs text-gray-400">Saving…</span>}
+          </div>
+          <div className="flex flex-col divide-y divide-gray-50">
+            {([
+              { key: "checkin"      as const, label: "Check-in confirmation",   hint: "Email each time a session is recorded" },
+              { key: "low_sessions" as const, label: "Low sessions warning",    hint: "Alert when you have 2 sessions left" },
+              { key: "milestone"    as const, label: "Session milestones",      hint: "Celebrate 10, 25, 50, 100+ visits" },
+            ]).map(({ key, label, hint }) => (
+              <div key={key} className="flex items-center justify-between py-3 gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-700">{label}</p>
+                  <p className="text-xs text-gray-400 truncate">{hint}</p>
+                </div>
+                <button
+                  onClick={() => handleTogglePref(key)}
+                  className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
+                    localPrefs[key] ? "bg-[#1a56db]" : "bg-gray-200"
+                  }`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    localPrefs[key] ? "translate-x-5" : "translate-x-0"
+                  }`} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400 mt-2">Sent to {member.email}</p>
         </div>
       )}
     </div>
