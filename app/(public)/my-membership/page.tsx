@@ -46,11 +46,11 @@ export default function MyMembershipPage() {
     try {
       const res = await fetch(`/api/scanner/lookup?pin=${pin}`);
       const data = await res.json();
-      if (!res.ok || !data?.id) { triggerPinError(); return; }
+      if (!res.ok || !data?.id) { triggerPinError(); setPinLoading(false); return; }
+      // Keep spinner showing until navigation completes — don't reset loading
       router.push(`/qr/card/${data.id}`);
     } catch {
       triggerPinError();
-    } finally {
       setPinLoading(false);
     }
   }
