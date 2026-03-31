@@ -891,7 +891,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                             setPendingTopUp(null);
                             if (val.length === 4) lookupMemberByPin(val);
                           }}
-                          placeholder="optional"
+                          placeholder=""
                           className="w-24 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
                         />
                       </div>
