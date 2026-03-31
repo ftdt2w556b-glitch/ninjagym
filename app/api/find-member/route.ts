@@ -8,8 +8,28 @@ import { createAdminClient } from "@/lib/supabase/server";
  * Only returns approved members.
  */
 export async function POST(request: NextRequest) {
-  const { name, phone } = await request.json();
+  const body = await request.json();
+  const { name, phone } = body;
+  const pin = body.pin !== undefined ? Number(body.pin) : null;
 
+  const admin = createAdminClient();
+
+  // ── PIN fast-path ────────────────────────────────────────────────
+  if (pin !== null && !isNaN(pin)) {
+    const { data: pinMember } = await admin
+      .from("member_registrations")
+      .select("id")
+      .eq("pin", pin)
+      .is("parent_member_id", null)
+      .maybeSingle();
+    if (pinMember) return NextResponse.json({ id: pinMember.id });
+    return NextResponse.json(
+      { error: "PIN not found. Try searching by name and phone instead." },
+      { status: 404 }
+    );
+  }
+
+  // ── Name + phone lookup ──────────────────────────────────────────
   const cleanName  = (name  ?? "").trim();
   const cleanPhone = (phone ?? "").trim().replace(/[\s\-().+]/g, ""); // strip spaces/dashes/+
 
@@ -26,8 +46,6 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-
-  const admin = createAdminClient();
 
   // Fetch candidates whose name matches, then check phone on the server
   // (avoids passing raw phone into the OR filter which could be tricky with + signs)
