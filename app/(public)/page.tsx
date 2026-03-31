@@ -189,21 +189,13 @@ export default function HomePage() {
           {t.homeJoinBtn}
         </Link>
 
-        {/* MY MEMBERSHIP + CHECK IN — side by side */}
-        <div className="flex gap-2">
-          <Link
-            href="/my-membership"
-            className="flex-1 bg-[#0d2d1a] border border-white/20 text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-[#133d24] transition-all active:scale-95 tracking-wide"
-          >
-            {t.homeMyMembership}
-          </Link>
-          <Link
-            href="/scanner"
-            className="flex-1 bg-[#1a56db] text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-blue-600 transition-all active:scale-95 tracking-wide"
-          >
-            📷 Check In
-          </Link>
-        </div>
+        {/* MY MEMBERSHIP */}
+        <Link
+          href="/my-membership"
+          className="bg-[#0d2d1a] border border-white/20 text-white font-bold text-base rounded-full py-3.5 text-center hover:bg-[#133d24] transition-all active:scale-95 tracking-wide"
+        >
+          {t.homeMyMembership}
+        </Link>
 
         {/* Secondary nav grid */}
         <div className="grid grid-cols-3 gap-2 mt-1">
@@ -227,6 +219,14 @@ export default function HomePage() {
           className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
         >
           ✉️ {t.homeContactUs}
+        </Link>
+
+        {/* Scanner shortcut — for tablet self check-in */}
+        <Link
+          href="/scanner"
+          className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
+        >
+          📷 Check In
         </Link>
       </div>
 
