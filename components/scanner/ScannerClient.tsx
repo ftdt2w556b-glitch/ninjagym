@@ -1,8 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { MEMBERSHIP_TYPES, BASE_PRICES, getPriceForType } from "@/lib/pricing";
-import CameraScanner from "@/components/scanner/CameraScanner";
+
+// Load camera scanner client-side only — html5-qrcode is not SSR-safe
+const CameraScanner = dynamic(() => import("@/components/scanner/CameraScanner"), {
+  ssr: false,
+  loading: () => (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+      <p className="text-white text-sm">Starting camera…</p>
+    </div>
+  ),
+});
 
 // Walk-in relevant types only (no bulk, no birthday_event)
 const WALKIN_TYPES = MEMBERSHIP_TYPES.filter(
