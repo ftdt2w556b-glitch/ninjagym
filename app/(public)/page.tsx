@@ -221,13 +221,6 @@ export default function HomePage() {
           ✉️ {t.homeContactUs}
         </Link>
 
-        {/* Scanner shortcut — for tablet self check-in */}
-        <Link
-          href="/scanner"
-          className="bg-white/10 text-white/80 font-semibold text-sm rounded-2xl py-3 text-center hover:bg-white/20 transition-all"
-        >
-          📷 Check In
-        </Link>
       </div>
 
 
