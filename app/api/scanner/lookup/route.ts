@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { signMemberId } from "@/lib/member-token";
 
 /**
  * GET /api/scanner/lookup?pin=1234
@@ -23,5 +24,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({ ...data, token: signMemberId(data.id) });
 }

@@ -48,7 +48,7 @@ export default function MyMembershipPage() {
       const data = await res.json();
       if (!res.ok || !data?.id) { triggerPinError(); setPinLoading(false); return; }
       // Keep spinner showing until navigation completes — don't reset loading
-      router.push(`/qr/card/${data.id}`);
+      router.push(`/qr/card/${data.id}?token=${data.token}`);
     } catch {
       triggerPinError();
       setPinLoading(false);
@@ -95,7 +95,7 @@ export default function MyMembershipPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Not found."); }
-      else { router.push(`/qr/card/${data.id}`); }
+      else { router.push(`/qr/card/${data.id}?token=${data.token}`); }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

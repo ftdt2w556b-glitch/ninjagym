@@ -1,17 +1,42 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import QrCardClient from "@/components/public/QrCardClient";
+import { verifyMemberToken, signMemberId } from "@/lib/member-token";
 
 export default async function QrCardPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ from?: string }>;
+  searchParams: Promise<{ from?: string; token?: string }>;
 }) {
   const { id } = await params;
-  const { from } = await searchParams;
+  const { from, token } = await searchParams;
+  const memberId = Number(id);
+
+  // ── Access control ───────────────────────────────────────────────
+  // Allow: valid signed token  OR  logged-in admin/staff
+  const hasValidToken = verifyMemberToken(memberId, token);
+
+  if (!hasValidToken) {
+    // Check if a logged-in admin/staff is accessing
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const adminClient = createAdminClient();
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      const isStaff = profile && ["admin", "owner", "manager", "staff"].includes(profile.role);
+      if (!isStaff) redirect("/my-membership");
+    } else {
+      redirect("/my-membership");
+    }
+  }
+
   const fromAdmin = from === "admin";
   const admin = createAdminClient();
 
@@ -23,9 +48,10 @@ export default async function QrCardPage({
 
   if (!member) notFound();
 
-  // Top-up records redirect to the parent card
+  // Top-up records redirect to the parent card (preserve token for parent)
   if (member.parent_member_id) {
-    redirect(`/qr/card/${member.parent_member_id}`);
+    const parentToken = signMemberId(member.parent_member_id);
+    redirect(`/qr/card/${member.parent_member_id}?token=${parentToken}`);
   }
 
   // Fetch ALL top-ups (approved) for history + active detection
@@ -111,6 +137,7 @@ export default async function QrCardPage({
 
   const siteUrl     = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ninjagym.com";
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const cardToken   = signMemberId(member.id);
 
   return (
     <QrCardClient
@@ -123,6 +150,7 @@ export default async function QrCardPage({
       photos={photos ?? []}
       activePackages={activePackages}
       pastPackages={pastPackages}
+      cardToken={cardToken}
     />
   );
 }

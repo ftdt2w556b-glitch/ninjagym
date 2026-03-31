@@ -56,6 +56,7 @@ interface Props {
   photos: Photo[];
   activePackages: ActivePackage[];
   pastPackages?: ActivePackage[];
+  cardToken: string;
 }
 
 export default function QrCardClient({
@@ -68,6 +69,7 @@ export default function QrCardClient({
   photos,
   activePackages,
   pastPackages = [],
+  cardToken,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
 
@@ -311,7 +313,7 @@ export default function QrCardClient({
       </div>
 
       <ShareButton
-        url={`${siteUrl}/qr/card/${member.id}`}
+        url={`${siteUrl}/qr/card/${member.id}?token=${cardToken}`}
         title={`${member.name}: NinjaGym Member Card`}
       />
 

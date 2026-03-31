@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { signMemberId } from "@/lib/member-token";
 
 /**
  * POST /api/find-member
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
       .eq("pin", pin)
       .is("parent_member_id", null)
       .maybeSingle();
-    if (pinMember) return NextResponse.json({ id: pinMember.id });
+    if (pinMember) return NextResponse.json({ id: pinMember.id, token: signMemberId(pinMember.id) });
     return NextResponse.json(
       { error: "PIN not found. Try searching by name and phone instead." },
       { status: 404 }
@@ -79,5 +80,5 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ id: match.id });
+  return NextResponse.json({ id: match.id, token: signMemberId(match.id) });
 }

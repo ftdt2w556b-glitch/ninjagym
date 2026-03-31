@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
         kidsNames: kids_names,
         kidsCount: kids_count,
         registeredAt: new Date().toISOString(),
+        pin: pin ?? undefined,
         lang,
       }).catch((e) => console.error("Email send failed:", e));
     }

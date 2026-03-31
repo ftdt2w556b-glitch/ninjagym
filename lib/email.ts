@@ -1,9 +1,10 @@
 import { Resend } from "resend";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
+import { signMemberId } from "@/lib/member-token";
 
 const FROM        = "NinjaGym <hello@ninjagym.com>";
 const BRAND_NAME  = "Rick Tew's NinjaGym";
-const FOOTER_LINE = "Rick Tew's NinjaGym · Koh Samui, Thailand · ninjagym.com";
+const FOOTER_LINE = "Rick Tew's NinjaGym · Koh Samui, Thailand";
 
 function getResend() {
   const key = process.env.RESEND_API_KEY;
@@ -116,6 +117,7 @@ export async function sendMemberConfirmation({
   kidsNames,
   kidsCount,
   registeredAt,
+  pin,
   lang = "en",
 }: {
   to: string;
@@ -126,6 +128,7 @@ export async function sendMemberConfirmation({
   kidsNames?: string | null;
   kidsCount?: number | null;
   registeredAt?: string | null;
+  pin?: number | null;
   lang?: string;
 }) {
   const resend = getResend();
@@ -133,7 +136,7 @@ export async function sendMemberConfirmation({
 
   const s = emailStrings[(lang as EmailLang) in emailStrings ? (lang as EmailLang) : "en"];
   const label = MEMBERSHIP_TYPES.find((m) => m.id === membershipType)?.label ?? membershipType;
-  const cardUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/qr/card/${memberId}`;
+  const cardUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/qr/card/${memberId}?token=${signMemberId(memberId)}`;
 
   const paymentNote =
     paymentMethod === "stripe" ? s.payCard :
@@ -178,6 +181,14 @@ export async function sendMemberConfirmation({
         <a href="${cardUrl}" style="display:block;background:#1a56db;color:#fff;text-decoration:none;text-align:center;padding:14px;border-radius:12px;font-weight:bold;font-size:16px;margin:20px 0">
           ${s.viewCard}
         </a>
+
+        ${pin ? `
+        <div style="background:#111;border-radius:12px;padding:16px;margin:16px 0;text-align:center">
+          <p style="color:#999;font-size:11px;font-weight:bold;letter-spacing:2px;margin:0 0 8px;text-transform:uppercase">Your Check-In PIN</p>
+          <p style="color:#ffe033;font-size:36px;font-weight:bold;letter-spacing:12px;margin:0;font-family:monospace">${String(pin).padStart(4,"0")}</p>
+          <p style="color:#666;font-size:12px;margin:8px 0 0">Enter this at the front desk kiosk to check in</p>
+        </div>
+        ` : ""}
 
         <p style="color:#888;font-size:13px">${s.saveHint}</p>
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
