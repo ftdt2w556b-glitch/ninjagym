@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
 
@@ -57,6 +58,12 @@ export default async function RevenuePage({
   const { from, to, label } = buildRange(mode, date);
 
   const admin = createAdminClient();
+
+  // Only admin, manager, and owner may view sales reports
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
+  if (!["admin", "manager", "owner"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
   // POS / walk-in cash sales (no payment_method column — all POS sales are cash)
   const { data: cashSales } = await admin

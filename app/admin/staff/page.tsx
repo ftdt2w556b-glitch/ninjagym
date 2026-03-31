@@ -15,6 +15,14 @@ export default async function StaffPage({
 
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
+  // Only admins may access this page
+  const { data: currentProfile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", currentUser!.id)
+    .single();
+  if (currentProfile?.role !== "admin") redirect("/admin/dashboard");
+
   const { data: profiles } = await admin
     .from("profiles")
     .select("id, name, email, role, pin, show_on_pos, created_at")
