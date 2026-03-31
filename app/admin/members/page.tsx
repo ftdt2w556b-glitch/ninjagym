@@ -193,7 +193,7 @@ export default async function MembersPage({
                           href={`/qr/card/${m.id}?from=admin`}
                           className="text-xs text-[#1a56db] hover:underline"
                         >
-                          QR Card
+                          Member Card
                         </Link>
                         {isAdminOrOwner && (
                           <Link

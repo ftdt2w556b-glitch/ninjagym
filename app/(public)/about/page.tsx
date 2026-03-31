@@ -238,7 +238,7 @@ export default function AboutPage() {
         <div className="bg-[#ffe033] rounded-2xl p-4 shadow">
           <p className="text-sm font-bold text-[#1a56db] mb-1">Registration</p>
           <p className="text-sm text-[#1a56db]">
-            Advance registration recommended. Bring your email receipt or show your QR card. Membership is prepared upon arrival.
+            Advance registration recommended. Bring your email receipt or use your member PIN at the front desk. Membership is prepared upon arrival.
           </p>
         </div>
 

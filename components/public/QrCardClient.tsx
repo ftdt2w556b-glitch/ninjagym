@@ -312,7 +312,7 @@ export default function QrCardClient({
 
       <ShareButton
         url={`${siteUrl}/qr/card/${member.id}`}
-        title={`${member.name}: NinjaGym QR Card`}
+        title={`${member.name}: NinjaGym Member Card`}
       />
 
       {/* My Sessions — full purchase history */}

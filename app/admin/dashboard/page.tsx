@@ -213,7 +213,7 @@ export default async function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 mb-10">
         <a href="/scanner"
           className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
-          📷 QR Scanner
+          🔢 PIN Scanner
         </a>
         {isAdminOrOwner && (
           <a href="/admin/pos"
