@@ -15,7 +15,12 @@ export async function POST(request: NextRequest) {
     const payment_method = formData.get("payment_method") as string;
     const amount_paid = Number(formData.get("amount_paid")) || null;
     const notes = formData.get("notes") as string;
-    const sessions_remaining = formData.get("sessions_remaining") ? Number(formData.get("sessions_remaining")) : null;
+    // Single-use sessions default to 1 so check-in decrements to 0 (making them filter out as used)
+    const isBulkType = membership_type?.endsWith("_bulk");
+    const isTimeBased = membership_type === "monthly_flex";
+    const sessions_remaining = formData.get("sessions_remaining")
+      ? Number(formData.get("sessions_remaining"))
+      : isBulkType || isTimeBased ? null : 1;
     const parent_member_id = formData.get("parent_member_id") ? Number(formData.get("parent_member_id")) : null;
     const lang = (formData.get("lang") as string) || "en";
     const slipFile = formData.get("slip") as File | null;

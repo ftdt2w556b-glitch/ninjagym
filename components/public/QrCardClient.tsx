@@ -165,9 +165,9 @@ export default function QrCardClient({
         {/* Member info */}
         <div className="px-5 pt-5 pb-2">
           <h2 className="font-fredoka text-2xl text-gray-900 leading-tight">{member.name}</h2>
-          {/* Show selected package label, or default membership label */}
+          {/* Show selected active package label, or "NinjaGym Member" when no active packages */}
           <p className="text-sm text-[#1a56db] font-semibold mt-0.5">
-            {selectedPkg ? selectedPkg.membership_label : membershipLabel}
+            {selectedPkg ? selectedPkg.membership_label : activePackages.length === 0 ? "NinjaGym Member" : membershipLabel}
           </p>
           {member.kids_names && (
             <p className="text-xs text-gray-400 mt-1">{t.qrKids}: {member.kids_names}</p>
@@ -228,7 +228,7 @@ export default function QrCardClient({
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Select the program you&apos;re using today — the QR code will update
+              Select the program you&apos;re using today. The QR code will update.
             </p>
           </div>
         )}
