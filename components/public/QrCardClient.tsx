@@ -201,8 +201,8 @@ export default function QrCardClient({
                           Exp {new Date(pkg.expires_at).toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric" })}
                         </span>
                       ) : (
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">
-                          Pending activation
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                          Active
                         </span>
                       )
                     ) : pkg.sessions_remaining !== null ? (
@@ -317,7 +317,7 @@ export default function QrCardClient({
                     ? "Expired " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" })
                     : "Expires " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" });
                 } else {
-                  statusText = "Pending activation";
+                  statusText = isActive ? "Active" : "Pending activation";
                 }
               } else if (pkg.sessions_remaining !== null) {
                 statusText = pkg.sessions_remaining === 0
