@@ -114,15 +114,6 @@ export default function QrCardClient({
         >
           {t.qrWelcome} {firstName}!
         </h1>
-        <p className="text-white/70 text-sm mt-1.5">
-          This is your permanent member card
-        </p>
-        <p className="text-white/45 text-xs mt-1">
-          Lost this link? Find it again at{" "}
-          <Link href="/my-membership" className="underline hover:text-white/70">
-            {t.myMembershipTitle}
-          </Link>
-        </p>
       </div>
 
       {/* Payment status banners */}
@@ -152,7 +143,7 @@ export default function QrCardClient({
         <div className="bg-[#1a56db] px-5 py-4 flex items-center justify-between">
           <div>
             <p className="text-white font-bold text-sm leading-tight">{t.qrCardTitle}</p>
-            <p className="text-white/60 text-xs mt-0.5">{t.qrCardSubtitle}</p>
+            <p className="text-white/60 text-xs mt-0.5">Use this to book, record and top-up sessions</p>
           </div>
           <span className={`text-xs font-bold px-3 py-1 rounded-full ${
             isApproved
