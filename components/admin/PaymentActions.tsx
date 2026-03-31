@@ -184,7 +184,7 @@ export default function PaymentActions({
             href={qrHref}
             className="bg-blue-50 text-[#1a56db] font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-100 transition-colors"
           >
-            View QR Card
+            View Member Card
           </a>
         )}
       </div>
