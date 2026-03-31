@@ -2,6 +2,15 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
 import Link from "next/link";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
+import CheckInButton from "@/components/admin/CheckInButton";
+
+function isPackageActive(r: { membership_type: string; sessions_remaining: number | null; expires_at: string | null }) {
+  const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
+  if (mt?.timeBased) return !r.expires_at || new Date(r.expires_at) > new Date();
+  if (mt?.bulk) return r.sessions_remaining !== null && r.sessions_remaining > 0;
+  // Single-use: active if sessions_remaining > 0, or null (legacy — hasn't been checked in yet)
+  return r.sessions_remaining === null || r.sessions_remaining > 0;
+}
 
 export default async function MembersPage({
   searchParams,
@@ -128,28 +137,39 @@ export default async function MembersPage({
 
                     {/* Active packages column */}
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      {/* Primary package */}
                       <div className="flex flex-col gap-1">
-                        <PackageRow
-                          label={primaryLabel}
-                          sessions={m.sessions_remaining}
-                          expiresAt={m.expires_at ?? null}
-                          membershipType={m.membership_type}
-                          isPrimary
-                        />
-                        {/* Top-up packages */}
-                        {topUps.map((t) => {
+                        {/* Primary package — only if active */}
+                        {isPackageActive({ membership_type: m.membership_type, sessions_remaining: m.sessions_remaining, expires_at: m.expires_at ?? null }) && (
+                          <PackageRow
+                            regId={m.id}
+                            label={primaryLabel}
+                            sessions={m.sessions_remaining}
+                            expiresAt={m.expires_at ?? null}
+                            membershipType={m.membership_type}
+                            isPrimary
+                            canCheckIn={isAdminOrOwner}
+                          />
+                        )}
+                        {/* Active top-up packages */}
+                        {topUps.filter((t) => isPackageActive(t)).map((t) => {
                           const tLabel = MEMBERSHIP_TYPES.find((mt) => mt.id === t.membership_type)?.label ?? t.membership_type;
                           return (
                             <PackageRow
                               key={t.id}
+                              regId={t.id}
                               label={tLabel}
                               sessions={t.sessions_remaining}
                               expiresAt={t.expires_at ?? null}
                               membershipType={t.membership_type}
+                              canCheckIn={isAdminOrOwner}
                             />
                           );
                         })}
+                        {/* Fallback when no active packages */}
+                        {!isPackageActive({ membership_type: m.membership_type, sessions_remaining: m.sessions_remaining, expires_at: m.expires_at ?? null }) &&
+                         topUps.filter((t) => isPackageActive(t)).length === 0 && (
+                          <span className="text-xs text-gray-400 italic">No active packages</span>
+                        )}
                       </div>
                     </td>
 
@@ -200,17 +220,21 @@ export default async function MembersPage({
 }
 
 function PackageRow({
+  regId,
   label,
   sessions,
   expiresAt,
   membershipType,
   isPrimary = false,
+  canCheckIn = false,
 }: {
+  regId?: number;
   label: string;
   sessions: number | null;
   expiresAt: string | null;
   membershipType: string;
   isPrimary?: boolean;
+  canCheckIn?: boolean;
 }) {
   const isMonthly = membershipType === "monthly_flex";
 
@@ -230,11 +254,15 @@ function PackageRow({
     );
   }
 
+  // Show Check In for single-use and bulk packages (not time-based like monthly_flex)
+  const showCheckIn = canCheckIn && !isMonthly && regId !== undefined;
+
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
       <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
       {sessionBadge}
+      {showCheckIn && <CheckInButton regId={regId!} label={label} />}
     </div>
   );
 }
