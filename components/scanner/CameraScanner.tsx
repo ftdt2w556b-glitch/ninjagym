@@ -9,11 +9,13 @@ interface Props {
 
 export default function CameraScanner({ onScan, onClose }: Props) {
   const divId = "qr-camera-region";
-  const scannerRef = useRef<unknown>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scannerRef = useRef<any>(null);
   const hasScanned = useRef(false);
 
   useEffect(() => {
-    let scanner: { stop: () => Promise<void> } | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let scanner: any = null;
 
     async function start() {
       const { Html5Qrcode } = await import("html5-qrcode");
