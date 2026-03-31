@@ -17,7 +17,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at")
+    .select("id, name, phone, email, membership_type, sessions_remaining, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid")
     .eq("id", id)
     .single();
 
@@ -28,10 +28,10 @@ export default async function QrCardPage({
     redirect(`/qr/card/${member.parent_member_id}`);
   }
 
-  // Fetch all approved top-ups for this member
+  // Fetch ALL top-ups (approved) for history + active detection
   const { data: topUps } = await admin
     .from("member_registrations")
-    .select("id, membership_type, sessions_remaining, slip_status, created_at, expires_at")
+    .select("id, membership_type, sessions_remaining, slip_status, created_at, expires_at, amount_paid")
     .eq("parent_member_id", Number(id))
     .eq("slip_status", "approved")
     .order("created_at", { ascending: false });
@@ -44,8 +44,9 @@ export default async function QrCardPage({
       slip_status: member.slip_status,
       created_at: member.created_at,
       expires_at: member.expires_at ?? null,
+      amount_paid: member.amount_paid ?? null,
     },
-    ...(topUps ?? []).map((r) => ({ ...r, expires_at: r.expires_at ?? null })),
+    ...(topUps ?? []).map((r) => ({ ...r, expires_at: r.expires_at ?? null, amount_paid: r.amount_paid ?? null })),
   ];
 
   const allIds = allRelated.map((r) => r.id);
@@ -63,7 +64,7 @@ export default async function QrCardPage({
       .select("id, check_in_at, notes, member_id")
       .in("member_id", allIds)
       .order("check_in_at", { ascending: false })
-      .limit(20),
+      .limit(30),
   ]);
 
   const checkIns = checkInsRaw ?? [];
@@ -73,35 +74,36 @@ export default async function QrCardPage({
 
   const now = new Date();
 
+  function packageIsActive(r: { membership_type: string; sessions_remaining: number | null; expires_at: string | null; id: number }) {
+    const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
+    if (mt?.timeBased) return !r.expires_at || new Date(r.expires_at) > now;
+    if (mt?.bulk) return r.sessions_remaining !== null && r.sessions_remaining > 0;
+    if (r.sessions_remaining !== null) return r.sessions_remaining > 0;
+    return !usedRegIds.has(r.id); // legacy null: active only if never checked in
+  }
+
+  function mapPackage(r: typeof allRelated[0]) {
+    const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
+    return {
+      id: r.id,
+      membership_type: r.membership_type,
+      membership_label: mt?.label ?? r.membership_type,
+      sessions_remaining: r.sessions_remaining,
+      expires_at: r.expires_at,
+      time_based: !!mt?.timeBased,
+      is_bulk: !!mt?.bulk,
+      created_at: r.created_at,
+      amount_paid: r.amount_paid,
+    };
+  }
+
   const activePackages = allRelated
-    .filter((r) => r.slip_status === "approved")
-    .filter((r) => {
-      const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
-      if (mt?.timeBased) {
-        // Time-based: active if not yet expired (or no expiry set yet)
-        return !r.expires_at || new Date(r.expires_at) > now;
-      }
-      if (mt?.bulk) {
-        // Bulk: active if sessions remain
-        return r.sessions_remaining !== null && r.sessions_remaining > 0;
-      }
-      // Single-use: active if sessions_remaining > 0,
-      // OR if legacy null and never checked in yet
-      if (r.sessions_remaining !== null) return r.sessions_remaining > 0;
-      return !usedRegIds.has(r.id);
-    })
-    .map((r) => {
-      const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
-      return {
-        id: r.id,
-        membership_type: r.membership_type,
-        membership_label: mt?.label ?? r.membership_type,
-        sessions_remaining: r.sessions_remaining,
-        expires_at: r.expires_at,
-        time_based: !!mt?.timeBased,
-        created_at: r.created_at,
-      };
-    });
+    .filter((r) => r.slip_status === "approved" && packageIsActive(r))
+    .map(mapPackage);
+
+  const pastPackages = allRelated
+    .filter((r) => r.slip_status === "approved" && !packageIsActive(r))
+    .map(mapPackage);
 
   const membershipLabel =
     MEMBERSHIP_TYPES.find((m) => m.id === member.membership_type)?.label ??
@@ -120,6 +122,7 @@ export default async function QrCardPage({
       checkIns={checkIns.slice(0, 10)}
       photos={photos ?? []}
       activePackages={activePackages}
+      pastPackages={pastPackages}
     />
   );
 }

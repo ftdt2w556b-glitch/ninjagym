@@ -30,7 +30,9 @@ interface ActivePackage {
   sessions_remaining: number | null;
   expires_at: string | null;
   time_based: boolean;
+  is_bulk?: boolean;
   created_at: string;
+  amount_paid?: number | null;
 }
 
 interface Props {
@@ -53,6 +55,7 @@ interface Props {
   checkIns: CheckIn[];
   photos: Photo[];
   activePackages: ActivePackage[];
+  pastPackages?: ActivePackage[];
 }
 
 export default function QrCardClient({
@@ -64,6 +67,7 @@ export default function QrCardClient({
   checkIns,
   photos,
   activePackages,
+  pastPackages = [],
 }: Props) {
   const { t, lang, setLang } = useLanguage();
 
@@ -305,6 +309,58 @@ export default function QrCardClient({
         url={`${siteUrl}/qr/card/${member.id}`}
         title={`${member.name}: NinjaGym QR Card`}
       />
+
+      {/* My Sessions — full purchase history */}
+      {(activePackages.length > 0 || pastPackages.length > 0) && (
+        <div className="mt-4 bg-white rounded-2xl p-5 shadow">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">My Sessions</p>
+          <div className="flex flex-col divide-y divide-gray-50">
+            {[...activePackages, ...pastPackages].map((pkg) => {
+              const isActive = activePackages.some((a) => a.id === pkg.id);
+              let statusText = "";
+              if (pkg.time_based) {
+                if (pkg.expires_at) {
+                  const d = new Date(pkg.expires_at);
+                  const expired = d < new Date();
+                  statusText = expired
+                    ? "Expired " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" })
+                    : "Expires " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" });
+                } else {
+                  statusText = "Pending activation";
+                }
+              } else if (pkg.sessions_remaining !== null) {
+                statusText = pkg.sessions_remaining === 0
+                  ? "Used"
+                  : `${pkg.sessions_remaining} session${pkg.sessions_remaining !== 1 ? "s" : ""} left`;
+              } else {
+                statusText = isActive ? "Active" : "Used";
+              }
+              return (
+                <div key={pkg.id} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <p className={`text-sm font-medium ${isActive ? "text-gray-800" : "text-gray-400"}`}>
+                      {pkg.membership_label}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(pkg.created_at).toLocaleDateString("en-US", {
+                        timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
+                      })}
+                      {pkg.amount_paid ? ` · ${Number(pkg.amount_paid).toLocaleString()} THB` : ""}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    isActive
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-400"
+                  }`}>
+                    {statusText}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Top-up / Continue Training / Recent Check-ins */}
       {isApproved && (
