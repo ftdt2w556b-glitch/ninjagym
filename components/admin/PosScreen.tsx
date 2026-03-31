@@ -48,6 +48,15 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const [membershipType, setMembershipType] = useState("session_group");
   const [bulkQty, setBulkQty] = useState(4);
   const [kidsCount, setKidsCount] = useState(1);
+  const [memberPhone, setMemberPhone] = useState("");
+  const [linkedMember, setLinkedMember] = useState<{ id: number; name: string } | null>(null);
+  const [phoneSearching, setPhoneSearching] = useState(false);
+  const [phoneLookupError, setPhoneLookupError] = useState("");
+  // Captured at "Add to Sale" time so processSale has correct values even if UI changes
+  const [pendingTopUp, setPendingTopUp] = useState<{
+    memberId: number; memberName: string;
+    membershipType: string; sessionsRemaining: number | null; kidsCount: number;
+  } | null>(null);
   const [shopItemId, setShopItemId] = useState("tshirt_kids");
   const [shopOption, setShopOption] = useState("S");
   const [notes, setNotes] = useState("");
@@ -166,6 +175,9 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         setCart([]);
         setNotes("");
         setReferenceId(null);
+        setLinkedMember(null);
+        setMemberPhone("");
+        setPendingTopUp(null);
       }, IDLE_MS);
     }
 
@@ -279,6 +291,18 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         unit: price,
       }]);
     }
+    // Capture top-up info now so processSale has correct values even if UI changes
+    if (linkedMember) {
+      const isBulk = !!mt?.bulk;
+      const isTimeBased = !!mt?.timeBased;
+      setPendingTopUp({
+        memberId: linkedMember.id,
+        memberName: linkedMember.name,
+        membershipType,
+        sessionsRemaining: isTimeBased ? null : isBulk ? bulkQty : 1,
+        kidsCount,
+      });
+    }
   }
 
   function addShopToCart() {
@@ -304,6 +328,27 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
 
   function removeCartLine(i: number) {
     setCart((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function lookupMemberByPhone() {
+    setPhoneLookupError("");
+    setLinkedMember(null);
+    if (memberPhone.length < 6) return;
+    setPhoneSearching(true);
+    try {
+      const res = await fetch("/api/pos/member-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: memberPhone }),
+      });
+      const data = await res.json();
+      if (res.ok) setLinkedMember(data);
+      else setPhoneLookupError(data.error ?? "Not found");
+    } catch {
+      setPhoneLookupError("Lookup failed");
+    } finally {
+      setPhoneSearching(false);
+    }
   }
 
   const total = cart.reduce((s, l) => s + l.unit * l.qty, 0);
@@ -352,6 +397,39 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
 
     const now = new Date();
     const time = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    // 3. Create + approve top-up registration if a member was linked
+    if (pendingTopUp) {
+      try {
+        const body = new FormData();
+        body.append("name", pendingTopUp.memberName);
+        body.append("membership_type", pendingTopUp.membershipType);
+        body.append("kids_count", String(pendingTopUp.kidsCount));
+        body.append("payment_method", "cash");
+        body.append("amount_paid", String(total));
+        body.append("parent_member_id", String(pendingTopUp.memberId));
+        body.append("notes", `POS top-up by ${activeStaff!.name} — sale #${saleId}`);
+        if (pendingTopUp.sessionsRemaining !== null) {
+          body.append("sessions_remaining", String(pendingTopUp.sessionsRemaining));
+        }
+        const regRes = await fetch("/api/members", { method: "POST", body });
+        if (regRes.ok) {
+          const regData = await regRes.json();
+          // Immediately approve so sessions are added to the member's card
+          const approveBody = new FormData();
+          approveBody.append("id", String(regData.id));
+          approveBody.append("action", "approve");
+          approveBody.append("type", "member");
+          await fetch("/api/payments", { method: "POST", body: approveBody });
+        }
+      } catch (e) {
+        console.error("Top-up creation failed:", e);
+      }
+      setPendingTopUp(null);
+      setLinkedMember(null);
+      setMemberPhone("");
+      setPhoneLookupError("");
+    }
+
     setProcessing(false);
     setScreen("main");
     setResult({ success: true, saleId, printerOk, change: changeAmt, time });
@@ -791,14 +869,39 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   })}
                 </select>
 
-                {/* Per-kid quantity */}
+                {/* Per-kid quantity + phone lookup */}
                 {mt?.perKid && (
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Number of Kids</label>
-                    <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
-                      className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                      {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                  <div className="flex gap-3 items-end">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Number of Kids</label>
+                      <select value={kidsCount} onChange={(e) => setKidsCount(Number(e.target.value))}
+                        className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
+                        {[1,2,3,4,5,6].map((n) => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Member Phone (optional)</label>
+                      <div className="flex gap-1">
+                        <input
+                          type="tel"
+                          value={memberPhone}
+                          onChange={(e) => { setMemberPhone(e.target.value); setLinkedMember(null); setPhoneLookupError(""); setPendingTopUp(null); }}
+                          onKeyDown={(e) => e.key === "Enter" && lookupMemberByPhone()}
+                          placeholder="e.g. 0862944374"
+                          className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                        />
+                        <button onClick={lookupMemberByPhone} disabled={phoneSearching}
+                          className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-gray-200 disabled:opacity-50 transition-colors whitespace-nowrap">
+                          {phoneSearching ? "..." : "Find"}
+                        </button>
+                      </div>
+                      {linkedMember && (
+                        <p className="text-xs text-green-600 font-semibold mt-1">✓ {linkedMember.name} — sessions will be added to their card</p>
+                      )}
+                      {phoneLookupError && (
+                        <p className="text-xs text-red-500 mt-1">{phoneLookupError}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
