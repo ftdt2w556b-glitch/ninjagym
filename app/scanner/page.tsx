@@ -6,7 +6,8 @@ export default async function ScannerPage() {
   const { data: profiles } = await admin
     .from("profiles")
     .select("name, email")
-    .in("role", ["staff"])
+    .in("role", ["admin", "manager", "staff"])
+    .eq("show_on_pos", true)
     .order("name");
 
   const staffNames = (profiles ?? []).map(
