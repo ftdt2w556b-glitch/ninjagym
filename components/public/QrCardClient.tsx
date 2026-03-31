@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import QRCode from "react-qr-code";
 import ShareButton from "@/components/public/ShareButton";
 import TopUpSection from "@/components/public/TopUpSection";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
@@ -83,9 +82,6 @@ export default function QrCardClient({
 
   const selectedPkg = activePackages.find((p) => p.id === selectedId) ?? activePackages[0];
   const hasMultiple = activePackages.length > 1;
-
-  // QR code points to the selected package's registration
-  const qrValue = `${siteUrl}/scanner?member=${selectedId}`;
 
   return (
     <div className="px-4 py-6">
@@ -233,22 +229,10 @@ export default function QrCardClient({
               ))}
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
-              Select the program you&apos;re using today. The QR code will update.
+              Select the program you&apos;re using today.
             </p>
           </div>
         )}
-
-        {/* QR Code */}
-        <div className="flex justify-center py-6 px-5">
-          <div className="p-4 bg-white border-2 border-gray-100 rounded-2xl shadow-inner">
-            <QRCode value={qrValue} size={188} bgColor="#ffffff" fgColor="#1a56db" />
-          </div>
-        </div>
-
-        {/* Scan instruction */}
-        <p className="text-center text-xs text-gray-400 -mt-3 mb-3 px-6">
-          {t.qrCardNote}
-        </p>
 
         {/* PIN display */}
         {member.pin && (
