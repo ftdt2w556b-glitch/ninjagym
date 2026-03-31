@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = createAdminClient();
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+    if (!["admin", "manager"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     const body = await request.json();
     const { action, staffId, staffType, staffName, amount, saleType, referenceId, items, notes, reason, notes1k } = body;
 
     if (!staffId) {
       return NextResponse.json({ error: "staffId required" }, { status: 400 });
     }
-
-    const admin = createAdminClient();
 
     if (action === "cash_sale") {
       if (!amount || amount <= 0) {

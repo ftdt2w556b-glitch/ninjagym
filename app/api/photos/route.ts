@@ -57,15 +57,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH: approve or delete a photo (admin only)
+// PATCH: approve or delete a photo (admin/manager only)
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const admin = createAdminClient();
+    const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+    if (!["admin", "manager"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
     const { id, action, member_id } = await request.json();
-    const admin = createAdminClient();
 
     if (action === "approve") {
       await admin

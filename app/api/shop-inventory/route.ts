@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
  * PATCH /api/shop-inventory
@@ -7,14 +7,19 @@ import { createAdminClient } from "@/lib/supabase/server";
  *    or { item_id, variant?, set_qty } — set an absolute quantity
  */
 export async function PATCH(request: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const body = await request.json();
   const { item_id, variant = "", delta, set_qty } = body;
 
   if (!item_id) {
     return NextResponse.json({ error: "Missing item_id" }, { status: 400 });
   }
-
-  const admin = createAdminClient();
 
   if (set_qty !== undefined) {
     const qty = Math.max(0, Number(set_qty));

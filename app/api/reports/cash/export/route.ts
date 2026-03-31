@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { bangkokToday } from "@/lib/timezone";
 
 export async function GET(request: NextRequest) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager", "owner"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
 
   // The Revenue page passes full ISO timestamps with +07:00 offset
@@ -14,8 +21,6 @@ export async function GET(request: NextRequest) {
   // Extract date portion for the filename
   const fromDate = from.split("T")[0];
   const toDate   = to.split("T")[0];
-
-  const admin = createAdminClient();
 
   // ── 1. POS cash_sales ────────────────────────────────────────
   const { data: cashSales } = await admin

@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { SHOP_CATALOG } from "@/lib/shop";
 import { ShopOrderItem } from "@/types";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
@@ -29,7 +30,13 @@ export default async function AdminShopPage({
   searchParams: Promise<{ tab?: string; status?: string }>;
 }) {
   const { tab = "inventory", status } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   // ── Inventory ────────────────────────────────────────────────

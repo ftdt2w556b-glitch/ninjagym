@@ -1,10 +1,16 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import PhotoManager from "@/components/admin/PhotoManager";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export default async function PhotosPage() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
 
   const { data: photos } = await admin
     .from("marketing_photos")

@@ -1,5 +1,4 @@
-import { createAdminClient } from "@/lib/supabase/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export default async function WorkInstructionsPage() {
@@ -7,9 +6,9 @@ export default async function WorkInstructionsPage() {
   const supabase = await createSupabaseServerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = user
-    ? await admin.from("profiles").select("role").eq("id", user.id).single()
-    : { data: null };
+  if (!user) redirect("/admin/login");
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
 
   const isAdmin = ["admin", "manager"].includes(profile?.role ?? "");
 
@@ -20,10 +19,16 @@ export default async function WorkInstructionsPage() {
 
   async function saveInstruction(formData: FormData) {
     "use server";
+    const serverSupabase = await createSupabaseServerClient();
+    const { data: { user: actionUser } } = await serverSupabase.auth.getUser();
+    if (!actionUser) redirect("/admin/login");
+    const adminClient = createAdminClient();
+    const { data: actionProfile } = await adminClient.from("profiles").select("role").eq("id", actionUser.id).single();
+    if (!["admin", "manager"].includes(actionProfile?.role ?? "")) redirect("/admin/dashboard");
+
     const id = formData.get("id") as string;
     const topic_name = formData.get("topic_name") as string;
     const content = formData.get("instructions") as string;
-    const adminClient = createAdminClient();
     if (id) {
       await adminClient.from("work_instructions").update({ topic_name, instructions: content }).eq("id", id);
     } else {
@@ -34,8 +39,14 @@ export default async function WorkInstructionsPage() {
 
   async function deleteInstruction(formData: FormData) {
     "use server";
-    const id = formData.get("id") as string;
+    const serverSupabase = await createSupabaseServerClient();
+    const { data: { user: actionUser } } = await serverSupabase.auth.getUser();
+    if (!actionUser) redirect("/admin/login");
     const adminClient = createAdminClient();
+    const { data: actionProfile } = await adminClient.from("profiles").select("role").eq("id", actionUser.id).single();
+    if (!["admin", "manager"].includes(actionProfile?.role ?? "")) redirect("/admin/dashboard");
+
+    const id = formData.get("id") as string;
     await adminClient.from("work_instructions").delete().eq("id", id);
     redirect("/admin/work-instructions");
   }

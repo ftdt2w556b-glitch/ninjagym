@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import Link from "next/link";
 
@@ -7,8 +8,14 @@ export default async function EventBookingsPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
-  const { status } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+
+  const { status } = await searchParams;
 
   let query = admin
     .from("event_bookings")
