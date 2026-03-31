@@ -304,13 +304,6 @@ export default function QrCardClient({
         </div>
       </div>
 
-      {/* Save tip */}
-      <div className="mt-4 bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-center">
-        <p className="text-white/80 text-sm font-semibold">📲 {t.qrSaveHint}</p>
-        <p className="text-white/50 text-xs mt-0.5">
-          {t.qrSaveHintBold}
-        </p>
-      </div>
 
       <ShareButton
         url={`${siteUrl}/qr/card/${member.id}?token=${cardToken}`}
