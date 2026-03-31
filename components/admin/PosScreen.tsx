@@ -241,6 +241,14 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       body: JSON.stringify({ staffId: activeStaff!.id, pin: entered, staffType: activeStaff!.staffType }),
     });
     if (res.ok) {
+      // Clear previous staff's state on new login
+      setCart([]);
+      setNotes("");
+      setCashInput("");
+      setReferenceId(null);
+      setResult(null);
+      setNotes1k(0);
+      setSaleType("registration");
       setScreen("main");
       setPinError("");
     } else {
@@ -660,7 +668,17 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             className="bg-yellow-500 text-gray-900 font-bold text-sm px-4 py-2 rounded-xl hover:bg-yellow-400 transition-colors">
             Open Drawer
           </button>
-          <button onClick={() => setScreen("select_staff")}
+          <button onClick={() => {
+            setScreen("select_staff");
+            setActiveStaff(null);
+            setCart([]);
+            setNotes("");
+            setCashInput("");
+            setReferenceId(null);
+            setResult(null);
+            setNotes1k(0);
+            setSaleType("registration");
+          }}
             className="text-gray-400 text-sm hover:text-white transition-colors">
             Switch Staff
           </button>
