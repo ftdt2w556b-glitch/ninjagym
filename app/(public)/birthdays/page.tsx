@@ -12,7 +12,7 @@ const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
-const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
+const SESSION_OPTIONS = [1, 2, 3, 4, 5, 6];
 const PHOTOGRAPHER_FEE = 1000;
 
 export default function BirthdaysPage() {
@@ -42,7 +42,7 @@ export default function BirthdaysPage() {
     event_date: "",
     time_slot: "afternoon" as BirthdayTimeSlot,
     hours: "",
-    num_hours: 2,
+    num_hours: 2,  // sessions
     num_kids: 5,
     birthday_child_name: "",
     birthday_child_age: "",
@@ -292,7 +292,7 @@ export default function BirthdaysPage() {
                     className="sr-only" />
                   <span className="text-sm font-bold text-gray-800">{slot.label}</span>
                   <span className="text-xs text-gray-500 mt-0.5">{slot.note}</span>
-                  <span className="text-sm font-bold text-[#1a56db] mt-1">{slot.rate.toLocaleString()} THB/hr</span>
+                  <span className="text-sm font-bold text-[#1a56db] mt-1">{slot.rate.toLocaleString()} THB/session</span>
                 </label>
               ))}
             </div>
@@ -312,8 +312,8 @@ export default function BirthdaysPage() {
             <select value={form.num_hours}
               onChange={(e) => setForm({ ...form, num_hours: Number(e.target.value) })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-              {HOUR_OPTIONS.map((h) => (
-                <option key={h} value={h}>{h} {h === 1 ? "hour" : "hours"}</option>
+              {SESSION_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s} {s === 1 ? t.hourUnit : t.hoursUnit} (55 min)</option>
               ))}
             </select>
           </div>
@@ -363,7 +363,7 @@ export default function BirthdaysPage() {
             <span className="font-bold text-gray-900 text-2xl">{formatTHB(total)}</span>
           </div>
           <p className="text-sm text-gray-700 mt-1">
-            {selectedSlot.rate.toLocaleString()} THB/hr × {form.num_hours} hr{form.num_hours !== 1 ? "s" : ""}
+            {selectedSlot.rate.toLocaleString()} THB/session × {form.num_hours} {form.num_hours !== 1 ? t.hoursUnit : t.hourUnit}
             {form.num_kids > 5 ? " + extra kids" : " (first 5 included)"}
             {form.photographer_requested ? " + photos (1,000 THB)" : ""}
           </p>
