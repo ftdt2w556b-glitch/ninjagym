@@ -79,7 +79,7 @@ export default function AboutPage() {
           <h2 className="font-bold text-[#1a56db] text-lg mb-3">The NinjaGym Method</h2>
           <div className="flex justify-center mb-4">
             <Image
-              src="/images/NinjaGym in a Turtle Shell.png"
+              src="/images/ninjagym-turtle-shell.png"
               alt="NinjaGym in a Turtle Shell"
               width={260}
               height={260}
