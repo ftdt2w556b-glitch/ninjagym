@@ -151,6 +151,88 @@ interface Props {
   notifyPrefs?: { checkin?: boolean; low_sessions?: boolean; milestone?: boolean } | null;
 }
 
+// ── Sessions list with collapse for past purchases ────────────────────────────
+const PAST_PREVIEW = 3;
+
+function SessionsList({
+  activePackages,
+  pastPackages,
+}: {
+  activePackages: { id: number; membership_label: string; sessions_remaining: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
+  pastPackages:   { id: number; membership_label: string; sessions_remaining: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const visiblePast = showAll ? pastPackages : pastPackages.slice(0, PAST_PREVIEW);
+  const hiddenCount = pastPackages.length - PAST_PREVIEW;
+
+  function statusText(pkg: typeof activePackages[number], isActive: boolean) {
+    if (pkg.time_based) {
+      if (pkg.expires_at) {
+        const d = new Date(pkg.expires_at);
+        const expired = d < new Date();
+        const label = d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" });
+        return expired ? `Expired ${label}` : `Expires ${label}`;
+      }
+      return isActive ? "Active" : "Pending activation";
+    }
+    if (pkg.sessions_remaining !== null) {
+      return pkg.sessions_remaining === 0
+        ? "Used"
+        : `${pkg.sessions_remaining} session${pkg.sessions_remaining !== 1 ? "s" : ""} left`;
+    }
+    return isActive ? "Active" : "Used";
+  }
+
+  function PkgRow({ pkg, isActive }: { pkg: typeof activePackages[number]; isActive: boolean }) {
+    return (
+      <div className="flex items-center justify-between py-2.5">
+        <div>
+          <p className={`text-sm font-medium ${isActive ? "text-gray-800" : "text-gray-400"}`}>
+            {pkg.membership_label}
+          </p>
+          <p className="text-xs text-gray-400">
+            {new Date(pkg.created_at).toLocaleDateString("en-US", {
+              timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
+            })}
+            {pkg.amount_paid ? ` · ${Number(pkg.amount_paid).toLocaleString()} THB` : ""}
+          </p>
+        </div>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+          isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"
+        }`}>
+          {statusText(pkg, isActive)}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 bg-white rounded-2xl p-5 shadow">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">My Sessions</p>
+      <div className="flex flex-col divide-y divide-gray-50">
+        {activePackages.map((pkg) => <PkgRow key={pkg.id} pkg={pkg} isActive={true} />)}
+        {visiblePast.map((pkg) => <PkgRow key={pkg.id} pkg={pkg} isActive={false} />)}
+      </div>
+      {hiddenCount > 0 && !showAll && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="mt-3 text-xs text-gray-400 hover:text-gray-600 underline w-full text-center"
+        >
+          Show {hiddenCount} older {hiddenCount === 1 ? "record" : "records"}
+        </button>
+      )}
+      {showAll && pastPackages.length > PAST_PREVIEW && (
+        <button
+          onClick={() => setShowAll(false)}
+          className="mt-3 text-xs text-gray-400 hover:text-gray-600 underline w-full text-center"
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function QrCardClient({
   member,
   membershipLabel,
@@ -631,56 +713,9 @@ export default function QrCardClient({
         </div>
       )}
 
-      {/* My Sessions — full purchase history */}
+      {/* My Sessions — purchase history */}
       {(activePackages.length > 0 || pastPackages.length > 0) && (
-        <div className="mt-4 bg-white rounded-2xl p-5 shadow">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">My Sessions</p>
-          <div className="flex flex-col divide-y divide-gray-50">
-            {[...activePackages, ...pastPackages].map((pkg) => {
-              const isActive = activePackages.some((a) => a.id === pkg.id);
-              let statusText = "";
-              if (pkg.time_based) {
-                if (pkg.expires_at) {
-                  const d = new Date(pkg.expires_at);
-                  const expired = d < new Date();
-                  statusText = expired
-                    ? "Expired " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" })
-                    : "Expires " + d.toLocaleDateString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric" });
-                } else {
-                  statusText = isActive ? "Active" : "Pending activation";
-                }
-              } else if (pkg.sessions_remaining !== null) {
-                statusText = pkg.sessions_remaining === 0
-                  ? "Used"
-                  : `${pkg.sessions_remaining} session${pkg.sessions_remaining !== 1 ? "s" : ""} left`;
-              } else {
-                statusText = isActive ? "Active" : "Used";
-              }
-              return (
-                <div key={pkg.id} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <p className={`text-sm font-medium ${isActive ? "text-gray-800" : "text-gray-400"}`}>
-                      {pkg.membership_label}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(pkg.created_at).toLocaleDateString("en-US", {
-                        timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
-                      })}
-                      {pkg.amount_paid ? ` · ${Number(pkg.amount_paid).toLocaleString()} THB` : ""}
-                    </p>
-                  </div>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                    isActive
-                      ? "bg-green-100 text-green-700"
-                      : "bg-gray-100 text-gray-400"
-                  }`}>
-                    {statusText}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <SessionsList activePackages={activePackages} pastPackages={pastPackages} />
       )}
 
       {/* Top-up / Continue Training / Recent Check-ins */}
