@@ -50,6 +50,7 @@ export default async function MembersPage({
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
+  const canCheckIn = ["admin", "manager", "owner", "staff"].includes(profile?.role ?? "");
 
   const tabs = [
     { id: "members",  label: "Members" },
@@ -250,7 +251,7 @@ export default async function MembersPage({
                                 expiresAt={m.expires_at}
                                 membershipType={m.membership_type}
                                 isPrimary
-                                canCheckIn={isAdminOrOwner}
+                                canCheckIn={canCheckIn}
                               />
                             )}
                             {topUps.filter((t) => isPackageActive(t)).map((t) => {
@@ -263,7 +264,7 @@ export default async function MembersPage({
                                   sessions={t.sessions_remaining}
                                   expiresAt={t.expires_at}
                                   membershipType={t.membership_type}
-                                  canCheckIn={isAdminOrOwner}
+                                  canCheckIn={canCheckIn}
                                 />
                               );
                             })}
