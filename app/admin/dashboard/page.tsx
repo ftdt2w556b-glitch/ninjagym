@@ -220,7 +220,7 @@ export default async function DashboardPage() {
             🛒 POS Counter
           </a>
         )}
-        <a href="/join"
+        <a href="/join" target="_blank" rel="noopener noreferrer"
           className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors">
           ➕ New Registration
         </a>
