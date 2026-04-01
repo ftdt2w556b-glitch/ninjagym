@@ -85,9 +85,8 @@ export default async function DashboardPage() {
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0) + (pendingEvents ?? 0);
 
   const stats = [
-    // Check-ins stat only useful for admin/owner (staff just use the Scanner button)
     ...(isAdminOrOwner
-      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/scanner" }]
+      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/admin/payments" }]
       : []),
     { label: "Pending",          value: totalPending,   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
     { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
@@ -211,9 +210,9 @@ export default async function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid gap-4 sm:grid-cols-2 mb-10">
-        <a href="/scanner"
+        <a href="https://ninjagym.com/pos" target="_blank" rel="noopener noreferrer"
           className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
-          🔢 PIN Scanner
+          🧾 POS Cash Register
         </a>
         {isAdminOrOwner && (
           <a href="/admin/pos"
