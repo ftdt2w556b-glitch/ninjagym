@@ -95,6 +95,52 @@ export default function AboutPage() {
           </ul>
         </div>
 
+        {/* Member Loyalty Benefits */}
+        <div className="bg-gray-900 rounded-2xl p-5 shadow text-white">
+          <h2 className="font-bold text-lg mb-1">🥷 Member Benefits</h2>
+          <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card — no stamps, no apps.</p>
+          <div className="flex flex-col gap-3">
+            {[
+              {
+                icon: "🎁",
+                title: "Free Sessions",
+                desc: "Every 10 check-ins earns a free session. No expiry. Just keep training.",
+              },
+              {
+                icon: "🥋",
+                title: "Ninja Belt Ranks",
+                desc: "Progress from White Belt to Black Belt as your session count grows — White, Yellow, Orange, Green, Blue, Purple, Brown, Black.",
+              },
+              {
+                icon: "🔥",
+                title: "Weekly Streak",
+                desc: "Keep your streak alive by coming at least once a week. Miss a week and it resets — great motivation for kids.",
+              },
+              {
+                icon: "📅",
+                title: "Attendance Calendar",
+                desc: "Your member card shows the last 6 weeks of attendance at a glance. Parents can always verify their child's sessions.",
+              },
+              {
+                icon: "🏆",
+                title: "Session Milestones",
+                desc: "Hit 10, 25, 50, 100 or more sessions and get a milestone badge. Something to be proud of.",
+              },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-3 bg-white/5 rounded-xl px-4 py-3">
+                <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
+                <div>
+                  <p className="font-bold text-[#ffe033] text-sm">{title}</p>
+                  <p className="text-sm text-white/70 leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-white/30 text-center mt-4">
+            All rewards are visible on your digital member card — accessible from the link in your registration email.
+          </p>
+        </div>
+
         {/* Programs */}
         <div className="bg-[#1a56db] rounded-2xl p-5 shadow text-white">
           <h2 className="font-bold text-lg mb-4">Programs</h2>
