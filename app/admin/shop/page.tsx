@@ -167,7 +167,7 @@ export default async function AdminShopPage({
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-gray-900">#{o.id} — {o.name}</span>
+                        <span className="font-bold text-gray-900">#{o.id} · {o.name}</span>
                         <Badge
                           label={slipStatusLabel(o.slip_status)}
                           variant={slipStatusVariant(o.slip_status)}

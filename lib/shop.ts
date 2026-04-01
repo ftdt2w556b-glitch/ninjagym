@@ -17,7 +17,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     id: "tshirt_kids",
     name: "Kids T-Shirt",
     price: 300,
-    description: "Available in 3 designs — NinjaGym, SamuiKids, and Samui Ninja",
+    description: "Available in 3 designs: NinjaGym, SamuiKids, and Samui Ninja",
     options: {
       label: "Design & Size",
       groups: [
@@ -53,7 +53,7 @@ export const SHOP_CATALOG: ShopCatalogItem[] = [
     id: "gift_card",
     name: "NinjaGym Gift Card",
     price: 0, // price driven by program selection
-    description: "Give the gift of ninja training! Choose the program below — staff will set up a member account for your guest and provide a personalised card.",
+    description: "Give the gift of ninja training! Choose the program below. Staff will set up a member account for your guest and provide a personalised card.",
     options: {
       label: "Program",
       values: Object.keys(GIFT_CARD_PRICES),

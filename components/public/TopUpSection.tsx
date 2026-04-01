@@ -97,13 +97,13 @@ export default function TopUpSection({
       setLoading(null);
       if (!res.ok) { setError(data.error ?? "Something went wrong"); return; }
       if (paymentMethod === "cash") {
-        setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive — staff will check you in.`);
+        setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive. Staff will check you in.`);
       } else {
         setShowPromptPay(true);
       }
     } catch {
       setLoading(null);
-      setError("Something went wrong — please try again.");
+      setError("Something went wrong. Please try again.");
     }
   }
 
@@ -253,7 +253,7 @@ export default function TopUpSection({
                 {loading === "promptpay" ? t.submitting : t.payPromptPay}
               </button>
 
-              <p className="text-center text-gray-300 text-xs">— {t.or} —</p>
+              <p className="text-center text-gray-300 text-xs">{t.or}</p>
 
               <button
                 onClick={() => doRegister("cash")}
@@ -263,7 +263,7 @@ export default function TopUpSection({
                 {loading === "cash" ? t.submitting : t.payCashGym}
               </button>
 
-              <p className="text-center text-gray-300 text-xs">— {t.or} —</p>
+              <p className="text-center text-gray-300 text-xs">{t.or}</p>
 
               <button
                 disabled

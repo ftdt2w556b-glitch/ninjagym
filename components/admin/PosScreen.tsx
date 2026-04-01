@@ -230,7 +230,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     setPinError("");
     setPin("");
     if (!s.hasPin) {
-      setPinError("No PIN set — ask admin to set a PIN for this account");
+      setPinError("No PIN set. Ask admin to set a PIN for this account.");
       return;
     }
     setScreen("pin_entry");
@@ -403,7 +403,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         body.append("payment_method", "cash");
         body.append("amount_paid", String(total));
         body.append("parent_member_id", String(pendingTopUp.memberId));
-        body.append("notes", `POS top-up by ${activeStaff!.name} — sale #${saleId}`);
+        body.append("notes", `POS top-up by ${activeStaff!.name}, sale #${saleId}`);
         if (pendingTopUp.sessionsRemaining !== null) {
           body.append("sessions_remaining", String(pendingTopUp.sessionsRemaining));
         }
@@ -450,7 +450,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       body: JSON.stringify({ action: "open_drawer", staffId: activeStaff!.id, staffType: activeStaff!.staffType, staffName: activeStaff!.name, reason: "manual_open" }),
     });
     const bridgeOk = await openDrawerOnly(activeStaff!.name);
-    setDrawerMsg(bridgeOk ? "Drawer opened." : "Drawer command sent — open manually if needed.");
+    setDrawerMsg(bridgeOk ? "Drawer opened." : "Drawer command sent. Open manually if needed.");
     setTimeout(() => setDrawerMsg(""), 3000);
   }
 
@@ -658,7 +658,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             disabled={!isEnough || processing}
             className="w-full bg-[#22c55e] text-white font-bold text-xl py-5 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
           >
-            {processing ? "Processing..." : isEnough ? `Confirm — give ${change.toLocaleString()} THB change` : "Enter cash amount"}
+            {processing ? "Processing..." : isEnough ? `Confirm: give ${change.toLocaleString()} THB change` : "Enter cash amount"}
           </button>
           <button onClick={() => { setScreen("main"); setCashInput(""); }}
             className="text-gray-500 text-sm text-center hover:text-gray-400 transition-colors">
@@ -695,7 +695,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   <button
                     key={reg.id}
                     onClick={() => {
-                      setCart([{ label: `${reg.name} — ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
+                      setCart([{ label: `${reg.name}: ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
                       setSaleType("membership");
                       setReferenceId(reg.id);
                       setNotes(reg.name);
@@ -861,7 +861,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                       const price = settingsPrices[`price_${m.id}`] ?? 0;
                       priceLabel = `${formatTHB(price)}${m.perKid ? "/kid" : ""}`;
                     }
-                    return <option key={m.id} value={m.id}>{m.label} — {priceLabel}</option>;
+                    return <option key={m.id} value={m.id}>{m.label}: {priceLabel}</option>;
                   })}
                 </select>
 
@@ -897,7 +897,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                       </div>
                     </div>
                     {phoneSearching && <p className="text-xs text-gray-400">Looking up...</p>}
-                    {linkedMember && <p className="text-xs text-green-600 font-semibold">✓ {linkedMember.name} — sessions will be added to their card</p>}
+                    {linkedMember && <p className="text-xs text-green-600 font-semibold">✓ {linkedMember.name}: sessions will be added to their card</p>}
                     {phoneLookupError && <p className="text-xs text-red-500">{phoneLookupError}</p>}
                   </div>
                 )}
@@ -911,7 +911,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                       {[2,3,4,5,6,7,8,9,10,12,14,16,18,20].map((n) => {
                         const base = settingsPrices[mt.bulkBase!] ?? 0;
                         const total = calcBulkPrice(base, n);
-                        return <option key={n} value={n}>{n} sessions — {formatTHB(total)} ({Math.min(n,20)}% off)</option>;
+                        return <option key={n} value={n}>{n} sessions: {formatTHB(total)} ({Math.min(n,20)}% off)</option>;
                       })}
                     </select>
                   </div>
@@ -955,7 +955,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
                   {SHOP_CATALOG.map((i) => (
                     <option key={i.id} value={i.id}>
-                      {i.name}{i.id === "gift_card" ? " — price by program" : ` — ${formatTHB(getShopPrice(i.id, shopItemId === i.id ? shopOption : (i.options.groups?.[0]?.values[0] ?? i.options.values?.[0] ?? "")))}`}
+                      {i.name}{i.id === "gift_card" ? ": price by program" : `: ${formatTHB(getShopPrice(i.id, shopItemId === i.id ? shopOption : (i.options.groups?.[0]?.values[0] ?? i.options.values?.[0] ?? "")))}`}
                     </option>
                   ))}
                 </select>
@@ -967,15 +967,15 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                         <optgroup key={g.label} label={g.label}>
                           {g.values.map((v) => {
                             const qty = getStock(shopItemId, v);
-                            const stockNote = qty === 0 ? " — OUT OF STOCK" : qty !== null && qty <= 3 ? ` — only ${qty} left` : qty !== null ? ` — ${qty} in stock` : "";
+                            const stockNote = qty === 0 ? ": OUT OF STOCK" : qty !== null && qty <= 3 ? `: only ${qty} left` : qty !== null ? `: ${qty} in stock` : "";
                             return <option key={v} value={v}>{v}{stockNote}</option>;
                           })}
                         </optgroup>
                       ))
                     : (catalogItem?.options.values ?? []).map((v) => {
                         const qty = isGiftCard ? null : getStock(shopItemId, v);
-                        const stockNote = qty === 0 ? " — OUT OF STOCK" : qty !== null && qty <= 3 ? ` — only ${qty} left` : qty !== null ? ` — ${qty} in stock` : "";
-                        const priceNote = isGiftCard ? ` — ${formatTHB(GIFT_CARD_PRICES[v] ?? 0)}` : "";
+                        const stockNote = qty === 0 ? ": OUT OF STOCK" : qty !== null && qty <= 3 ? `: only ${qty} left` : qty !== null ? `: ${qty} in stock` : "";
+                        const priceNote = isGiftCard ? `: ${formatTHB(GIFT_CARD_PRICES[v] ?? 0)}` : "";
                         return <option key={v} value={v}>{v}{priceNote}{stockNote}</option>;
                       })
                   }

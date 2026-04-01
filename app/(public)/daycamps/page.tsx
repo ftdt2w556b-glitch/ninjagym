@@ -137,7 +137,7 @@ export default function DayCampsPage() {
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             >
               {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                <option key={n} value={n}>{n} kid{n !== 1 ? "s" : ""} — {formatTHB(n * CAMP_PRICE_PER_KID)}</option>
+                <option key={n} value={n}>{n} kid{n !== 1 ? "s" : ""}: {formatTHB(n * CAMP_PRICE_PER_KID)}</option>
               ))}
             </select>
           </div>

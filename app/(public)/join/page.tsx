@@ -168,7 +168,7 @@ export default function JoinPage() {
           <Suspense fallback={<p className="text-gray-400 text-sm text-center py-4 animate-pulse">Loading...</p>}>
             <StripePayment
               amount={price}
-              description={`NinjaGym membership — ${form.membership_type}`}
+              description={`NinjaGym membership: ${form.membership_type}`}
               referenceId={pendingMemberId}
               referenceType="member"
               onSuccess={() => router.push(`/qr/card/${pendingMemberId}`)}
@@ -479,7 +479,7 @@ export default function JoinPage() {
               onChange={(e) => setSessionFocus(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             >
-              <option value="">— No preference —</option>
+              <option value="">No preference</option>
               {SESSION_FOCUS_GROUPS.map((group) => (
                 <optgroup key={group.label} label={group.label}>
                   {group.options.map((opt) => (

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       date: dt ? dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : "",
       time: dt ? dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }) : "",
       type: "Registration",
-      description: `${m.name} — ${m.membership_type}`,
+      description: `${m.name}: ${m.membership_type}`,
       method: m.payment_method ?? "cash",
       amount: Number(m.amount_paid ?? 0),
       source: "Registration",

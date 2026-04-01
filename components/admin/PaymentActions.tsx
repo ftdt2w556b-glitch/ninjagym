@@ -65,7 +65,7 @@ export default function PaymentActions({
       }
     } catch (e) {
       setStatus(prev); // revert
-      setErr("Action failed — please try again.");
+      setErr("Action failed. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -83,7 +83,7 @@ export default function PaymentActions({
       if (!res.ok) throw new Error(data.error);
       setCheckInDone(true);
     } catch (e) {
-      setErr("Check-in failed — try from the scanner.");
+      setErr("Check-in failed. Try from the scanner.");
     } finally {
       setCheckInBusy(false);
     }
@@ -114,7 +114,7 @@ export default function PaymentActions({
         {/* Staff: cash_pending is POS-only */}
         {isPending && status === "cash_pending" && !canApproveCash && (
           <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-500">
-            💵 Cash payment — must be approved at the POS terminal.
+            💵 Cash payment. Must be approved at the POS terminal.
           </div>
         )}
 
@@ -147,7 +147,7 @@ export default function PaymentActions({
         {/* Admin/manager: cash approval confirmation */}
         {confirmCashApprove && (
           <div className="w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-            <p className="text-xs font-bold text-orange-800 mb-1">⚠️ Cash payment — not collected at POS</p>
+            <p className="text-xs font-bold text-orange-800 mb-1">⚠️ Cash payment: not collected at POS</p>
             <p className="text-xs text-orange-700 mb-3">
               Approving here will not record a cash sale in the drawer. Only approve if you have confirmed payment by other means.
             </p>

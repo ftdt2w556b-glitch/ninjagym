@@ -245,7 +245,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                   {sessionsLeft} session{sessionsLeft !== 1 ? "s" : ""} remaining
                 </p>
               ) : (
-                <p className="text-yellow-200 font-bold">Last session used — remind to renew!</p>
+                <p className="text-yellow-200 font-bold">Last session used. Remind to renew!</p>
               )}
             </div>
           )}
@@ -258,18 +258,18 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
 
           {isMonthlyFlex && isExpired && (
             <div className="bg-red-100 text-red-700 rounded-xl px-3 py-2 mb-4 text-sm font-semibold text-center">
-              Monthly membership expired — renewal required
+              Monthly membership expired. Renewal required.
             </div>
           )}
           {isMonthlyFlex && isExpiringSoon && (
             <div className="bg-orange-100 text-orange-700 rounded-xl px-3 py-2 mb-4 text-sm text-center">
-              Membership expires in <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong> — remind to renew!
+              Membership expires in <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong>. Remind to renew!
             </div>
           )}
           {isPaymentPending && (
             <div className="bg-orange-100 text-orange-700 rounded-xl px-3 py-2 mb-4 text-sm flex items-center gap-2">
               <span>⚠️</span>
-              <span>Payment pending — see staff</span>
+              <span>Payment pending. See staff.</span>
             </div>
           )}
 
@@ -288,7 +288,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                 {member.sessions_remaining}
               </p>
               {member.sessions_remaining <= 1 && (
-                <p className="text-xs text-orange-500 font-medium">Almost out — suggest renewal!</p>
+                <p className="text-xs text-orange-500 font-medium">Almost out. Suggest renewal!</p>
               )}
             </div>
           )}
@@ -412,7 +412,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                   </>
                 ) : (
                   <>
-                    <p className="text-blue-100 mb-2">Registered — payment pending</p>
+                    <p className="text-blue-100 mb-2">Registered. Payment pending.</p>
                     <p className="text-xs text-blue-200">Ask them to transfer via PromptPay and show the slip. Staff will approve in Payments.</p>
                   </>
                 )}

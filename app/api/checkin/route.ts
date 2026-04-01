@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
           source_type: "registration",
           source_id: member.id,
           points: 1,
-          description: `Check-in point — attendance #${log.id}`,
+          description: `Check-in point: attendance #${log.id}`,
         });
       } catch (e) {
         console.error("Loyalty check-in point failed:", e);

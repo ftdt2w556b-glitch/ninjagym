@@ -126,7 +126,7 @@ export default async function AdminPosPage({
           </a>
         </div>
         <p className="text-xs text-gray-400 mt-2">
-          Bookmark this on the register tablet. No login required — just the kiosk password below.
+          Bookmark this on the register tablet. No login required. Just enter the kiosk password below.
         </p>
       </div>
 
@@ -134,12 +134,12 @@ export default async function AdminPosPage({
       <div className="bg-white rounded-2xl shadow p-5">
         <h2 className="font-bold text-gray-800 mb-1">Kiosk Password</h2>
         <p className="text-sm text-gray-500 mb-4">
-          Enter this once on the register tablet — it stays unlocked until changed.
+          Enter this once on the register tablet. It stays unlocked until changed.
         </p>
 
         {params.saved === "1" && (
           <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-4 font-semibold">
-            ✓ Password updated — re-enter it on the tablet to unlock.
+            ✓ Password updated. Re-enter it on the tablet to unlock.
           </div>
         )}
         {params.error === "short" && (

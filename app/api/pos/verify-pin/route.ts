@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!posStaff?.pin_hash) {
-      return NextResponse.json({ error: "PIN required — please ask admin to set one" }, { status: 401 });
+      return NextResponse.json({ error: "PIN required. Ask admin to set one." }, { status: 401 });
     }
     const match = await bcrypt.compare(pin, posStaff.pin_hash);
     if (!match) return NextResponse.json({ error: "Incorrect PIN" }, { status: 401 });

@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
   if (cleanPhone.length < 6) {
     return NextResponse.json(
-      { error: "Phone number is too short — please enter your full number." },
+      { error: "Phone number is too short. Please enter your full number." },
       { status: 400 }
     );
   }

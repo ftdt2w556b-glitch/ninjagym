@@ -24,7 +24,7 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: "NinjaGym",
-  description: "Rick Tew's NinjaGym — Koh Samui, Thailand. Kids ninja training, parkour, climbing and more.",
+  description: "Rick Tew's NinjaGym, Koh Samui, Thailand. Kids ninja training, parkour, climbing and more.",
   manifest: "/manifest.json",
   icons: {
     icon: [

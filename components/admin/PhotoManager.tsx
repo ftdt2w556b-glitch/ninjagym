@@ -154,7 +154,7 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
               <label className="block text-xs font-semibold text-gray-600 mb-1">Tag a Member (optional)</label>
               <select value={memberId} onChange={e => setMemberId(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]">
-                <option value="">— none —</option>
+                <option value="">None</option>
                 {members.map(m => (
                   <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                 ))}
@@ -246,7 +246,7 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
                       onChange={e => setPhotoMembers(prev => ({ ...prev, [photo.id]: e.target.value }))}
                       className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs mb-2 focus:outline-none focus:ring-1 focus:ring-[#1a56db] text-gray-700"
                     >
-                      <option value="">— no member —</option>
+                      <option value="">No member</option>
                       {members.map(m => (
                         <option key={m.id} value={m.id}>{memberLabel(m)}</option>
                       ))}

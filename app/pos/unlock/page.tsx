@@ -52,7 +52,7 @@ export default async function PosUnlockPage({
       <p className="text-gray-400 mb-8">Enter the kiosk password to unlock</p>
 
       {hasError && (
-        <p className="text-red-400 text-sm mb-4">Incorrect password — try again</p>
+        <p className="text-red-400 text-sm mb-4">Incorrect password. Try again.</p>
       )}
 
       <form action={unlockKiosk} className="w-full max-w-xs flex flex-col gap-4">

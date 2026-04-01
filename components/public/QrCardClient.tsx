@@ -275,7 +275,7 @@ export default function QrCardClient({
             {totalCheckIns} Session Milestone!
           </p>
           <p className="text-white/60 text-xs mt-0.5">
-            You&apos;ve trained {totalCheckIns} times at NinjaGym — legendary!
+            You&apos;ve trained {totalCheckIns} times at NinjaGym. Legendary!
           </p>
         </div>
       )}
@@ -525,7 +525,7 @@ export default function QrCardClient({
             </div>
             <p className="text-xs text-gray-400 text-center mb-3">
               {totalCheckIns % 10 === 0 && freeSessionsAvailable > 0
-                ? "🎉 Progress reset — keep training!"
+                ? "🎉 Progress reset. Keep training!"
                 : `${totalCheckIns % 10}/10 toward next free session`}
             </p>
 

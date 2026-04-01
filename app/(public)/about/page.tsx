@@ -98,7 +98,7 @@ export default function AboutPage() {
         {/* Member Loyalty Benefits */}
         <div className="bg-gray-900 rounded-2xl p-5 shadow text-white">
           <h2 className="font-bold text-lg mb-1">🥷 Member Benefits</h2>
-          <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card — no stamps, no apps.</p>
+          <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card. No stamps, no apps.</p>
           <div className="flex flex-col gap-3">
             {[
               {
@@ -109,17 +109,17 @@ export default function AboutPage() {
               {
                 icon: "🥋",
                 title: "Ninja Belt Ranks",
-                desc: "Progress from White Belt to Black Belt as your session count grows — White, Yellow, Orange, Green, Blue, Purple, Brown, Black.",
+                desc: "Progress from White Belt to Black Belt as your session count grows.",
               },
               {
                 icon: "🔥",
                 title: "Weekly Streak",
-                desc: "Keep your streak alive by coming at least once a week. Miss a week and it resets — great motivation for kids.",
+                desc: "Keep your streak alive by coming at least once a week. Great motivation for kids.",
               },
               {
                 icon: "📅",
                 title: "Attendance Calendar",
-                desc: "Your member card shows the last 6 weeks of attendance at a glance. Parents can always verify their child's sessions.",
+                desc: "Shows the last 6 weeks of attendance. Parents can always verify their child's sessions.",
               },
               {
                 icon: "🏆",
@@ -137,7 +137,7 @@ export default function AboutPage() {
             ))}
           </div>
           <p className="text-xs text-white/30 text-center mt-4">
-            All rewards are visible on your digital member card — accessible from the link in your registration email.
+            All rewards are visible on your digital member card, accessible from the link in your registration email.
           </p>
         </div>
 
