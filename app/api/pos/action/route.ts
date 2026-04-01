@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // POS runs as a kiosk (no admin login) — verify pos_auth cookie instead
+    const cookieStore = await cookies();
+    const posAuth = cookieStore.get("pos_auth")?.value;
     const admin = createAdminClient();
-    const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-    if (!["admin", "manager"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+    const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
+    const isUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
+    if (!isUnlocked) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { action, staffId, staffType, staffName, amount, saleType, referenceId, items, notes, reason, notes1k } = body;
