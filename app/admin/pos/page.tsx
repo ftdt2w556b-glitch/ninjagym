@@ -205,7 +205,7 @@ export default async function AdminPosPage({
               type="number"
               name="float"
               min="0"
-              step="100"
+              step="1"
               placeholder="e.g. 5000"
               className="pl-7 border border-gray-200 rounded-xl px-3 py-2.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             />
