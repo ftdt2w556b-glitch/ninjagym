@@ -38,7 +38,7 @@ export default async function AdminLayout({
     { href: "/admin/event-bookings",    label: "Events",    roles: ["admin", "manager", "staff", "owner"] },
     { href: "/admin/shop",              label: "Shop",      roles: ["admin", "manager"] },
     { href: "/admin/pos",               label: "POS",       roles: ["admin", "manager"] },
-    { href: "https://ninjagym.com/pos", label: "POS Register", roles: ["admin", "manager", "staff"], external: true },
+    { href: "https://ninjagym.com/pos", label: "Register", roles: ["admin", "manager", "staff"], external: true },
     { href: "/admin/reports/cash",      label: "Sales",     roles: ["admin", "manager", "owner"] },
     { href: "/admin/staff",             label: "Users",     roles: ["admin"] },
     { href: "/admin/photos",            label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
