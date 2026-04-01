@@ -86,7 +86,7 @@ export default async function DashboardPage() {
 
   const stats = [
     ...(isAdminOrOwner
-      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/admin/payments" }]
+      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/admin/attendance" }]
       : []),
     { label: "Pending",          value: totalPending,   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
     { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
