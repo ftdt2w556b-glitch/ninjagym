@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 
 export default function AboutPage() {
@@ -75,7 +76,16 @@ export default function AboutPage() {
 
         {/* The NinjaGym Method */}
         <div className="bg-white rounded-2xl p-5 shadow">
-          <h2 className="font-bold text-[#1a56db] text-lg mb-2">The NinjaGym Method</h2>
+          <h2 className="font-bold text-[#1a56db] text-lg mb-3">The NinjaGym Method</h2>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/images/NinjaGym in a Turtle Shell.png"
+              alt="NinjaGym in a Turtle Shell"
+              width={260}
+              height={260}
+              className="rounded-xl object-contain"
+            />
+          </div>
           <p className="text-sm text-gray-600 leading-relaxed mb-3">
             NinjaGym is an adventure zone, not a traditional dojo. Guides actively participate rather than just supervise. Following the ninja symbol of patience and endurance, every session builds habitual training and daily focus.
           </p>
