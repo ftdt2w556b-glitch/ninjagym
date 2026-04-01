@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import Image from "next/image";
+
+const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 import {
   MEMBERSHIP_TYPES,
   getPriceForType,
@@ -62,6 +64,8 @@ export default function TopUpSection({
   const [success, setSuccess]             = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
   const [showPromptPay, setShowPromptPay] = useState(false);
+  const [stripeStep, setStripeStep]       = useState(false);
+  const [pendingId, setPendingId]         = useState<number | null>(null);
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
   const isBulk     = !!selectedMt?.bulk;
@@ -72,7 +76,7 @@ export default function TopUpSection({
 
   const discountPct = isBulk ? Math.min(bulkQty, 20) : 0;
 
-  async function doRegister(paymentMethod: "cash" | "promptpay") {
+  async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe") {
     setLoading(paymentMethod);
     setError(null);
 
@@ -98,6 +102,9 @@ export default function TopUpSection({
       if (!res.ok) { setError(data.error ?? "Something went wrong"); return; }
       if (paymentMethod === "cash") {
         setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive. Staff will check you in.`);
+      } else if (paymentMethod === "stripe") {
+        setPendingId(data.id);
+        setStripeStep(true);
       } else {
         setShowPromptPay(true);
       }
@@ -105,6 +112,34 @@ export default function TopUpSection({
       setLoading(null);
       setError("Something went wrong. Please try again.");
     }
+  }
+
+  // ── Stripe payment screen ─────────────────────────────────────────────────
+  if (stripeStep && pendingId) {
+    return (
+      <div className="mt-4 flex flex-col gap-3">
+        <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-4">
+          <button onClick={() => setStripeStep(false)} className="text-gray-400 text-sm text-left underline">
+            {t.back}
+          </button>
+          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+            <span className="text-gray-600 text-sm">{selectedMt?.label}</span>
+            <span className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</span>
+          </div>
+          <Suspense fallback={<p className="text-gray-400 text-sm text-center py-4 animate-pulse">Loading...</p>}>
+            <StripePayment
+              amount={price}
+              description={`NinjaGym top-up: ${selectedMt?.label}`}
+              referenceId={pendingId}
+              referenceType="member"
+              onSuccess={() => setSuccess(`Payment confirmed! ✅ Your ${selectedMt?.label} has been added.`)}
+              onError={(msg) => setError(msg)}
+            />
+          </Suspense>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        </div>
+      </div>
+    );
   }
 
   // ── PromptPay payment screen ───────────────────────────────────────────────
@@ -266,10 +301,11 @@ export default function TopUpSection({
               <p className="text-center text-gray-300 text-xs">{t.or}</p>
 
               <button
-                disabled
-                className="w-full border border-gray-200 text-gray-400 font-semibold text-base rounded-xl py-3.5 cursor-not-allowed"
+                onClick={() => doRegister("stripe")}
+                disabled={!!loading}
+                className="w-full border border-gray-300 text-gray-600 font-semibold text-base rounded-xl py-3.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
-                {t.payCardDisabled}
+                {loading === "stripe" ? t.submitting : t.payCardDisabled}
               </button>
             </div>
 
