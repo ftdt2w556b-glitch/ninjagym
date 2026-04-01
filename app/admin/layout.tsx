@@ -38,7 +38,7 @@ export default async function AdminLayout({
     { href: "/admin/event-bookings",    label: "Events",    roles: ["admin", "manager", "staff", "owner"] },
     { href: "/admin/shop",              label: "Shop",      roles: ["admin", "manager"] },
     { href: "/admin/pos",               label: "POS",       roles: ["admin", "manager"] },
-    { href: "/scanner",                 label: "Scanner",   roles: ["admin", "manager", "staff"] },
+    { href: "https://ninjagym.com/pos", label: "POS Register", roles: ["admin", "manager", "staff"], external: true },
     { href: "/admin/reports/cash",      label: "Sales",     roles: ["admin", "manager", "owner"] },
     { href: "/admin/staff",             label: "Users",     roles: ["admin"] },
     { href: "/admin/photos",            label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
@@ -68,15 +68,27 @@ export default async function AdminLayout({
       <nav className="bg-white border-b border-gray-100">
         <div className="mx-auto max-w-[900px] px-4">
           <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) =>
+              link.external ? (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
+                >
+                  {link.label}
+                </a>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
+                >
+                  {link.label}
+                </Link>
+              )
+            )}
           </div>
         </div>
       </nav>
