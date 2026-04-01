@@ -16,7 +16,7 @@ export default async function WorkInstructionsPage() {
   const { data: instructions } = await admin
     .from("work_instructions")
     .select("*")
-    .order("topic_name", { ascending: true });
+    .order("created_at", { ascending: false });
 
   async function saveInstruction(formData: FormData) {
     "use server";
