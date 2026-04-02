@@ -14,8 +14,8 @@ export default async function ShopOrdersPage({
   if (!user) redirect("/admin/login");
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-  if (!["admin", "manager"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
-  const canManage = true; // page already restricted to admin/manager
+  if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  const canManage = ["admin", "manager", "staff", "owner"].includes(profile?.role ?? "");
 
   let query = admin
     .from("shop_orders")

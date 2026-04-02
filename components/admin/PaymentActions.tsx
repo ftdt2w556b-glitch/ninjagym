@@ -33,8 +33,9 @@ export default function PaymentActions({
   memberName?: string;
   userRole?: string;
 }) {
-  const canManage      = ["admin", "manager"].includes(userRole ?? "");
-  const canApproveCash = canManage;
+  const canApprove     = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
+  const canManage      = ["admin", "manager"].includes(userRole ?? ""); // undo/restore only
+  const canApproveCash = canApprove;
   const [status, setStatus]         = useState<SlipStatus>(initialStatus);
   const [busy, setBusy]             = useState<string | null>(null);
   const [err, setErr]               = useState<string | null>(null);
@@ -87,15 +88,8 @@ export default function PaymentActions({
       {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        {/* Staff: cash_pending is POS-only */}
-        {isPending && status === "cash_pending" && !canApproveCash && (
-          <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-xs text-gray-500">
-            💵 Cash payment. Must be approved at the POS terminal.
-          </div>
-        )}
-
-        {/* Admin/manager: normal pending_review approve/reject */}
-        {isPending && canManage && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && (
+        {/* Approve/Reject — available to all staff and above */}
+        {isPending && canApprove && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && (
           <>
             <button
               onClick={() => {

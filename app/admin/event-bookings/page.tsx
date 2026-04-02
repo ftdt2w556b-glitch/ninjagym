@@ -14,7 +14,7 @@ export default async function EventBookingsPage({
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
-  const canManage = ["admin", "manager"].includes(profile?.role ?? "");
+  const canManage = ["admin", "manager", "staff", "owner"].includes(profile?.role ?? "");
 
   const { status } = await searchParams;
 

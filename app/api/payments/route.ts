@@ -19,14 +19,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
-  // Only admin and manager may approve, reject, or restore payments
+  // All staff may approve/reject. Only admin/manager may restore (undo) an approval.
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const admin = createAdminClient();
   const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
-  if (!["admin", "manager"].includes(callerProfile?.role ?? "")) {
-    return NextResponse.json({ error: "Forbidden — admin or manager required" }, { status: 403 });
+  const callerRole = callerProfile?.role ?? "";
+  if (!["admin", "manager", "staff", "owner"].includes(callerRole)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (action === "restore" && !["admin", "manager"].includes(callerRole)) {
+    return NextResponse.json({ error: "Forbidden — only admin or manager can undo an approval" }, { status: 403 });
   }
   const slip_status =
     action === "approve"  ? "approved"       :
