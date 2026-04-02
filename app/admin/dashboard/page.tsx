@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     admin
       .from("attendance_logs")
-      .select("kids_count")
+      .select("kids_count, notes")
       .gte("check_in_at", bangkokStartOfDay())
       .lte("check_in_at", bangkokEndOfDay()),
     admin
@@ -83,8 +83,13 @@ export default async function DashboardPage() {
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
   // Events merged into the single Pending count for everyone
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0) + (pendingEvents ?? 0);
-  // Sum kids_count for accurate headcount (old records without kids_count default to 1)
-  const todayCheckIns = (todayCheckInRows ?? []).reduce((sum, r) => sum + (r.kids_count ?? 1), 0);
+  // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
+  function kidsFromLog(r: { kids_count?: number | null; notes?: string | null }) {
+    if (r.kids_count && r.kids_count > 1) return r.kids_count;
+    const m = r.notes?.match(/\|\s*(\d+)\s*kids/i);
+    return m ? parseInt(m[1], 10) : 1;
+  }
+  const todayCheckIns = (todayCheckInRows ?? []).reduce((sum, r) => sum + kidsFromLog(r), 0);
 
   const stats = [
     ...(isAdminOrOwner

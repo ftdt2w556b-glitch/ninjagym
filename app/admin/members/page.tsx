@@ -135,8 +135,12 @@ export default async function MembersPage({
 
     const { data } = await ciQuery;
     checkInLogs = (data ?? []) as typeof checkInLogs;
-    // Sum kids_count for accurate headcount (old records default to 1)
-    checkInCount = checkInLogs.reduce((sum, log) => sum + (log.kids_count ?? 1), 0);
+    // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
+    checkInCount = checkInLogs.reduce((sum, log) => {
+      if (log.kids_count && log.kids_count > 1) return sum + log.kids_count;
+      const m = log.notes?.match(/\|\s*(\d+)\s*kids/i);
+      return sum + (m ? parseInt(m[1], 10) : 1);
+    }, 0);
   }
 
   // Group check-ins by date
@@ -402,7 +406,7 @@ export default async function MembersPage({
               <div key={dateLabel} className="bg-white rounded-2xl shadow overflow-hidden">
                 <div className="px-5 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                   <span className="font-bold text-gray-700 text-sm">{dateLabel}</span>
-                  <span className="text-xs text-gray-400 font-semibold">{dayLogs!.length} check-in{dayLogs!.length !== 1 ? "s" : ""}</span>
+                  <span className="text-xs text-gray-400 font-semibold">{(() => { const n = dayLogs!.reduce((s, l) => { if (l.kids_count && l.kids_count > 1) return s + l.kids_count; const m = l.notes?.match(/\|\s*(\d+)\s*kids/i); return s + (m ? parseInt(m[1], 10) : 1); }, 0); return `${n} check-in${n !== 1 ? "s" : ""}`; })()}</span>
                 </div>
                 <ul className="divide-y divide-gray-50">
                   {dayLogs!.map((log) => (
