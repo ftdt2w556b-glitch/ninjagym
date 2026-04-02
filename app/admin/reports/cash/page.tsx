@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
+import VoidTransactionButton from "@/components/admin/VoidTransactionButton";
 
 async function voidTransaction(formData: FormData) {
   "use server";
@@ -247,18 +248,13 @@ export default async function RevenuePage({
                   </td>
                   {["admin", "manager"].includes(currentProfile?.role ?? "") && (
                     <td className="px-4 py-3 text-right">
-                      <form action={voidTransaction} onSubmit={(e) => {
-                        if (!confirm(`Void this ฿${tx.amount.toLocaleString()} transaction for "${tx.description}"? This cannot be undone.`)) e.preventDefault();
-                      }}>
-                        <input type="hidden" name="id" value={tx.id} />
-                        <input type="hidden" name="source" value={tx.source} />
-                        <button
-                          type="submit"
-                          className="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                        >
-                          Void
-                        </button>
-                      </form>
+                      <VoidTransactionButton
+                        action={voidTransaction}
+                        id={tx.id}
+                        source={tx.source}
+                        description={tx.description}
+                        amount={tx.amount}
+                      />
                     </td>
                   )}
                 </tr>
