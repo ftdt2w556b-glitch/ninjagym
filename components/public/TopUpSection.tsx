@@ -64,6 +64,7 @@ export default function TopUpSection({
   const [success, setSuccess]             = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
   const [showPromptPay, setShowPromptPay] = useState(false);
+  const [slip, setSlip]                   = useState<File | null>(null);
   const [stripeStep, setStripeStep]       = useState(false);
   const [pendingId, setPendingId]         = useState<number | null>(null);
 
@@ -76,7 +77,7 @@ export default function TopUpSection({
 
   const discountPct = isBulk ? Math.min(bulkQty, 20) : 0;
 
-  async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe") {
+  async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe", slipFile?: File | null) {
     setLoading(paymentMethod);
     setError(null);
 
@@ -88,12 +89,12 @@ export default function TopUpSection({
     body.append("kids_count", String(kidsCount));
     body.append("payment_method", paymentMethod);
     body.append("amount_paid", String(price));
-    // Time-based memberships (monthly_flex) don't use sessions_remaining — expiry is set on approval
     if (!selectedMt?.timeBased) {
       body.append("sessions_remaining", isBulk ? String(bulkQty) : "1");
     }
     body.append("parent_member_id", String(memberId));
     body.append("notes", `Top-up from member card #${memberId}`);
+    if (slipFile && slipFile.size > 0) body.append("slip", slipFile);
 
     try {
       const res  = await fetch("/api/members", { method: "POST", body });
@@ -106,7 +107,10 @@ export default function TopUpSection({
         setPendingId(data.id);
         setStripeStep(true);
       } else {
-        setShowPromptPay(true);
+        // PromptPay submitted with slip
+        setShowPromptPay(false);
+        setSlip(null);
+        setSuccess(`Payment slip submitted! ✅ Staff will approve your ${selectedMt?.label} shortly.`);
       }
     } catch {
       setLoading(null);
@@ -148,7 +152,7 @@ export default function TopUpSection({
       <div className="mt-4 flex flex-col gap-3">
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-4">
           <button
-            onClick={() => setShowPromptPay(false)}
+            onClick={() => { setShowPromptPay(false); setSlip(null); setError(null); }}
             className="text-gray-400 text-sm text-left underline"
           >
             {t.back}
@@ -175,9 +179,30 @@ export default function TopUpSection({
               </p>
             )}
           </div>
-          <p className="text-sm text-gray-600 text-center">
-            Screenshot the confirmation and show staff to complete your check-in.
-          </p>
+          {/* Slip upload */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              Upload Payment Slip <span className="text-gray-400 font-normal">(screenshot of transfer confirmation)</span>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setSlip(e.target.files?.[0] ?? null)}
+              className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold"
+            />
+            {slip && (
+              <p className="text-xs text-green-600 mt-1">Selected: {slip.name}</p>
+            )}
+          </div>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+          <button
+            onClick={() => doRegister("promptpay", slip)}
+            disabled={!!loading || !slip}
+            className="w-full bg-[#1a56db] text-white font-bold text-base rounded-xl py-3.5 hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {loading === "promptpay" ? "Submitting…" : "Submit Payment Slip →"}
+          </button>
+          <p className="text-xs text-gray-400 text-center">Staff will approve your session after verifying the transfer.</p>
         </div>
       </div>
     );
@@ -281,11 +306,11 @@ export default function TopUpSection({
 
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => doRegister("promptpay")}
+                onClick={() => { setShowPromptPay(true); setError(null); }}
                 disabled={!!loading}
                 className="w-full bg-[#1a56db] text-white font-bold text-base rounded-xl py-3.5 hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {loading === "promptpay" ? t.submitting : t.payPromptPay}
+                {t.payPromptPay}
               </button>
 
               <p className="text-center text-gray-300 text-xs">{t.or}</p>
