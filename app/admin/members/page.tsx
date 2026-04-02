@@ -64,7 +64,7 @@ export default async function MembersPage({
 
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
+  const { data: profile } = await admin.from("profiles").select("role, name").eq("id", user!.id).single();
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
   const canCheckIn = ["admin", "manager", "owner", "staff"].includes(profile?.role ?? "");
 
@@ -268,6 +268,7 @@ export default async function MembersPage({
                                 membershipType={m.membership_type}
                                 isPrimary
                                 canCheckIn={canCheckIn}
+                                staffName={profile?.name ?? undefined}
                               />
                             )}
                             {topUps.filter((t) => isPackageActive(t)).map((t) => {
@@ -281,6 +282,7 @@ export default async function MembersPage({
                                   expiresAt={t.expires_at}
                                   membershipType={t.membership_type}
                                   canCheckIn={canCheckIn}
+                                  staffName={profile?.name ?? undefined}
                                 />
                               );
                             })}
@@ -418,9 +420,11 @@ export default async function MembersPage({
                           <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
                         )}
                       </div>
-                      {log.notes && (
-                        <span className="text-xs text-gray-400 italic truncate max-w-[160px]">{log.notes}</span>
-                      )}
+                      <span className="text-xs text-gray-400 italic shrink-0">
+                        {log.notes
+                          ? log.notes.replace("Manual check-in by staff", "Check-in by staff")
+                          : "PIN check-in"}
+                      </span>
                       {log.member_id && (
                         <Link
                           href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
@@ -457,6 +461,7 @@ function PackageRow({
   membershipType,
   isPrimary = false,
   canCheckIn = false,
+  staffName,
 }: {
   regId?: number;
   label: string;
@@ -465,6 +470,7 @@ function PackageRow({
   membershipType: string;
   isPrimary?: boolean;
   canCheckIn?: boolean;
+  staffName?: string;
 }) {
   const isMonthly = membershipType === "monthly_flex";
 
@@ -491,7 +497,7 @@ function PackageRow({
       {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
       <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
       {sessionBadge}
-      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} />}
+      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} staffName={staffName} />}
     </div>
   );
 }

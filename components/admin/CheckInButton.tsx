@@ -7,10 +7,12 @@ export default function CheckInButton({
   regId,
   label,
   sessionsRemaining,
+  staffName,
 }: {
   regId: number;
   label: string;
   sessionsRemaining?: number | null;
+  staffName?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export default function CheckInButton({
     const res = await fetch("/api/checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ member_id: regId, note: "Manual check-in by staff" }),
+      body: JSON.stringify({ member_id: regId, note: `Check-in by ${staffName ?? "Staff"}` }),
     });
     const data = await res.json();
     setLoading(false);
