@@ -14,6 +14,7 @@ export default async function EventBookingsPage({
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  const canManage = ["admin", "manager"].includes(profile?.role ?? "");
 
   const { status } = await searchParams;
 
@@ -111,7 +112,7 @@ export default async function EventBookingsPage({
               )}
 
               <div className="flex gap-2 flex-wrap">
-                {(b.slip_status === "pending_review" || b.slip_status === "cash_pending") && (
+                {canManage && (b.slip_status === "pending_review" || b.slip_status === "cash_pending") && (
                   <>
                     <form action="/api/payments" method="POST">
                       <input type="hidden" name="id" value={b.id} />

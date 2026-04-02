@@ -33,7 +33,8 @@ export default function PaymentActions({
   memberName?: string;
   userRole?: string;
 }) {
-  const canApproveCash = ["admin", "manager"].includes(userRole ?? "");
+  const canManage      = ["admin", "manager"].includes(userRole ?? "");
+  const canApproveCash = canManage;
   const [status, setStatus]         = useState<SlipStatus>(initialStatus);
   const [busy, setBusy]             = useState<string | null>(null);
   const [err, setErr]               = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function PaymentActions({
         )}
 
         {/* Admin/manager: normal pending_review approve/reject */}
-        {isPending && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && (
+        {isPending && canManage && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && (
           <>
             <button
               onClick={() => {
@@ -144,7 +145,7 @@ export default function PaymentActions({
           </div>
         )}
 
-        {(isApproved || isRejected) && (
+        {canManage && (isApproved || isRejected) && (
           <button
             onClick={() => { doAction("restore", "pending_review"); }}
             disabled={!!busy}

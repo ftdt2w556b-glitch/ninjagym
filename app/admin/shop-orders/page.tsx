@@ -1,4 +1,5 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { ShopOrderItem } from "@/types";
 
@@ -8,7 +9,13 @@ export default async function ShopOrdersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  const canManage = true; // page already restricted to admin/manager
 
   let query = admin
     .from("shop_orders")
@@ -97,7 +104,7 @@ export default async function ShopOrdersPage({
               )}
 
               <div className="flex gap-2 flex-wrap">
-                {(o.slip_status === "pending_review" || o.slip_status === "cash_pending") && (
+                {canManage && (o.slip_status === "pending_review" || o.slip_status === "cash_pending") && (
                   <>
                     <form action="/api/payments" method="POST">
                       <input type="hidden" name="id" value={o.id} />

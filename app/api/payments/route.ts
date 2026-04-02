@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
 /** Points = floor(amount / 100), minimum 1. Bonus for events. */
 function calcPoints(amount: number, sourceType: string): number {
@@ -19,7 +19,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
+  // Only admin and manager may approve, reject, or restore payments
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const admin = createAdminClient();
+  const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(callerProfile?.role ?? "")) {
+    return NextResponse.json({ error: "Forbidden — admin or manager required" }, { status: 403 });
+  }
   const slip_status =
     action === "approve"  ? "approved"       :
     action === "restore"  ? "pending_review" :

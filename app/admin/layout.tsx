@@ -34,7 +34,7 @@ export default async function AdminLayout({
   const navLinks = [
     { href: "/admin/dashboard",         label: "Dash",       roles: ["admin", "manager", "staff", "owner"] },
     { href: "/admin/members",           label: "Members",    roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/payments",          label: "Pending",    roles: ["admin", "manager", "staff"] },
+    { href: "/admin/payments",          label: "Pending",    roles: ["admin", "manager"] },
     { href: "/admin/event-bookings",    label: "Events",     roles: ["admin", "manager", "staff", "owner"] },
     { href: "/admin/shop",              label: "Shop",       roles: ["admin", "manager"] },
     { href: "/admin/pos",               label: "POS",        roles: ["admin", "manager"] },
