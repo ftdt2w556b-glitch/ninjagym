@@ -373,21 +373,28 @@ export default function BirthdaysPage() {
         <div className="bg-white rounded-2xl p-5 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-3">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            {[
-              { value: "cash",      label: `💵 ${t.cashOption}` },
-              { value: "promptpay", label: `📱 ${t.promptpayOption}` },
-              // { value: "stripe", label: t.birthdayCardOption }, // re-enable when needed
-            ].map((opt) => (
-              <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
-                form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-200"
-              }`}>
-                <input type="radio" name="payment_method" value={opt.value}
-                  checked={form.payment_method === opt.value}
-                  onChange={() => setForm({ ...form, payment_method: opt.value })}
-                  className="accent-[#1a56db]" />
-                <span className="text-sm font-medium">{opt.label}</span>
-              </label>
-            ))}
+            {/* Cash — green */}
+            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
+            }`}>
+              <input type="radio" name="payment_method" value="cash"
+                checked={form.payment_method === "cash"}
+                onChange={() => setForm({ ...form, payment_method: "cash" })}
+                className="accent-green-500" />
+              <span className="text-sm font-semibold text-green-700">💵 {t.cashOption}</span>
+            </label>
+            {/* PromptPay — blue */}
+            <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
+            }`}>
+              <input type="radio" name="payment_method" value="promptpay"
+                checked={form.payment_method === "promptpay"}
+                onChange={() => setForm({ ...form, payment_method: "promptpay" })}
+                className="accent-[#1a56db]" />
+              <span className="text-sm font-semibold text-[#1a56db]">📱 {t.promptpayOption}</span>
+            </label>
+            {/* Credit card — re-enable when needed */}
+            {/* { value: "stripe", label: t.birthdayCardOption } */}
           </div>
         </div>
 

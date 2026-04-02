@@ -381,25 +381,9 @@ export default function JoinPage() {
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            {/* PromptPay — blue */}
-            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-              form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-gray-100 hover:bg-gray-50"
-            }`}>
-              <input
-                type="radio"
-                name="payment_method"
-                value="promptpay"
-                checked={form.payment_method === "promptpay"}
-                onChange={() => setForm({ ...form, payment_method: "promptpay" })}
-                className="accent-[#1a56db]"
-              />
-              <span className={`text-sm font-semibold ${form.payment_method === "promptpay" ? "text-[#1a56db]" : "text-gray-700"}`}>
-                📱 {t.promptpayOption}
-              </span>
-            </label>
             {/* Cash — green */}
             <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
-              form.payment_method === "cash" ? "border-green-500 bg-green-50" : "border-gray-100 hover:bg-gray-50"
+              form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
             }`}>
               <input
                 type="radio"
@@ -409,8 +393,24 @@ export default function JoinPage() {
                 onChange={() => setForm({ ...form, payment_method: "cash" })}
                 className="accent-green-500"
               />
-              <span className={`text-sm font-semibold ${form.payment_method === "cash" ? "text-green-700" : "text-gray-700"}`}>
+              <span className="text-sm font-semibold text-green-700">
                 💵 {t.cashOption}
+              </span>
+            </label>
+            {/* PromptPay — blue */}
+            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
+            }`}>
+              <input
+                type="radio"
+                name="payment_method"
+                value="promptpay"
+                checked={form.payment_method === "promptpay"}
+                onChange={() => setForm({ ...form, payment_method: "promptpay" })}
+                className="accent-[#1a56db]"
+              />
+              <span className="text-sm font-semibold text-[#1a56db]">
+                📱 {t.promptpayOption}
               </span>
             </label>
             {/* Credit/Debit Card — hidden for now, keep for easy re-enable */}
