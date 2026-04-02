@@ -20,6 +20,7 @@ export default async function PhotosPage() {
   const { data: members } = await admin
     .from("member_registrations")
     .select("id, name, kids_names")
+    .is("parent_member_id", null)
     .order("name");
 
   return (
