@@ -298,8 +298,8 @@ export default function TopUpSection({
                 {loading === "cash" ? t.submitting : t.payCashGym}
               </button>
 
+              {/* Credit card — re-enable when needed
               <p className="text-center text-gray-300 text-xs">{t.or}</p>
-
               <button
                 onClick={() => doRegister("stripe")}
                 disabled={!!loading}
@@ -307,6 +307,7 @@ export default function TopUpSection({
               >
                 {loading === "stripe" ? t.submitting : t.payCardDisabled}
               </button>
+              */}
             </div>
 
             {error && <p className="text-red-500 text-sm text-center mt-3">{error}</p>}

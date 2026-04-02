@@ -376,7 +376,7 @@ export default function BirthdaysPage() {
             {[
               { value: "cash",      label: `💵 ${t.cashOption}` },
               { value: "promptpay", label: `📱 ${t.promptpayOption}` },
-              { value: "stripe",    label: t.birthdayCardOption },
+              // { value: "stripe", label: t.birthdayCardOption }, // re-enable when needed
             ].map((opt) => (
               <label key={opt.value} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
                 form.payment_method === opt.value ? "border-[#1a56db] bg-blue-50" : "border-gray-200"
