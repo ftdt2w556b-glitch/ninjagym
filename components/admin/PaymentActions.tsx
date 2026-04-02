@@ -77,7 +77,7 @@ export default function PaymentActions({
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ member_id: id }),
+        body: JSON.stringify({ member_id: id, note: "Check-in at approval" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

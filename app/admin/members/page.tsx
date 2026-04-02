@@ -423,7 +423,7 @@ export default async function MembersPage({
                       <span className="text-xs text-gray-400 italic shrink-0">
                         {log.notes
                           ? log.notes.replace("Manual check-in by staff", "Check-in by staff")
-                          : "PIN check-in"}
+                          : "Check-in at approval"}
                       </span>
                       {log.member_id && (
                         <Link
