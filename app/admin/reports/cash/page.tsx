@@ -87,10 +87,12 @@ export default async function RevenuePage({
   const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   if (!["admin", "manager", "owner"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
-  // POS / walk-in cash sales (no payment_method column — all POS sales are cash)
+  // POS / walk-in cash sales — exclude sale_type "membership" because those
+  // walk-in registrations are already counted via the member_registrations query below.
   const { data: cashSales } = await admin
     .from("cash_sales")
     .select("id, amount, processed_at, sale_type, notes, staff_name")
+    .neq("sale_type", "membership")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });

@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
   const fromDate = from.split("T")[0];
   const toDate   = to.split("T")[0];
 
-  // ── 1. POS cash_sales ────────────────────────────────────────
+  // ── 1. POS cash_sales — exclude membership type (counted via member_registrations) ──
   const { data: cashSales } = await admin
     .from("cash_sales")
     .select("id, processed_at, sale_type, amount, payment_method, notes, profiles(name, email)")
+    .neq("sale_type", "membership")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: true });
