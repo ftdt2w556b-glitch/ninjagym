@@ -350,7 +350,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const total = cart.reduce((s, l) => s + l.unit * l.qty, 0);
 
   // ── Process sale ─────────────────────────────────────────────────
-  async function processSale(changeAmt: number) {
+  async function processSale(changeAmt: number, amountTendered?: number) {
     if (total <= 0) return;
     setProcessing(true);
     setResult(null);
@@ -365,6 +365,8 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         staffType: activeStaff!.staffType,
         staffName: activeStaff!.name,
         amount: total,
+        amountTendered: amountTendered ?? null,
+        changeGiven: changeAmt > 0 ? changeAmt : null,
         saleType,
         referenceId: referenceId ?? null,
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
@@ -654,7 +656,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
 
           {/* Confirm / Back */}
           <button
-            onClick={() => processSale(change)}
+            onClick={() => processSale(change, cashGiven)}
             disabled={!isEnough || processing}
             className="w-full bg-[#22c55e] text-white font-bold text-xl py-5 rounded-2xl hover:bg-green-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-lg"
           >

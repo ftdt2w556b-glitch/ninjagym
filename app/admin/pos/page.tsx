@@ -100,7 +100,7 @@ export default async function AdminPosPage({
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
     .from("cash_sales")
-    .select("id, processed_at, amount, sale_type, staff_name, notes, items")
+    .select("id, processed_at, amount, amount_tendered, change_given, sale_type, staff_name, notes, items")
     .order("processed_at", { ascending: false })
     .limit(20);
 
@@ -387,11 +387,12 @@ export default async function AdminPosPage({
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Staff</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Type</th>
                 <th className="text-right px-4 py-2.5 font-semibold text-gray-500 text-xs">Amount</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-gray-500 text-xs">Change Given</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {(recentSales ?? []).length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No POS sales yet.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No POS sales yet.</td></tr>
               )}
               {(recentSales ?? []).map((s) => {
                 const dt = new Date(s.processed_at as string);
@@ -427,6 +428,13 @@ export default async function AdminPosPage({
                       })()}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">{Number(s.amount).toLocaleString()} THB</td>
+                    <td className="px-4 py-3 text-right text-sm tabular-nums">
+                      {(s as Record<string, unknown>).change_given != null ? (
+                        <span className="text-orange-600 font-semibold">-฿{Number((s as Record<string, unknown>).change_given).toLocaleString()}</span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
