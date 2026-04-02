@@ -107,13 +107,17 @@ export async function POST(request: NextRequest) {
     let sessions_after: number | null = sessions_remaining;
 
     if (isCash) {
+      const kidsCount = Math.max(1, Number(kids_count) || 1);
+      const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
       const { error: logErr } = await admin
         .from("attendance_logs")
         .insert({
           member_id: member.id,
           member_name: member.name,
           check_in_at: now,
-          notes: "Walk-in quick register",
+          notes: staff_name ? `Check-in by ${staff_name}${kidsSuffix}` : `Walk-in quick register${kidsSuffix}`,
+          kids_count: kidsCount,
+          kids_names: kids_names || null,
         });
 
       if (!logErr) {
