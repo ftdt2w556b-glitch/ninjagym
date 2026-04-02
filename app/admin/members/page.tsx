@@ -116,7 +116,7 @@ export default async function MembersPage({
   }
 
   // ── Check-ins tab data ───────────────────────────────────────
-  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; member_registrations: { kids_names: string | null; kids_count: number | null } | null }[] = [];
+  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
   const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
@@ -125,7 +125,7 @@ export default async function MembersPage({
     const { from, to } = getCheckInRange(checkInPeriod);
     let ciQuery = admin
       .from("attendance_logs")
-      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, member_registrations(kids_names, kids_count)")
+      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
@@ -134,7 +134,7 @@ export default async function MembersPage({
     if (q) ciQuery = ciQuery.ilike("member_name", `%${q}%`);
 
     const { data } = await ciQuery;
-    checkInLogs = (data ?? []) as unknown as typeof checkInLogs;
+    checkInLogs = (data ?? []) as typeof checkInLogs;
     // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
     checkInCount = checkInLogs.reduce((sum, log) => {
       if (log.kids_count && log.kids_count > 1) return sum + log.kids_count;
@@ -421,14 +421,13 @@ export default async function MembersPage({
                         >
                           {log.member_name ?? "Unknown"}
                         </Link>
-                        {log.member_registrations?.kids_names && (
+                        {log.kids_names ? (
                           <p className="text-xs font-semibold text-[#1a56db] truncate">
-                            👧 {log.member_registrations.kids_names}
+                            👧 {log.kids_names}{(log.kids_count ?? 1) > 1 ? ` · ${log.kids_count} kids` : ""}
                           </p>
-                        )}
-                        {log.member_email && !log.member_registrations?.kids_names && (
+                        ) : log.member_email ? (
                           <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
-                        )}
+                        ) : null}
                       </div>
                       <span className="text-xs text-gray-400 italic shrink-0">
                         {log.notes

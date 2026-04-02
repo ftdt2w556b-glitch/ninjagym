@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Fetch member
     const { data: member, error: fetchErr } = await admin
       .from("member_registrations")
-      .select("id, name, email, membership_type, slip_status, sessions_remaining, kids_count")
+      .select("id, name, email, membership_type, slip_status, sessions_remaining, kids_count, kids_names, parent_member_id")
       .eq("id", member_id)
       .single();
 
@@ -50,6 +50,17 @@ export async function POST(request: NextRequest) {
     const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
     const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
 
+    // Kids names — for top-ups, look up from parent registration
+    let kidsNames: string | null = member.kids_names ?? null;
+    if (!kidsNames && member.parent_member_id) {
+      const { data: parent } = await admin
+        .from("member_registrations")
+        .select("kids_names")
+        .eq("id", member.parent_member_id)
+        .maybeSingle();
+      kidsNames = parent?.kids_names ?? null;
+    }
+
     // Log attendance
     const { data: log, error: logErr } = await admin
       .from("attendance_logs")
@@ -60,6 +71,7 @@ export async function POST(request: NextRequest) {
         check_in_at: new Date().toISOString(),
         notes: fullNote,
         kids_count: kidsCount,
+        kids_names: kidsNames,
       })
       .select("id")
       .single();
