@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Fetch member
     const { data: member, error: fetchErr } = await admin
       .from("member_registrations")
-      .select("id, name, email, membership_type, slip_status, sessions_remaining")
+      .select("id, name, email, membership_type, slip_status, sessions_remaining, kids_count")
       .eq("id", member_id)
       .single();
 
@@ -34,8 +34,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
+    // Block unapproved members
+    if (member.slip_status !== "approved") {
+      return NextResponse.json(
+        { error: "Payment not approved yet — approve the member first before checking in." },
+        { status: 403 }
+      );
+    }
+
     const outOfSessions = member.sessions_remaining !== null && member.sessions_remaining === 0;
-    const warned = member.slip_status !== "approved" || outOfSessions;
+    const warned = outOfSessions;
+
+    // Append kids count to note if more than 1 kid
+    const kidsCount = member.kids_count ?? 1;
+    const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
+    const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
 
     // Log attendance
     const { data: log, error: logErr } = await admin
@@ -45,7 +58,7 @@ export async function POST(request: NextRequest) {
         member_name: member.name,
         member_email: member.email ?? null,
         check_in_at: new Date().toISOString(),
-        notes: note,
+        notes: fullNote,
       })
       .select("id")
       .single();

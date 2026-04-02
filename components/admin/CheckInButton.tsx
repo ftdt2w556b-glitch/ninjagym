@@ -17,6 +17,7 @@ export default function CheckInButton({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<"ok" | "warn" | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function handleCheckIn() {
     const noSessions = sessionsRemaining !== undefined && sessionsRemaining !== null && sessionsRemaining === 0;
@@ -25,6 +26,7 @@ export default function CheckInButton({
       : `Check in "${label}"?`;
     if (!confirm(msg)) return;
     setLoading(true);
+    setErrorMsg(null);
     const res = await fetch("/api/checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,11 +37,14 @@ export default function CheckInButton({
     if (res.ok) {
       setResult(data.outOfSessions ? "warn" : "ok");
       router.refresh();
+    } else {
+      setErrorMsg(data.error ?? "Check-in failed");
     }
   }
 
   if (result === "ok") return <span className="text-xs text-green-600 font-semibold">Checked in</span>;
   if (result === "warn") return <span className="text-xs text-orange-500 font-semibold">Checked in (0 sessions left)</span>;
+  if (errorMsg) return <span className="text-xs text-red-500 font-semibold max-w-[180px] leading-tight">{errorMsg}</span>;
 
   return (
     <button
