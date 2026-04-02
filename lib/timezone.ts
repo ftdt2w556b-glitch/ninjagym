@@ -18,12 +18,12 @@ export function formatBangkokDate(
   return new Date(dateStr).toLocaleDateString("en-US", { timeZone: TZ, ...options });
 }
 
-/** Formats a UTC date string as Bangkok time */
+/** Formats a UTC date string as Bangkok time (12-hour AM/PM) */
 export function formatBangkokTime(
   dateStr: string,
-  options: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" }
+  options: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit", hour12: true }
 ): string {
-  return new Date(dateStr).toLocaleTimeString("en-GB", { timeZone: TZ, ...options });
+  return new Date(dateStr).toLocaleTimeString("en-US", { timeZone: TZ, ...options });
 }
 
 /** Returns Bangkok start-of-day (midnight) ISO string for use in DB range queries */

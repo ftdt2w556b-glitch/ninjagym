@@ -396,7 +396,7 @@ export default async function AdminPosPage({
               {(recentSales ?? []).map((s) => {
                 const dt = new Date(s.processed_at as string);
                 const dateStr = dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short" });
-                const timeStr = dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" });
+                const timeStr = dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true });
                 return (
                   <tr key={s.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id}</td>

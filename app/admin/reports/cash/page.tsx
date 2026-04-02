@@ -233,7 +233,7 @@ export default async function RevenuePage({
               {allTx.map((tx, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-400 tabular-nums whitespace-nowrap">
-                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-700 max-w-[260px]">
                     <span className="line-clamp-1">{tx.description}</span>

@@ -164,7 +164,7 @@ export default async function PaymentsPage({
                     </a>
                     {m.slip_uploaded_at && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Uploaded: {new Date(m.slip_uploaded_at).toLocaleString()}
+                        Uploaded: {new Date(m.slip_uploaded_at).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
                       </p>
                     )}
                   </div>
@@ -259,7 +259,7 @@ export default async function PaymentsPage({
                     </a>
                     {b.slip_uploaded_at && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Uploaded: {new Date(b.slip_uploaded_at).toLocaleString()}
+                        Uploaded: {new Date(b.slip_uploaded_at).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
                       </p>
                     )}
                   </div>
@@ -312,7 +312,7 @@ export default async function PaymentsPage({
                     {o.phone && <p className="text-xs text-gray-400">{o.phone}</p>}
                     {o.email && <p className="text-xs text-gray-400">{o.email}</p>}
                     <p className="text-xs text-gray-400">
-                      {new Date(o.created_at).toLocaleString()}
+                      {new Date(o.created_at).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}
                     </p>
                   </div>
                   <div className="text-right shrink-0">

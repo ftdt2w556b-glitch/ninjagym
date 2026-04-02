@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     return {
       id: s.id,
       date: dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }),
-      time: dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }),
+      time: dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true }),
       type: s.sale_type ?? "POS",
       description: s.notes ?? "",
       method: s.payment_method ?? "cash",
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     return {
       id: `R${m.id}`,
       date: dt ? dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : "",
-      time: dt ? dt.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit" }) : "",
+      time: dt ? dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true }) : "",
       type: "Registration",
       description: `${m.name}: ${m.membership_type}`,
       method: m.payment_method ?? "cash",

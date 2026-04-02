@@ -392,7 +392,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     });
 
     const now = new Date();
-    const time = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const time = now.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true });
     // 3. Create + approve top-up registration if a member was linked
     if (pendingTopUp) {
       try {

@@ -343,7 +343,7 @@ export default function TopUpSection({
                   </div>
                   <span className="text-xs text-gray-400 shrink-0">
                     {new Date(ci.check_in_at).toLocaleTimeString("en-US", {
-                      timeZone: "Asia/Bangkok", hour: "2-digit", minute: "2-digit",
+                      timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true,
                     })}
                   </span>
                 </div>

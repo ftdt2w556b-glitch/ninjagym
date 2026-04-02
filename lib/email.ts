@@ -145,13 +145,13 @@ export async function sendMemberConfirmation({
 
   // Format registration time
   const regTime = registeredAt
-    ? new Date(registeredAt).toLocaleString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok",
+    ? new Date(registeredAt).toLocaleString("en-US", {
+        day: "numeric", month: "short", year: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Bangkok",
       })
-    : new Date().toLocaleString("en-GB", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok",
+    : new Date().toLocaleString("en-US", {
+        day: "numeric", month: "short", year: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Bangkok",
       });
 
   // Kids row (only show if there are kids)
