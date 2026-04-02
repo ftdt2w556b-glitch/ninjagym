@@ -23,7 +23,33 @@ async function deleteCheckIn(formData: FormData) {
   const admin = makeAdmin();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+
+  // Fetch the log so we can restore the session
+  const { data: log } = await admin
+    .from("attendance_logs")
+    .select("member_id, kids_count")
+    .eq("id", id)
+    .maybeSingle();
+
+  // Delete the log
   await admin.from("attendance_logs").delete().eq("id", id);
+
+  // Restore session(s) on the member registration
+  if (log?.member_id) {
+    const { data: reg } = await admin
+      .from("member_registrations")
+      .select("sessions_remaining, membership_type")
+      .eq("id", log.member_id)
+      .maybeSingle();
+    // Only restore for session-based memberships (sessions_remaining is a number, not null)
+    if (reg && reg.sessions_remaining !== null) {
+      await admin
+        .from("member_registrations")
+        .update({ sessions_remaining: reg.sessions_remaining + 1 })
+        .eq("id", log.member_id);
+    }
+  }
+
   revalidatePath("/admin/members");
 }
 
