@@ -1,6 +1,7 @@
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -8,6 +9,21 @@ import {
   formatBangkokDate,
   formatBangkokTime,
 } from "@/lib/timezone";
+import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
+
+async function deleteCheckIn(formData: FormData) {
+  "use server";
+  const id = Number(formData.get("id"));
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+  await admin.from("attendance_logs").delete().eq("id", id);
+  revalidatePath("/admin/attendance");
+}
 
 type Period = "today" | "week" | "month";
 
@@ -63,6 +79,7 @@ export default async function AttendancePage({
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!profile || !["admin", "manager", "staff", "owner"].includes(profile.role)) redirect("/admin/dashboard");
+  const canDelete = ["admin", "manager"].includes(profile.role);
 
   const { from, to, label } = getRange(period);
 
@@ -194,6 +211,16 @@ export default async function AttendancePage({
                     >
                       View
                     </Link>
+                  )}
+
+                  {/* Delete (admin/manager only) */}
+                  {canDelete && (
+                    <DeleteCheckInButton
+                      action={deleteCheckIn}
+                      id={log.id}
+                      memberName={log.member_name ?? "Unknown"}
+                      time={formatBangkokTime(log.check_in_at)}
+                    />
                   )}
                 </li>
               ))}

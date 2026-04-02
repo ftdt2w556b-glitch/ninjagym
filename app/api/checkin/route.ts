@@ -34,7 +34,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
-    const warned = member.slip_status !== "approved";
+    const outOfSessions = member.sessions_remaining !== null && member.sessions_remaining === 0;
+    const warned = member.slip_status !== "approved" || outOfSessions;
 
     // Log attendance
     const { data: log, error: logErr } = await admin
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
       attendance_id: log.id,
       sessions_remaining: newSessions,
       warned,
+      outOfSessions,
     });
   } catch (err: unknown) {
     console.error("POST /api/checkin error:", err);

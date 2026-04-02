@@ -61,6 +61,11 @@ export async function PATCH(
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
+  // When manually approving, stamp the review timestamp
+  if (updates.slip_status === "approved") {
+    updates.slip_reviewed_at = new Date().toISOString();
+  }
+
   const admin = createAdminClient();
   const { error } = await admin
     .from("member_registrations")

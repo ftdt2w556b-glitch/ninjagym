@@ -1,8 +1,10 @@
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import CheckInButton from "@/components/admin/CheckInButton";
+import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -10,6 +12,20 @@ import {
   formatBangkokDate,
   formatBangkokTime,
 } from "@/lib/timezone";
+
+async function deleteCheckIn(formData: FormData) {
+  "use server";
+  const id = Number(formData.get("id"));
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+  await admin.from("attendance_logs").delete().eq("id", id);
+  revalidatePath("/admin/members");
+}
 
 function isPackageActive(r: { membership_type: string; sessions_remaining: number | null; expires_at: string | null }) {
   const mt = MEMBERSHIP_TYPES.find((m) => m.id === r.membership_type);
@@ -413,6 +429,14 @@ export default async function MembersPage({
                           View
                         </Link>
                       )}
+                      {isAdminOrOwner && (
+                        <DeleteCheckInButton
+                          action={deleteCheckIn}
+                          id={log.id}
+                          memberName={log.member_name ?? "Unknown"}
+                          time={formatBangkokTime(log.check_in_at)}
+                        />
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -467,7 +491,7 @@ function PackageRow({
       {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
       <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
       {sessionBadge}
-      {showCheckIn && <CheckInButton regId={regId!} label={label} />}
+      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} />}
     </div>
   );
 }
