@@ -61,14 +61,14 @@ const WAIVER_RULES = [
   { icon: "⚠️", text: "Participation is at **your own risk**. Areas of the center are dangerous and similar to a public playground." },
   { icon: "👧", text: "**Only Kids** (no parents or guardians) on the mat." },
   { icon: "🚫", text: "Kids only enter after a **NinjaGym Guide** has brought them into the center." },
-  { icon: "📢", text: "No **Yelling**, running, disruptive behavior, or ignoring a Safety Guide. Kids must behave or be asked to sit out **without refund**." },
+  { icon: "📢", text: "No **Yelling**, fighting, disruptive behavior, or ignoring a Guide. Kids must behave or be asked to sit out." },
   { icon: "👥", text: "**Parents are responsible** for ensuring their kids follow the rules and Guides. We want to focus on our program." },
   { icon: "⏱️", text: "Each session is **55 minutes** long." },
   { icon: "🚧", text: "Inform your kids to **NOT MOVE** or disrupt our equipment." },
   { icon: "🚪", text: "Please **depart shortly after** a session. No children playing in entry areas." },
-  { icon: "🍔", text: "**No outside food or drink** in the center. Please clean up after yourself." },
+  { icon: "🍔", text: "If you bring in food or drinks, clean up after yourself." },
   { icon: "🎓", text: "Sessions are **\"learn by doing\"** with a relaxed, fun environment. Not a strict martial arts class." },
-  { icon: "📷", text: "By registering you **consent to photos/video** being taken during sessions for marketing use." },
+  { icon: "📷", text: "By registering, you **consent to photos/video** being taken during sessions for marketing use." },
   { icon: "💰", text: "**No Refunds**. All sales are final once the session has begun." },
 ];
 
