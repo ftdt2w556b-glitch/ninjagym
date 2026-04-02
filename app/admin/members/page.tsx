@@ -134,7 +134,7 @@ export default async function MembersPage({
     if (q) ciQuery = ciQuery.ilike("member_name", `%${q}%`);
 
     const { data } = await ciQuery;
-    checkInLogs = (data ?? []) as typeof checkInLogs;
+    checkInLogs = (data ?? []) as unknown as typeof checkInLogs;
     // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
     checkInCount = checkInLogs.reduce((sum, log) => {
       if (log.kids_count && log.kids_count > 1) return sum + log.kids_count;
