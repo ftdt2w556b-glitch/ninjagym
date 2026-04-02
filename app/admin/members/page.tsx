@@ -135,6 +135,44 @@ export default async function MembersPage({
 
     const { data } = await ciQuery;
     checkInLogs = (data ?? []) as unknown as typeof checkInLogs;
+
+    // Batch lookup kids_names for top-up registrations (which don't carry kids_names directly)
+    const missingIds = checkInLogs
+      .filter(l => !l.kids_names && !(l.member_registrations as { kids_names?: string | null } | null)?.kids_names && l.member_id)
+      .map(l => l.member_id as number);
+
+    if (missingIds.length > 0) {
+      const { data: regs } = await admin
+        .from("member_registrations")
+        .select("id, kids_names, parent_member_id")
+        .in("id", missingIds);
+
+      const parentIds = [...new Set((regs ?? []).map((r: { parent_member_id: number | null }) => r.parent_member_id).filter(Boolean))] as number[];
+      const parentMap = new Map<number, string | null>();
+
+      if (parentIds.length > 0) {
+        const { data: parents } = await admin
+          .from("member_registrations")
+          .select("id, kids_names")
+          .in("id", parentIds);
+        for (const p of (parents ?? []) as { id: number; kids_names: string | null }[]) {
+          parentMap.set(p.id, p.kids_names ?? null);
+        }
+      }
+
+      const kidsMap = new Map<number, string | null>();
+      for (const reg of (regs ?? []) as { id: number; kids_names: string | null; parent_member_id: number | null }[]) {
+        kidsMap.set(reg.id, reg.kids_names || (reg.parent_member_id ? parentMap.get(reg.parent_member_id) ?? null : null));
+      }
+
+      // Patch logs with resolved kids_names
+      for (const log of checkInLogs) {
+        if (!log.kids_names && log.member_id && kidsMap.has(log.member_id)) {
+          log.kids_names = kidsMap.get(log.member_id) ?? null;
+        }
+      }
+    }
+
     // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
     checkInCount = checkInLogs.reduce((sum, log) => {
       if (log.kids_count && log.kids_count > 1) return sum + log.kids_count;
