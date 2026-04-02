@@ -116,7 +116,7 @@ export default async function MembersPage({
   }
 
   // ── Check-ins tab data ───────────────────────────────────────
-  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null }[] = [];
+  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
   const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
@@ -125,7 +125,7 @@ export default async function MembersPage({
     const { from, to } = getCheckInRange(checkInPeriod);
     let ciQuery = admin
       .from("attendance_logs")
-      .select("id, member_id, member_name, member_email, check_in_at, notes", { count: "exact" })
+      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
@@ -133,9 +133,10 @@ export default async function MembersPage({
 
     if (q) ciQuery = ciQuery.ilike("member_name", `%${q}%`);
 
-    const { data, count } = await ciQuery;
+    const { data } = await ciQuery;
     checkInLogs = (data ?? []) as typeof checkInLogs;
-    checkInCount = count ?? 0;
+    // Sum kids_count for accurate headcount (old records default to 1)
+    checkInCount = checkInLogs.reduce((sum, log) => sum + (log.kids_count ?? 1), 0);
   }
 
   // Group check-ins by date

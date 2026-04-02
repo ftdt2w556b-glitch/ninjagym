@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const outOfSessions = member.sessions_remaining !== null && member.sessions_remaining === 0;
     const warned = outOfSessions;
 
-    // Append kids count to note if more than 1 kid
-    const kidsCount = member.kids_count ?? 1;
+    // Kids count — used for accurate headcount in reports
+    const kidsCount = Math.max(1, member.kids_count ?? 1);
     const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
     const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
 
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
         member_email: member.email ?? null,
         check_in_at: new Date().toISOString(),
         notes: fullNote,
+        kids_count: kidsCount,
       })
       .select("id")
       .single();

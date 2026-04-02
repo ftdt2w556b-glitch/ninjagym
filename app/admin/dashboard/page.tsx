@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
   const [
-    { count: todayCheckIns },
+    { data: todayCheckInRows },
     { count: pendingPayments },
     { count: pendingEvents },
     { count: pendingOrders },
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     admin
       .from("attendance_logs")
-      .select("*", { count: "exact", head: true })
+      .select("kids_count")
       .gte("check_in_at", bangkokStartOfDay())
       .lte("check_in_at", bangkokEndOfDay()),
     admin
@@ -83,10 +83,12 @@ export default async function DashboardPage() {
   const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
   // Events merged into the single Pending count for everyone
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0) + (pendingEvents ?? 0);
+  // Sum kids_count for accurate headcount (old records without kids_count default to 1)
+  const todayCheckIns = (todayCheckInRows ?? []).reduce((sum, r) => sum + (r.kids_count ?? 1), 0);
 
   const stats = [
     ...(isAdminOrOwner
-      ? [{ label: "Check-ins Today", value: todayCheckIns ?? 0, color: "bg-blue-100 text-blue-800", href: "/admin/members?tab=checkins" }]
+      ? [{ label: "Check-ins Today", value: todayCheckIns, color: "bg-blue-100 text-blue-800", href: "/admin/members?tab=checkins" }]
       : []),
     { label: "Pending",          value: totalPending,   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
     { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
