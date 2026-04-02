@@ -441,9 +441,8 @@ export default function JoinPage() {
               value={cashStaffName}
               onChange={(e) => setCashStaffName(e.target.value)}
               className="w-full border border-green-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
-              placeholder="e.g. Rick, Pam, Nong..."
+              placeholder=""
             />
-            <p className="text-xs text-green-600 mt-1.5">This is recorded with the registration so there is a cash trail.</p>
           </div>
         )}
 
