@@ -73,6 +73,15 @@ export async function PATCH(
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Sync name / email changes back to historical attendance_log snapshots
+  const logSync: Record<string, unknown> = {};
+  if ("name" in updates) logSync.member_name = updates.name;
+  if ("email" in updates) logSync.member_email = updates.email;
+  if (Object.keys(logSync).length > 0) {
+    await admin.from("attendance_logs").update(logSync).eq("member_id", Number(id));
+  }
+
   return NextResponse.json({ success: true });
 }
 
