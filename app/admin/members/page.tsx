@@ -116,7 +116,7 @@ export default async function MembersPage({
   }
 
   // ── Check-ins tab data ───────────────────────────────────────
-  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number }[] = [];
+  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; member_registrations: { kids_names: string | null; kids_count: number | null } | null }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
   const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
@@ -125,7 +125,7 @@ export default async function MembersPage({
     const { from, to } = getCheckInRange(checkInPeriod);
     let ciQuery = admin
       .from("attendance_logs")
-      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count")
+      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, member_registrations(kids_names, kids_count)")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
@@ -421,13 +421,21 @@ export default async function MembersPage({
                         >
                           {log.member_name ?? "Unknown"}
                         </Link>
-                        {log.member_email && (
+                        {log.member_registrations?.kids_names && (
+                          <p className="text-xs font-semibold text-[#1a56db] truncate">
+                            👧 {log.member_registrations.kids_names}
+                          </p>
+                        )}
+                        {log.member_email && !log.member_registrations?.kids_names && (
                           <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
                         )}
                       </div>
                       <span className="text-xs text-gray-400 italic shrink-0">
                         {log.notes
-                          ? log.notes.replace("Manual check-in by staff", "Check-in by staff")
+                          ? log.notes
+                              .replace("Manual check-in by staff", "Check-in by staff")
+                              .replace(/\s*\|\s*\d+\s*kids/i, "")
+                              .trim()
                           : "Check-in at approval"}
                       </span>
                       {log.member_id && (
