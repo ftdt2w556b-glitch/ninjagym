@@ -72,11 +72,12 @@ function inputType(mode: Mode) {
 export default async function RevenuePage({
   searchParams,
 }: {
-  searchParams: Promise<{ mode?: string; date?: string }>;
+  searchParams: Promise<{ mode?: string; date?: string; method?: string }>;
 }) {
-  const { mode: rawMode, date: rawDate } = await searchParams;
+  const { mode: rawMode, date: rawDate, method: rawMethod } = await searchParams;
   const mode: Mode = (rawMode === "month" || rawMode === "year") ? rawMode : "day";
   const date = rawDate ?? defaultDate(mode);
+  const methodFilter = rawMethod === "cash" ? "cash" : rawMethod === "promptpay" ? "promptpay" : "";
   const { from, to, label } = buildRange(mode, date);
 
   const admin = createAdminClient();
@@ -141,6 +142,12 @@ export default async function RevenuePage({
   const grandTotal     = cashTotal + transferTotal;
   const cashCount      = allTx.filter((t) => t.method === "cash").length;
   const transferCount  = allTx.filter((t) => t.method !== "cash").length;
+
+  const visibleTx = methodFilter === "cash"
+    ? allTx.filter((t) => t.method === "cash")
+    : methodFilter === "promptpay"
+    ? allTx.filter((t) => t.method !== "cash")
+    : allTx;
 
   const exportUrl = `/api/reports/cash/export?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
 
@@ -213,8 +220,30 @@ export default async function RevenuePage({
 
       {/* ── Transactions table ───────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900">All Transactions</h2>
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
+          <h2 className="font-bold text-gray-900">
+            {methodFilter === "cash" ? "Cash Transactions" : methodFilter === "promptpay" ? "PromptPay Transactions" : "All Transactions"}
+            <span className="ml-2 text-sm font-normal text-gray-400">({visibleTx.length})</span>
+          </h2>
+          <div className="flex gap-1">
+            {[
+              { value: "",          label: "All" },
+              { value: "cash",      label: "Cash" },
+              { value: "promptpay", label: "PromptPay" },
+            ].map((opt) => (
+              <Link
+                key={opt.value}
+                href={`?mode=${mode}&date=${date}${opt.value ? `&method=${opt.value}` : ""}`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  methodFilter === opt.value
+                    ? "bg-[#1a56db] text-white"
+                    : "text-gray-500 hover:bg-gray-100"
+                }`}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -230,7 +259,7 @@ export default async function RevenuePage({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {allTx.map((tx, i) => (
+              {visibleTx.map((tx, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-400 tabular-nums whitespace-nowrap">
                     {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) : "—"}
@@ -261,7 +290,7 @@ export default async function RevenuePage({
                   )}
                 </tr>
               ))}
-              {allTx.length === 0 && (
+              {visibleTx.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-10 text-center text-gray-400">
                     No payments recorded for this period.
