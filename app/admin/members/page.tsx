@@ -338,6 +338,7 @@ export default async function MembersPage({
                                 isPrimary
                                 canCheckIn={canCheckIn}
                                 staffName={profile?.name ?? undefined}
+                                kidsCount={m.kids_count ?? 1}
                               />
                             )}
                             {topUps.filter((t) => isPackageActive(t)).map((t) => {
@@ -352,6 +353,7 @@ export default async function MembersPage({
                                   membershipType={t.membership_type}
                                   canCheckIn={canCheckIn}
                                   staffName={profile?.name ?? undefined}
+                                  kidsCount={m.kids_count ?? 1}
                                 />
                               );
                             })}
@@ -543,6 +545,7 @@ function PackageRow({
   isPrimary = false,
   canCheckIn = false,
   staffName,
+  kidsCount = 1,
 }: {
   regId?: number;
   label: string;
@@ -552,6 +555,7 @@ function PackageRow({
   isPrimary?: boolean;
   canCheckIn?: boolean;
   staffName?: string;
+  kidsCount?: number;
 }) {
   const isMonthly = membershipType === "monthly_flex";
 
@@ -578,7 +582,7 @@ function PackageRow({
       {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
       <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
       {sessionBadge}
-      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} staffName={staffName} />}
+      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} staffName={staffName} kidsCount={kidsCount} />}
     </div>
   );
 }

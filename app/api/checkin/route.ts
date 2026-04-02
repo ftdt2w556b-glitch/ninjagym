@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const member_id = Number(body.member_id);
     const note = (body.note as string | undefined) ?? null;
+    const kids_count_override = body.kids_count_override != null ? Math.max(1, Number(body.kids_count_override)) : null;
 
     if (!member_id) {
       return NextResponse.json({ error: "member_id required" }, { status: 400 });
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
     const outOfSessions = member.sessions_remaining !== null && member.sessions_remaining === 0;
     const warned = outOfSessions;
 
-    // Kids count — used for accurate headcount in reports
-    const kidsCount = Math.max(1, member.kids_count ?? 1);
+    // Kids count — use override from staff (e.g. mom has 2 kids but only brought 1 today)
+    const kidsCount = kids_count_override !== null ? kids_count_override : Math.max(1, member.kids_count ?? 1);
     const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
     const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
 
