@@ -1,7 +1,28 @@
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
+
+async function voidTransaction(formData: FormData) {
+  "use server";
+  const id     = formData.get("id") as string;
+  const source = formData.get("source") as string;
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+
+  if (source === "member") {
+    await admin.from("member_registrations").update({ slip_status: "rejected" }).eq("id", Number(id));
+  } else if (source === "cash_sale") {
+    await admin.from("cash_sales").delete().eq("id", Number(id));
+  }
+  revalidatePath("/admin/reports/cash");
+}
 
 type Mode = "day" | "month" | "year";
 
@@ -84,6 +105,8 @@ export default async function RevenuePage({
 
   // Unified transaction list
   type TxRow = {
+    id: number;
+    source: "member" | "cash_sale";
     time: string;
     description: string;
     method: string;
@@ -92,12 +115,16 @@ export default async function RevenuePage({
 
   const allTx: TxRow[] = [
     ...(cashSales ?? []).map((s) => ({
+      id: s.id as number,
+      source: "cash_sale" as const,
       time: s.processed_at as string,
       description: (s.notes as string | null) ?? s.sale_type ?? "POS Sale",
-      method: "cash", // cash_sales are always cash
+      method: "cash",
       amount: Number(s.amount),
     })),
     ...(memberPayments ?? []).map((m) => ({
+      id: m.id as number,
+      source: "member" as const,
       time: m.slip_reviewed_at ?? "",
       description: `${m.name}`,
       method: m.payment_method ?? "cash",
@@ -194,6 +221,9 @@ export default async function RevenuePage({
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Member / Description</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Method</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
+                {["admin", "manager"].includes(currentProfile?.role ?? "") && (
+                  <th className="px-4 py-3" />
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -215,6 +245,22 @@ export default async function RevenuePage({
                   <td className="px-4 py-3 font-semibold text-gray-900 text-right tabular-nums">
                     ฿{tx.amount.toLocaleString()}
                   </td>
+                  {["admin", "manager"].includes(currentProfile?.role ?? "") && (
+                    <td className="px-4 py-3 text-right">
+                      <form action={voidTransaction} onSubmit={(e) => {
+                        if (!confirm(`Void this ฿${tx.amount.toLocaleString()} transaction for "${tx.description}"? This cannot be undone.`)) e.preventDefault();
+                      }}>
+                        <input type="hidden" name="id" value={tx.id} />
+                        <input type="hidden" name="source" value={tx.source} />
+                        <button
+                          type="submit"
+                          className="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                        >
+                          Void
+                        </button>
+                      </form>
+                    </td>
+                  )}
                 </tr>
               ))}
               {allTx.length === 0 && (
