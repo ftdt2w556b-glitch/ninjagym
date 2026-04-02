@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendMemberConfirmation } from "@/lib/email";
+import { signMemberId } from "@/lib/member-token";
 
 export async function POST(request: NextRequest) {
   try {
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
       }).catch((e) => console.error("Email send failed:", e));
     }
 
-    return NextResponse.json({ id: data.id });
+    return NextResponse.json({ id: data.id, token: signMemberId(data.id) });
   } catch (err: unknown) {
     // Log full error for Vercel function logs
     console.error("POST /api/members error:", JSON.stringify(err, null, 2));

@@ -99,6 +99,7 @@ export default function JoinPage() {
   const [sessionQty, setSessionQty] = useState(5);
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [cashStaffName, setCashStaffName] = useState("");
 
   useEffect(() => {
@@ -141,10 +142,11 @@ export default function JoinPage() {
 
       if (form.payment_method === "stripe") {
         setPendingMemberId(data.id);
+        setPendingToken(data.token ?? null);
         setStripeStep(true);
         setSubmitting(false);
       } else {
-        router.push(`/qr/card/${data.id}`);
+        router.push(`/qr/card/${data.id}?token=${data.token}`);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -176,7 +178,7 @@ export default function JoinPage() {
               description={`NinjaGym membership: ${form.membership_type}`}
               referenceId={pendingMemberId}
               referenceType="member"
-              onSuccess={() => router.push(`/qr/card/${pendingMemberId}`)}
+              onSuccess={() => router.push(`/qr/card/${pendingMemberId}?token=${pendingToken ?? ""}`)}
               onError={(msg) => setError(msg)}
             />
           </Suspense>
