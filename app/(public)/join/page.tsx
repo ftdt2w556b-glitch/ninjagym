@@ -382,21 +382,32 @@ export default function JoinPage() {
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
             {/* Cash — green */}
-            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+            <div className={`rounded-xl border-2 transition-colors ${
               form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
             }`}>
-              <input
-                type="radio"
-                name="payment_method"
-                value="cash"
-                checked={form.payment_method === "cash"}
-                onChange={() => setForm({ ...form, payment_method: "cash" })}
-                className="accent-green-500"
-              />
-              <span className="text-sm font-semibold text-green-700">
-                💵 {t.cashOption}
-              </span>
-            </label>
+              <label className="flex items-center gap-3 px-3 py-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="cash"
+                  checked={form.payment_method === "cash"}
+                  onChange={() => setForm({ ...form, payment_method: "cash" })}
+                  className="accent-green-500"
+                />
+                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption}</span>
+              </label>
+              {form.payment_method === "cash" && (
+                <div className="px-3 pb-3" onClick={(e) => e.stopPropagation()}>
+                  <p className="text-xs font-semibold text-green-700 mb-1">Staff Name <span className="font-normal">(who received the cash)</span></p>
+                  <input
+                    type="text"
+                    value={cashStaffName}
+                    onChange={(e) => setCashStaffName(e.target.value)}
+                    className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+                  />
+                </div>
+              )}
+            </div>
             {/* PromptPay — blue */}
             <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
@@ -430,21 +441,6 @@ export default function JoinPage() {
           </div>
         </div>
 
-        {/* Staff name — shown when cash is selected */}
-        {form.payment_method === "cash" && (
-          <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 shadow">
-            <label className="block text-sm font-bold text-green-800 mb-1">
-              Staff Name <span className="font-normal text-green-600">(who received the cash)</span>
-            </label>
-            <input
-              type="text"
-              value={cashStaffName}
-              onChange={(e) => setCashStaffName(e.target.value)}
-              className="w-full border border-green-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
-              placeholder=""
-            />
-          </div>
-        )}
 
         {/* PromptPay panel — QR + account details + slip upload */}
         {form.payment_method === "promptpay" && (
