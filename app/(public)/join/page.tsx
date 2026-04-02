@@ -99,6 +99,7 @@ export default function JoinPage() {
   const [sessionQty, setSessionQty] = useState(5);
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
+  const [cashStaffName, setCashStaffName] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -126,7 +127,11 @@ export default function JoinPage() {
       body.append("amount_paid", String(price));
       body.append("lang", lang);
       if (selectedMt?.bulk) body.append("sessions_remaining", String(sessionQty));
-      if (sessionFocus) body.append("notes", sessionFocus ? `Focus: ${sessionFocus}${form.notes ? " | " + form.notes : ""}` : form.notes);
+      const focusPart = sessionFocus ? `Focus: ${sessionFocus}` : "";
+      const staffPart = form.payment_method === "cash" && cashStaffName ? `Staff: ${cashStaffName}` : "";
+      const notesPart = form.notes || "";
+      const combinedNotes = [focusPart, staffPart, notesPart].filter(Boolean).join(" | ");
+      if (combinedNotes) body.append("notes", combinedNotes);
       if (slip && form.payment_method === "promptpay") body.append("slip", slip);
 
       const res = await fetch("/api/members", { method: "POST", body });
@@ -376,8 +381,9 @@ export default function JoinPage() {
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
-              form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
+            {/* PromptPay — blue */}
+            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-gray-100 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -387,10 +393,13 @@ export default function JoinPage() {
                 onChange={() => setForm({ ...form, payment_method: "promptpay" })}
                 className="accent-[#1a56db]"
               />
-              <span className="text-sm font-medium">📱 {t.promptpayOption}</span>
+              <span className={`text-sm font-semibold ${form.payment_method === "promptpay" ? "text-[#1a56db]" : "text-gray-700"}`}>
+                📱 {t.promptpayOption}
+              </span>
             </label>
-            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
-              form.payment_method === "cash" ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
+            {/* Cash — green */}
+            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "cash" ? "border-green-500 bg-green-50" : "border-gray-100 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -398,12 +407,15 @@ export default function JoinPage() {
                 value="cash"
                 checked={form.payment_method === "cash"}
                 onChange={() => setForm({ ...form, payment_method: "cash" })}
-                className="accent-[#1a56db]"
+                className="accent-green-500"
               />
-              <span className="text-sm font-medium">💵 {t.cashOption}</span>
+              <span className={`text-sm font-semibold ${form.payment_method === "cash" ? "text-green-700" : "text-gray-700"}`}>
+                💵 {t.cashOption}
+              </span>
             </label>
-            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border cursor-pointer transition-colors ${
-              form.payment_method === "stripe" ? "border-[#1a56db] bg-blue-50" : "border-gray-100"
+            {/* Credit/Debit Card — hidden for now, keep for easy re-enable */}
+            {/* <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              form.payment_method === "stripe" ? "border-[#1a56db] bg-blue-50" : "border-gray-100 hover:bg-gray-50"
             }`}>
               <input
                 type="radio"
@@ -413,10 +425,27 @@ export default function JoinPage() {
                 onChange={() => setForm({ ...form, payment_method: "stripe" })}
                 className="accent-[#1a56db]"
               />
-              <span className="text-sm font-medium">💳 {t.cardOption}</span>
-            </label>
+              <span className="text-sm font-semibold text-gray-700">💳 {t.cardOption}</span>
+            </label> */}
           </div>
         </div>
+
+        {/* Staff name — shown when cash is selected */}
+        {form.payment_method === "cash" && (
+          <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 shadow">
+            <label className="block text-sm font-bold text-green-800 mb-1">
+              Staff Name <span className="font-normal text-green-600">(who received the cash)</span>
+            </label>
+            <input
+              type="text"
+              value={cashStaffName}
+              onChange={(e) => setCashStaffName(e.target.value)}
+              className="w-full border border-green-300 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+              placeholder="e.g. Rick, Pam, Nong..."
+            />
+            <p className="text-xs text-green-600 mt-1.5">This is recorded with the registration so there is a cash trail.</p>
+          </div>
+        )}
 
         {/* PromptPay panel — QR + account details + slip upload */}
         {form.payment_method === "promptpay" && (
