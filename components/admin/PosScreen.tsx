@@ -383,7 +383,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
           correctedMembershipType: correctType,
           correctedSessions: MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.timeBased
             ? null
-            : MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.isBulk
+            : MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.bulk
             ? correctBulkQty
             : 1,
         } : {}),
@@ -617,7 +617,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                       <option key={m.id} value={m.id}>{m.label}</option>
                     ))}
                   </select>
-                  {MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.isBulk && (
+                  {MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.bulk && (
                     <div>
                       <p className="text-gray-400 text-xs mb-1">Number of sessions:</p>
                       <select
