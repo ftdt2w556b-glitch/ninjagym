@@ -19,6 +19,8 @@ async function voidTransaction(formData: FormData) {
 
   if (source === "member") {
     await admin.from("member_registrations").update({ slip_status: "rejected" }).eq("id", Number(id));
+    // Also delete the linked cash_sale if one exists (created by quick-register)
+    await admin.from("cash_sales").delete().eq("reference_id", Number(id)).eq("sale_type", "membership");
   } else if (source === "cash_sale") {
     await admin.from("cash_sales").delete().eq("id", Number(id));
   }
