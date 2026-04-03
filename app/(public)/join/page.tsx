@@ -544,9 +544,15 @@ export default function JoinPage() {
           </label>
         </div>
 
+        {form.payment_method === "promptpay" && !slip && (
+          <div className="bg-yellow-50 border border-yellow-300 rounded-2xl px-4 py-3 text-center">
+            <p className="text-yellow-800 font-semibold text-sm">📎 Please upload your PromptPay receipt above to complete registration.</p>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={submitting || !agreedToPolicy}
+          disabled={submitting || !agreedToPolicy || (form.payment_method === "promptpay" && !slip)}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
