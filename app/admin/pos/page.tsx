@@ -151,15 +151,21 @@ export default async function AdminPosPage({
     .gte("slip_reviewed_at", bangkokStartOfDay())
     .lte("slip_reviewed_at", bangkokEndOfDay());
 
-  // Today's box total (notes_1k fetched separately — column may not exist yet)
+  // Today's box total + change given (non-membership cash sales only, matching todaySales filter)
   let todayBoxTotal = 0;
+  let todayChangeTotal = 0;
   const { data: todayNotes1kRows } = await admin
     .from("cash_sales")
-    .select("notes_1k")
+    .select("notes_1k, change_given")
+    .neq("sale_type", "membership")
     .gte("processed_at", bangkokStartOfDay())
     .lte("processed_at", bangkokEndOfDay());
   if (todayNotes1kRows) {
-    todayBoxTotal = todayNotes1kRows.reduce((s, r) => s + (Number((r as Record<string, unknown>).notes_1k ?? 0) * 1000), 0);
+    for (const r of todayNotes1kRows) {
+      const row = r as Record<string, unknown>;
+      todayBoxTotal    += Number(row.notes_1k ?? 0) * 1000;
+      todayChangeTotal += Number(row.change_given ?? 0);
+    }
   }
 
   const staffMap = new Map<string, { total: number; count: number }>();
@@ -309,6 +315,13 @@ export default async function AdminPosPage({
                 <div className="bg-yellow-50 rounded-xl p-3">
                   <p className="text-gray-400 text-xs mb-0.5">In Box (1K notes)</p>
                   <p className="font-bold text-yellow-700">฿{todayBoxTotal.toLocaleString()}</p>
+                </div>
+              )}
+              {todayChangeTotal > 0 && (
+                <div className="bg-orange-50 rounded-xl p-3">
+                  <p className="text-gray-400 text-xs mb-0.5">Change Given</p>
+                  <p className="font-bold text-orange-600">-฿{todayChangeTotal.toLocaleString()}</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Already in amounts ↑</p>
                 </div>
               )}
               {currentRemoved > 0 && (
