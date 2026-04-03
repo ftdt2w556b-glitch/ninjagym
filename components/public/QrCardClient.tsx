@@ -380,11 +380,11 @@ export default function QrCardClient({
         </div>
       )}
       {isRejected && (
-        <div className="bg-red-500/20 border border-red-400/30 rounded-2xl px-4 py-3 mb-4 flex items-start gap-3">
-          <span className="text-xl mt-0.5">❌</span>
+        <div className="bg-orange-500/20 border border-orange-400/30 rounded-2xl px-4 py-3 mb-4 flex items-start gap-3">
+          <span className="text-xl mt-0.5">⚠️</span>
           <div>
-            <p className="text-red-200 font-bold text-sm">{t.statusNotConfirmed}</p>
-            <p className="text-red-200/70 text-xs">{t.statusSpeak}</p>
+            <p className="text-orange-200 font-bold text-sm">Program selection needs to be corrected</p>
+            <p className="text-orange-200/70 text-xs">Please scroll down and select the correct program below. Your member card stays active.</p>
           </div>
         </div>
       )}
@@ -726,7 +726,8 @@ export default function QrCardClient({
       )}
 
       {/* Top-up / Continue Training / Recent Check-ins */}
-      {isApproved && (
+      {/* Also shown when rejected so parent can re-register with correct program */}
+      {(isApproved || isRejected) && (
         <TopUpSection
           memberId={member.id}
           memberName={member.name}

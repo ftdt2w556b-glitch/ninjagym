@@ -12,7 +12,7 @@ async function requireAdmin(request: NextRequest) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (!profile || !["admin", "owner"].includes(profile.role)) return null;
+  if (!profile || !["admin", "owner", "manager"].includes(profile.role)) return null;
   return user;
 }
 
