@@ -568,7 +568,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     function priceForType(typeId: string, qty: number): number {
       const mt = MEMBERSHIP_TYPES.find((m) => m.id === typeId);
       if (!mt) return 0;
-      if (mt.isBulk) return calcBulkPrice(settingsPrices[mt.bulkBase!] ?? 0, qty);
+      if (mt.bulk) return calcBulkPrice(settingsPrices[mt.bulkBase!] ?? 0, qty);
       if (mt.perKid) return (settingsPrices[`price_${mt.id}`] ?? 0) * kidsCount;
       return settingsPrices[`price_${mt.id}`] ?? 0;
     }
@@ -577,7 +577,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       setCorrectType(typeId);
       setCorrectBulkQty(qty);
       const mt = MEMBERSHIP_TYPES.find((m) => m.id === typeId)!;
-      const label = mt.isBulk ? `${mt.label} ×${qty}` : mt.label;
+      const label = mt.bulk ? `${mt.label} ×${qty}` : mt.label;
       const price = priceForType(typeId, qty);
       setCart([{ label: `${pendingMemberName}: ${label}`, qty: 1, unit: price }]);
       setCashInput("");
