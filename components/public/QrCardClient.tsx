@@ -287,17 +287,14 @@ export default function QrCardClient({
   const isNewMilestone = MILESTONES.includes(totalCheckIns) && totalCheckIns > 0;
 
   // ── Loyalty calcs ─────────────────────────────────────────────────────────
-  // Free sessions based on THB spent — every 3,500 THB = 1 free Group Session.
-  // Belt rank stays check-in based (activity tracker, no cash value).
-  const FREE_SESSION_THB = 3500;
-  const allPkgs   = [...activePackages, ...(pastPackages ?? [])];
-  const totalSpend = allPkgs.reduce((sum, p) => sum + (p.amount_paid ?? 0), 0);
-  const spentInCycle   = totalSpend % FREE_SESSION_THB;
-  const pipsToShow     = spentInCycle === 0 && totalSpend > 0 && Math.floor(totalSpend / FREE_SESSION_THB) > localRedeemed
+  // Free sessions based on check-ins — every 10 check-ins = 1 free Group Session.
+  // Belt rank also check-in based. No money in the equation.
+  const FREE_SESSION_CHECKINS = 10;
+  const sessionsInCycle   = totalCheckIns % FREE_SESSION_CHECKINS;
+  const freeSessionsEarned    = Math.floor(totalCheckIns / FREE_SESSION_CHECKINS);
+  const pipsToShow     = sessionsInCycle === 0 && totalCheckIns > 0 && freeSessionsEarned > localRedeemed
     ? 10
-    : Math.floor(spentInCycle / (FREE_SESSION_THB / 10));
-
-  const freeSessionsEarned    = Math.floor(totalSpend / FREE_SESSION_THB);
+    : sessionsInCycle;
   const freeSessionsAvailable = Math.max(0, freeSessionsEarned - localRedeemed);
   const belt        = getBelt(totalCheckIns);
   const { pct: beltPct, next: nextBelt } = getBeltProgress(totalCheckIns);
@@ -597,13 +594,13 @@ export default function QrCardClient({
             </div>
           )}
 
-          {/* Free session tracker — every 3,500 THB spent */}
+          {/* Free session tracker — every 10 check-ins */}
           <div className="border-t border-gray-700 pt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Free Sessions</p>
-              <p className="text-xs text-gray-500">Every ฿3,500 spent</p>
+              <p className="text-xs text-gray-500">Every 10 sessions</p>
             </div>
-            {/* Pip track — 10 pips, each = 350 THB */}
+            {/* Pip track — 10 pips, each = 1 check-in */}
             <div className="flex gap-1.5 mb-3">
               {Array.from({ length: 10 }).map((_, i) => {
                 const filled = i < pipsToShow;
@@ -616,9 +613,9 @@ export default function QrCardClient({
               })}
             </div>
             <p className="text-xs text-gray-400 text-center mb-3">
-              {spentInCycle === 0 && freeSessionsAvailable > 0
+              {sessionsInCycle === 0 && freeSessionsAvailable > 0
                 ? "🎉 Free session ready! Keep training!"
-                : `฿${spentInCycle.toLocaleString()}/฿3,500 toward next free session`}
+                : `${sessionsInCycle}/10 sessions toward next free session`}
             </p>
 
             {/* Free session available banner */}
