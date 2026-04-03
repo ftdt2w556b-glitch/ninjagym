@@ -86,6 +86,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ saleId: sale.id });
     }
 
+    // Dismiss a pending cash registration without collecting cash
+    // Used when admin already approved the member via another method
+    if (action === "dismiss_pending") {
+      if (!referenceId) return NextResponse.json({ error: "referenceId required" }, { status: 400 });
+      await admin
+        .from("member_registrations")
+        .update({ slip_status: "approved", slip_reviewed_at: new Date().toISOString() })
+        .eq("id", referenceId)
+        .eq("slip_status", "cash_pending"); // only dismiss if still pending (safety check)
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "open_drawer") {
       const { error } = await admin.from("drawer_log").insert({
         opened_by: staffType === "profile" ? staffId : null,

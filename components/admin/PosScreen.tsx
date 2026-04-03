@@ -694,30 +694,50 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
               {pendingList.map((reg) => {
                 const memberLabel = MEMBERSHIP_TYPES.find((m) => m.id === reg.membership_type)?.label ?? reg.membership_type;
                 return (
-                  <button
-                    key={reg.id}
-                    onClick={() => {
-                      setCart([{ label: `${reg.name}: ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
-                      setSaleType("membership");
-                      setReferenceId(reg.id);
-                      setNotes(reg.name);
-                      setCashInput("");
-                      setNotes1k(0);
-                      setScreen("change_calc");
-                    }}
-                    className="bg-gray-800 hover:bg-gray-700 transition-colors rounded-2xl p-5 text-left flex items-center justify-between gap-4"
-                  >
-                    <div>
-                      <p className="font-bold text-white text-lg">{reg.name}</p>
-                      <p className="text-gray-400 text-sm mt-0.5">{memberLabel}</p>
-                      {reg.kids_names && <p className="text-gray-400 text-xs mt-0.5">Kids: {reg.kids_names}</p>}
-                      {reg.notes && <p className="text-gray-500 text-xs mt-1 italic">{reg.notes}</p>}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-fredoka text-2xl text-[#22c55e]">฿{Number(reg.amount_paid).toLocaleString()}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">Tap to collect</p>
-                    </div>
-                  </button>
+                  <div key={reg.id} className="bg-gray-800 rounded-2xl p-5 flex items-center justify-between gap-4">
+                    <button
+                      className="flex-1 text-left flex items-center justify-between gap-4"
+                      onClick={() => {
+                        setCart([{ label: `${reg.name}: ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
+                        setSaleType("membership");
+                        setReferenceId(reg.id);
+                        setNotes(reg.name);
+                        setCashInput("");
+                        setNotes1k(0);
+                        setScreen("change_calc");
+                      }}
+                    >
+                      <div>
+                        <p className="font-bold text-white text-lg">{reg.name}</p>
+                        <p className="text-gray-400 text-sm mt-0.5">{memberLabel}</p>
+                        {reg.kids_names && <p className="text-[#22c55e] text-sm font-semibold mt-0.5">👦 {reg.kids_names}</p>}
+                        {reg.notes && <p className="text-gray-500 text-xs mt-1 italic">{reg.notes}</p>}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-fredoka text-2xl text-[#22c55e]">฿{Number(reg.amount_paid).toLocaleString()}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">Tap to collect</p>
+                      </div>
+                    </button>
+                    <button
+                      title="Dismiss — already paid or no longer needed"
+                      onClick={async () => {
+                        await fetch("/api/pos/action", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            action: "dismiss_pending",
+                            staffId: activeStaff!.id,
+                            staffType: activeStaff!.staffType,
+                            referenceId: reg.id,
+                          }),
+                        });
+                        setPendingList((prev) => prev.filter((r) => r.id !== reg.id));
+                      }}
+                      className="shrink-0 text-gray-600 hover:text-red-400 text-xl transition-colors px-2"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 );
               })}
             </div>
