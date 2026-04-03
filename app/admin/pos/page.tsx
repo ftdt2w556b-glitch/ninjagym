@@ -42,12 +42,38 @@ async function saveDrawerFloat(formData: FormData) {
     { key: "drawer_float", value: String(val), label: "Cash Drawer Opening Float" },
     { onConflict: "key" }
   );
-  // Reset cash-removed whenever float is updated (new day / new count)
+  // Reset cash-removed and manual expected whenever float is updated (new day / new count)
   await admin.from("settings").upsert(
     { key: "drawer_removed", value: "0", label: "Cash Removed from Drawer Today" },
     { onConflict: "key" }
   );
+  await admin.from("settings").upsert(
+    { key: "drawer_expected", value: "", label: "Expected in Drawer (manual override)" },
+    { onConflict: "key" }
+  );
   redirect("/admin/pos?floatsaved=1");
+}
+
+async function saveDrawerExpected(formData: FormData) {
+  "use server";
+  const raw = (formData.get("expected") as string)?.trim();
+  const val = parseInt(raw, 10);
+  if (isNaN(val) || val < 0) redirect("/admin/pos?expectederr=1");
+
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/pos");
+
+  await admin.from("settings").upsert(
+    { key: "drawer_expected", value: String(val), label: "Expected in Drawer (manual override)" },
+    { onConflict: "key" }
+  );
+  redirect("/admin/pos?expectedsaved=1");
 }
 
 async function saveDrawerRemoved(formData: FormData) {
@@ -75,7 +101,7 @@ async function saveDrawerRemoved(formData: FormData) {
 export default async function AdminPosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string; floatsaved?: string; floaterror?: string; removedsaved?: string; removederr?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; floatsaved?: string; floaterror?: string; removedsaved?: string; removederr?: string; expectedsaved?: string; expectederr?: string }>;
 }) {
   const params = await searchParams;
   const admin = createAdminClient();
@@ -96,6 +122,9 @@ export default async function AdminPosPage({
 
   const { data: removedSetting } = await admin.from("settings").select("value").eq("key", "drawer_removed").maybeSingle();
   const currentRemoved = removedSetting?.value ? parseInt(removedSetting.value, 10) : 0;
+
+  const { data: expectedSetting } = await admin.from("settings").select("value").eq("key", "drawer_expected").maybeSingle();
+  const manualExpected = expectedSetting?.value ? parseInt(expectedSetting.value, 10) : null;
 
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
@@ -276,17 +305,55 @@ export default async function AdminPosPage({
                   <p className="font-bold text-red-600">-฿{currentRemoved.toLocaleString()}</p>
                 </div>
               )}
-              <div className="bg-blue-50 rounded-xl p-3">
+              <div className="bg-blue-50 rounded-xl p-3 col-span-2">
                 <p className="text-gray-400 text-xs mb-0.5">Expected in Drawer</p>
-                <p className="font-bold text-blue-700">฿{(currentFloat + todayTotal - todayBoxTotal - currentRemoved).toLocaleString()}</p>
+                <p className="font-bold text-blue-700 text-xl">
+                  ฿{(manualExpected ?? (currentFloat + todayTotal - todayBoxTotal - currentRemoved)).toLocaleString()}
+                  {manualExpected !== null && (
+                    <span className="text-xs text-gray-400 font-normal ml-2">
+                      (manual · calc: ฿{(currentFloat + todayTotal - todayBoxTotal - currentRemoved).toLocaleString()})
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 mb-3">
               Float ฿{currentFloat.toLocaleString()} + Collected ฿{todayTotal.toLocaleString()}
               {todayBoxTotal > 0 ? ` - Box ฿${todayBoxTotal.toLocaleString()}` : ""}
               {currentRemoved > 0 ? ` - Removed ฿${currentRemoved.toLocaleString()}` : ""}
               {" = "}<strong>฿{(currentFloat + todayTotal - todayBoxTotal - currentRemoved).toLocaleString()}</strong> expected in drawer
             </p>
+            {/* Manual override for expected */}
+            {params.expectedsaved === "1" && (
+              <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-3 font-semibold">
+                ✓ Expected amount updated.
+              </div>
+            )}
+            {params.expectederr === "1" && (
+              <div className="bg-red-50 text-red-600 text-sm rounded-xl px-4 py-2 mb-3">
+                Please enter a valid amount (0 or more).
+              </div>
+            )}
+            <form action={saveDrawerExpected} className="flex gap-3 items-center">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">฿</span>
+                <input
+                  type="number"
+                  name="expected"
+                  min="0"
+                  step="1"
+                  defaultValue={manualExpected ?? (currentFloat + todayTotal - todayBoxTotal - currentRemoved)}
+                  className="pl-7 border border-gray-200 rounded-xl px-3 py-2.5 text-sm w-36 focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                />
+              </div>
+              <button
+                type="submit"
+                className="bg-blue-600 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors whitespace-nowrap"
+              >
+                Set Expected
+              </button>
+              <span className="text-xs text-gray-400">Override the calculated amount</span>
+            </form>
           </div>
         )}
 
