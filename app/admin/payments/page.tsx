@@ -138,7 +138,10 @@ export default async function PaymentsPage({
                     <p className="text-sm text-gray-500 mt-0.5">
                       {typeLabel} · {m.kids_count} kid{m.kids_count !== 1 ? "s" : ""}
                     </p>
-                    {m.kids_names && <p className="text-xs text-gray-500">Kids: {m.kids_names}</p>}
+                    {m.kids_names
+                      ? <p className="text-sm font-bold text-[#1a56db] mt-0.5">👦 {m.kids_names}</p>
+                      : <p className="text-xs text-red-400 italic mt-0.5">⚠️ No kid name provided</p>
+                    }
                     {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                     {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                   </div>

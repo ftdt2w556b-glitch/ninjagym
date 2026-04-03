@@ -295,11 +295,17 @@ export default function JoinPage() {
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.kidsNamesLabel}</label>
             <input
               type="text"
+              required
               value={form.kids_names}
               onChange={(e) => setForm({ ...form, kids_names: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+              className={`w-full border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${
+                !form.kids_names.trim() ? "border-red-300 bg-red-50" : "border-gray-200"
+              }`}
               placeholder="e.g. Tom, Lisa"
             />
+            {!form.kids_names.trim() && (
+              <p className="text-xs text-red-500 mt-1">Required — so staff can find the right child.</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.kidsCountLabel}</label>
@@ -575,7 +581,7 @@ export default function JoinPage() {
 
         <button
           type="submit"
-          disabled={submitting || !agreedToPolicy || (form.payment_method === "promptpay" && !slip)}
+          disabled={submitting || !agreedToPolicy || (form.payment_method === "promptpay" && !slip) || !form.kids_names.trim()}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting
