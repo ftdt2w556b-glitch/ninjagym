@@ -77,8 +77,8 @@ export default async function QrCardPage({
 
   const allIds = allRelated.map((r) => r.id);
 
-  // Fetch attendance, photos, and total check-in count in parallel
-  const [{ data: photos }, { data: checkInsRaw }, { count: totalCheckIns }] = await Promise.all([
+  // Fetch attendance, photos, and all check-in kids data in parallel
+  const [{ data: photos }, { data: checkInsRaw }, { data: allCheckInKids }] = await Promise.all([
     admin
       .from("marketing_photos")
       .select("id, file_path, caption, tags")
@@ -91,13 +91,22 @@ export default async function QrCardPage({
       .in("member_id", allIds)
       .order("check_in_at", { ascending: false })
       .limit(60),
+    // Fetch kids_count for ALL check-ins (no limit) to correctly sum loyalty sessions
     admin
       .from("attendance_logs")
-      .select("*", { count: "exact", head: true })
+      .select("kids_count, notes")
       .in("member_id", allIds),
   ]);
 
   const checkIns = checkInsRaw ?? [];
+
+  // Each check-in may cover multiple kids — sum them for loyalty/belt accuracy
+  function kidsFromLog(r: { kids_count?: number | null; notes?: string | null }) {
+    if (r.kids_count && r.kids_count > 1) return r.kids_count;
+    const m = r.notes?.match(/\|\s*(\d+)\s*kids/i);
+    return m ? parseInt(m[1], 10) : 1;
+  }
+  const totalCheckIns = (allCheckInKids ?? []).reduce((sum, r) => sum + kidsFromLog(r), 0);
 
   // Registration IDs that have at least one check-in (for legacy null-sessions detection)
   const usedRegIds = new Set(checkIns.map((c) => c.member_id));
