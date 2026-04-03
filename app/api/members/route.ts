@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { sendMemberConfirmation } from "@/lib/email";
 import { signMemberId } from "@/lib/member-token";
 
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
