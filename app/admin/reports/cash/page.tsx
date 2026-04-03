@@ -20,7 +20,12 @@ async function voidTransaction(formData: FormData) {
   if (source === "member") {
     await admin.from("member_registrations").update({ slip_status: "rejected" }).eq("id", Number(id));
     // Also delete the linked cash_sale if one exists (created by quick-register)
-    await admin.from("cash_sales").delete().eq("reference_id", Number(id)).eq("sale_type", "membership");
+    // Must delete drawer_log entries first due to FK constraint
+    const { data: linkedSales } = await admin.from("cash_sales").select("id").eq("reference_id", Number(id)).eq("sale_type", "membership");
+    for (const s of linkedSales ?? []) {
+      await admin.from("drawer_log").delete().eq("sale_id", s.id);
+      await admin.from("cash_sales").delete().eq("id", s.id);
+    }
   } else if (source === "cash_sale") {
     await admin.from("cash_sales").delete().eq("id", Number(id));
   }
