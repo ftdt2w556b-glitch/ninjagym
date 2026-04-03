@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         notes: fullNote,
         kids_count: kidsCount,
         kids_names: kidsNames,
+        membership_type: member.membership_type ?? null,
       })
       .select("id")
       .single();

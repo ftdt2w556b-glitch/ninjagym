@@ -142,7 +142,7 @@ export default async function MembersPage({
   }
 
   // ── Check-ins tab data ───────────────────────────────────────
-  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; member_registrations: { kids_names: string | null } | null }[] = [];
+  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null } | null }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
   const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
@@ -151,7 +151,7 @@ export default async function MembersPage({
     const { from, to } = getCheckInRange(checkInPeriod);
     let ciQuery = admin
       .from("attendance_logs")
-      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, member_registrations(kids_names)")
+      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, membership_type, member_registrations(kids_names)")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
@@ -489,15 +489,24 @@ export default async function MembersPage({
                         </Link>
                         {(() => {
                           const names = log.kids_names || (log.member_registrations as { kids_names?: string | null } | null)?.kids_names;
-                          if (names) return (
-                            <p className="text-xs font-semibold text-[#1a56db] truncate">
-                              👧 {names}{(log.kids_count ?? 1) > 1 ? ` · ${log.kids_count} kids` : ""}
-                            </p>
+                          const programLabel = log.membership_type
+                            ? (MEMBERSHIP_TYPES.find((m) => m.id === log.membership_type)?.label ?? log.membership_type)
+                            : null;
+                          return (
+                            <>
+                              {names && (
+                                <p className="text-xs font-semibold text-[#1a56db] truncate">
+                                  👧 {names}{(log.kids_count ?? 1) > 1 ? ` · ${log.kids_count} kids` : ""}
+                                </p>
+                              )}
+                              {!names && log.member_email && (
+                                <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
+                              )}
+                              {programLabel && (
+                                <p className="text-xs text-gray-500 truncate">{programLabel}</p>
+                              )}
+                            </>
                           );
-                          if (log.member_email) return (
-                            <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
-                          );
-                          return null;
                         })()}
                       </div>
                       <span className="text-xs text-gray-400 italic shrink-0">

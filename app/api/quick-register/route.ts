@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
           notes: staff_name ? `Check-in by ${staff_name}${kidsSuffix}` : `Walk-in quick register${kidsSuffix}`,
           kids_count: kidsCount,
           kids_names: kids_names || null,
+          membership_type: membership_type ?? null,
         });
 
       if (!logErr) {
