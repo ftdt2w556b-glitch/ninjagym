@@ -25,6 +25,7 @@ export default async function DashboardPage() {
     { count: pendingPhotos },
     { data: rawQuestions },
     { data: todayApproved },
+    { data: todayCashSales },
   ] = await Promise.all([
     admin
       .from("attendance_logs")
@@ -54,12 +55,21 @@ export default async function DashboardPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(30),
+    // Approved member registrations today (covers PromptPay + linked cash walk-ins)
     admin
       .from("member_registrations")
       .select("amount_paid")
       .eq("slip_status", "approved")
       .gte("slip_reviewed_at", bangkokStartOfDay())
       .lte("slip_reviewed_at", bangkokEndOfDay()),
+    // Direct POS cash sales with no linked registration (reference_id IS NULL)
+    // These don't appear in member_registrations so must be counted separately
+    admin
+      .from("cash_sales")
+      .select("amount")
+      .is("reference_id", null)
+      .gte("processed_at", bangkokStartOfDay())
+      .lte("processed_at", bangkokEndOfDay()),
   ]);
 
   // Fetch replies separately — fails gracefully if table doesn't exist yet
@@ -80,7 +90,9 @@ export default async function DashboardPage() {
     }
   }
 
-  const revenueToday = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
+  const revenueFromRegistrations = todayApproved?.reduce((sum, r) => sum + Number(r.amount_paid ?? 0), 0) ?? 0;
+  const revenueFromPosSales = todayCashSales?.reduce((sum, r) => sum + Number(r.amount ?? 0), 0) ?? 0;
+  const revenueToday = revenueFromRegistrations + revenueFromPosSales;
   // Events merged into the single Pending count for everyone
   const totalPending = (pendingPayments ?? 0) + (pendingOrders ?? 0) + (pendingEvents ?? 0);
   // Sum kids_count for accurate headcount; fall back to parsing "| X kids" from notes for old records
