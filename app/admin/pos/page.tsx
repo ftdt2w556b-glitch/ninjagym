@@ -478,7 +478,7 @@ export default async function AdminPosPage({
       <div className="bg-white rounded-2xl shadow overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-bold text-gray-800">Recent POS Sales</h2>
-          <a href="/admin/reports/cash" className="text-xs text-[#1a56db] hover:underline">View all in Sales →</a>
+          <a href="/admin/pos/archive" className="text-xs text-[#1a56db] hover:underline">View archive →</a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
