@@ -62,6 +62,12 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const [notes, setNotes] = useState("");
   const [referenceId, setReferenceId] = useState<number | null>(null);
 
+  // Pending cash correction (admin/manager can fix wrong type before collecting)
+  const [pendingMemberName, setPendingMemberName] = useState("");
+  const [correctType, setCorrectType] = useState("session_group");
+  const [correctBulkQty, setCorrectBulkQty] = useState(4);
+  const [showCorrect, setShowCorrect] = useState(false);
+
   // Pending cash registrations — client-side copy so we can remove approved ones instantly
   const [pendingList, setPendingList] = useState<PendingReg[]>(pendingCash);
 
@@ -372,6 +378,15 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
         notes: notes || null,
         notes1k,
+        // Send corrected membership details so the registration gets patched correctly
+        ...(referenceId && showCorrect ? {
+          correctedMembershipType: correctType,
+          correctedSessions: MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.timeBased
+            ? null
+            : MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.isBulk
+            ? correctBulkQty
+            : 1,
+        } : {}),
       }),
     });
     const data = await res.json();
@@ -549,6 +564,25 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       if (quickAmounts.length >= 5) break;
     }
 
+    // Helper: calculate price for a given type + bulk qty
+    function priceForType(typeId: string, qty: number): number {
+      const mt = MEMBERSHIP_TYPES.find((m) => m.id === typeId);
+      if (!mt) return 0;
+      if (mt.isBulk) return calcBulkPrice(settingsPrices[mt.bulkBase!] ?? 0, qty);
+      if (mt.perKid) return (settingsPrices[`price_${mt.id}`] ?? 0) * kidsCount;
+      return settingsPrices[`price_${mt.id}`] ?? 0;
+    }
+
+    function applyCorrection(typeId: string, qty: number) {
+      setCorrectType(typeId);
+      setCorrectBulkQty(qty);
+      const mt = MEMBERSHIP_TYPES.find((m) => m.id === typeId)!;
+      const label = mt.isBulk ? `${mt.label} ×${qty}` : mt.label;
+      const price = priceForType(typeId, qty);
+      setCart([{ label: `${pendingMemberName}: ${label}`, qty: 1, unit: price }]);
+      setCashInput("");
+    }
+
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4 py-6">
         {/* Header */}
@@ -558,6 +592,51 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         </div>
 
         <div className="w-full max-w-sm flex flex-col gap-4">
+          {/* Pending cash correction panel — admin/manager only */}
+          {referenceId && (activeStaff?.role === "admin" || activeStaff?.role === "manager") && (
+            <div className="bg-gray-800 rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-gray-400 text-xs uppercase tracking-wide">Collecting for</p>
+                <button
+                  onClick={() => setShowCorrect((v) => !v)}
+                  className="text-yellow-400 text-xs font-semibold hover:text-yellow-300"
+                >
+                  {showCorrect ? "▲ Hide" : "✏️ Wrong type?"}
+                </button>
+              </div>
+              <p className="text-white text-sm font-semibold">{cart[0]?.label}</p>
+              {showCorrect && (
+                <div className="mt-3 border-t border-gray-700 pt-3 flex flex-col gap-2">
+                  <p className="text-gray-400 text-xs">Select correct membership type:</p>
+                  <select
+                    value={correctType}
+                    onChange={(e) => applyCorrection(e.target.value, correctBulkQty)}
+                    className="w-full bg-gray-700 text-white rounded-xl px-3 py-2 text-sm"
+                  >
+                    {MEMBERSHIP_TYPES.filter((m) => m.id !== "birthday_event").map((m) => (
+                      <option key={m.id} value={m.id}>{m.label}</option>
+                    ))}
+                  </select>
+                  {MEMBERSHIP_TYPES.find((m) => m.id === correctType)?.isBulk && (
+                    <div>
+                      <p className="text-gray-400 text-xs mb-1">Number of sessions:</p>
+                      <select
+                        value={correctBulkQty}
+                        onChange={(e) => applyCorrection(correctType, Number(e.target.value))}
+                        className="w-full bg-gray-700 text-white rounded-xl px-3 py-2 text-sm"
+                      >
+                        {[4,5,6,7,8,9,10,12,15,20].map((n) => (
+                          <option key={n} value={n}>{n} sessions</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <p className="text-yellow-400 text-xs">↑ Amount above will update automatically.</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Totals display */}
           <div className="bg-gray-800 rounded-2xl p-4 flex flex-col gap-3">
             <div className="flex justify-between items-center">
@@ -702,6 +781,10 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                         setSaleType("membership");
                         setReferenceId(reg.id);
                         setNotes(reg.name);
+                        setPendingMemberName(reg.name);
+                        setCorrectType(reg.membership_type);
+                        setCorrectBulkQty(4);
+                        setShowCorrect(false);
                         setCashInput("");
                         setNotes1k(0);
                         setScreen("change_calc");

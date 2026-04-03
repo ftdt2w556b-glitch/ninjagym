@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (!isUnlocked) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { action, staffId, staffType, staffName, amount, amountTendered, changeGiven, saleType, referenceId, items, notes, reason, notes1k } = body;
+    const { action, staffId, staffType, staffName, amount, amountTendered, changeGiven, saleType, referenceId, items, notes, reason, notes1k, correctedMembershipType, correctedSessions } = body;
 
     if (!staffId) {
       return NextResponse.json({ error: "staffId required" }, { status: 400 });
@@ -58,10 +58,20 @@ export async function POST(request: NextRequest) {
       });
 
       // Update reference record slip_status to approved if provided
+      // Also patch membership_type/amount/sessions if a correction was made at the POS
       if (referenceId && saleType === "membership") {
+        const regUpdate: Record<string, unknown> = {
+          slip_status: "approved",
+          slip_reviewed_at: new Date().toISOString(),
+        };
+        if (correctedMembershipType) {
+          regUpdate.membership_type = correctedMembershipType;
+          regUpdate.amount_paid = amount; // already the corrected amount from cart
+          if (correctedSessions !== undefined) regUpdate.sessions_remaining = correctedSessions;
+        }
         await admin
           .from("member_registrations")
-          .update({ slip_status: "approved", slip_reviewed_at: new Date().toISOString() })
+          .update(regUpdate)
           .eq("id", referenceId);
       }
 
