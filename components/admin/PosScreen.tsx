@@ -718,25 +718,27 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                         <p className="text-gray-500 text-xs mt-0.5">Tap to collect</p>
                       </div>
                     </button>
-                    <button
-                      title="Dismiss — already paid or no longer needed"
-                      onClick={async () => {
-                        await fetch("/api/pos/action", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            action: "dismiss_pending",
-                            staffId: activeStaff!.id,
-                            staffType: activeStaff!.staffType,
-                            referenceId: reg.id,
-                          }),
-                        });
-                        setPendingList((prev) => prev.filter((r) => r.id !== reg.id));
-                      }}
-                      className="shrink-0 text-gray-600 hover:text-red-400 text-xl transition-colors px-2"
-                    >
-                      ✕
-                    </button>
+                    {(activeStaff?.role === "admin" || activeStaff?.role === "manager") && (
+                      <button
+                        title="Dismiss — already paid or no longer needed"
+                        onClick={async () => {
+                          await fetch("/api/pos/action", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              action: "dismiss_pending",
+                              staffId: activeStaff!.id,
+                              staffType: activeStaff!.staffType,
+                              referenceId: reg.id,
+                            }),
+                          });
+                          setPendingList((prev) => prev.filter((r) => r.id !== reg.id));
+                        }}
+                        className="shrink-0 text-gray-600 hover:text-red-400 text-xl transition-colors px-2"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 );
               })}
