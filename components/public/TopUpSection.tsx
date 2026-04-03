@@ -79,7 +79,7 @@ export default function TopUpSection({
 
   async function compressImage(file: File, maxPx: number): Promise<File> {
     return new Promise((resolve) => {
-      const img = new Image();
+      const img = document.createElement("img");
       const url = URL.createObjectURL(file);
       img.onload = () => {
         const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
