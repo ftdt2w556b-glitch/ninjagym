@@ -55,19 +55,19 @@ export default async function DashboardPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(30),
-    // Approved member registrations today (covers PromptPay + linked cash walk-ins)
+    // Approved non-cash member registrations today (PromptPay, transfer, etc.)
+    // Cash is excluded — it's tracked exclusively via cash_sales below.
     admin
       .from("member_registrations")
       .select("amount_paid")
       .eq("slip_status", "approved")
+      .neq("payment_method", "cash")
       .gte("slip_reviewed_at", bangkokStartOfDay())
       .lte("slip_reviewed_at", bangkokEndOfDay()),
-    // Direct POS cash sales with no linked registration (reference_id IS NULL)
-    // These don't appear in member_registrations so must be counted separately
+    // ALL POS cash sales today — single source of truth for cash revenue
     admin
       .from("cash_sales")
       .select("amount")
-      .is("reference_id", null)
       .gte("processed_at", bangkokStartOfDay())
       .lte("processed_at", bangkokEndOfDay()),
   ]);

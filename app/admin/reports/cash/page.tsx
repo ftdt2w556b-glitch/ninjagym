@@ -97,24 +97,22 @@ export default async function RevenuePage({
   const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   if (!["admin", "manager", "owner"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
-  // POS / walk-in cash sales.
-  // Exclude membership-type sales that have a reference_id (those are linked to a
-  // member_registration that will be counted below via the approved query).
-  // BUT include membership-type sales with reference_id IS NULL — those are direct
-  // POS counter sales with no linked registration (e.g. walk-ins paid at the register).
+  // ALL POS cash sales — cash_sales is the single source of truth for cash.
+  // Cash only happens at the POS register; no filtering by sale_type or reference_id.
   const { data: cashSales } = await admin
     .from("cash_sales")
     .select("id, amount, processed_at, sale_type, notes, staff_name, reference_id")
-    .or("sale_type.neq.membership,reference_id.is.null")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
 
-  // Approved member registrations (by approval date)
+  // Approved non-cash member registrations (PromptPay, transfer, etc.)
+  // Cash registrations are excluded — they are already counted via cash_sales above.
   const { data: memberPayments } = await admin
     .from("member_registrations")
     .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image")
     .eq("slip_status", "approved")
+    .neq("payment_method", "cash")
     .gte("slip_reviewed_at", from)
     .lte("slip_reviewed_at", to)
     .order("slip_reviewed_at", { ascending: false });
