@@ -76,6 +76,20 @@ async function saveDrawerExpected(formData: FormData) {
   redirect("/admin/pos?expectedsaved=1");
 }
 
+async function clearDrawerExpected() {
+  "use server";
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const admin = makeAdmin();
+  await admin.from("settings").upsert(
+    { key: "drawer_expected", value: "", label: "Expected in Drawer (manual override)" },
+    { onConflict: "key" }
+  );
+  redirect("/admin/pos");
+}
+
 async function saveDrawerRemoved(formData: FormData) {
   "use server";
   const raw = (formData.get("removed") as string)?.trim();
@@ -368,6 +382,13 @@ export default async function AdminPosPage({
               </button>
               <span className="text-xs text-gray-400">Override the calculated amount</span>
             </form>
+            {manualExpected !== null && (
+              <form action={clearDrawerExpected}>
+                <button type="submit" className="text-xs text-gray-400 underline hover:text-gray-600">
+                  Clear override → use calculated
+                </button>
+              </form>
+            )}
           </div>
         )}
 
