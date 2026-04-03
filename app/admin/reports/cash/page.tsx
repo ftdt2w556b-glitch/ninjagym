@@ -101,13 +101,15 @@ export default async function RevenuePage({
   // Approved member registrations (by approval date)
   const { data: memberPayments } = await admin
     .from("member_registrations")
-    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes")
+    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image")
     .eq("slip_status", "approved")
     .gte("slip_reviewed_at", from)
     .lte("slip_reviewed_at", to)
     .order("slip_reviewed_at", { ascending: false });
 
   // Unified transaction list
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+
   type TxRow = {
     id: number;
     source: "member" | "cash_sale";
@@ -115,6 +117,7 @@ export default async function RevenuePage({
     description: string;
     method: string;
     amount: number;
+    slipImage?: string | null;
   };
 
   const allTx: TxRow[] = [
@@ -133,6 +136,7 @@ export default async function RevenuePage({
       description: `${m.name}`,
       method: m.payment_method ?? "cash",
       amount: Number(m.amount_paid ?? 0),
+      slipImage: m.slip_image as string | null,
     })),
   ].sort((a, b) => b.time.localeCompare(a.time));
 
@@ -253,6 +257,7 @@ export default async function RevenuePage({
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Member / Description</th>
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Method</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
+                <th className="px-4 py-3 font-semibold text-gray-600">Slip</th>
                 {["admin", "manager"].includes(currentProfile?.role ?? "") && (
                   <th className="px-4 py-3" />
                 )}
@@ -276,6 +281,24 @@ export default async function RevenuePage({
                   </td>
                   <td className="px-4 py-3 font-semibold text-gray-900 text-right tabular-nums">
                     ฿{tx.amount.toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    {tx.slipImage ? (
+                      <a
+                        href={`${SUPABASE_URL}/storage/v1/object/public/slips/${tx.slipImage}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View payment slip"
+                      >
+                        <img
+                          src={`${SUPABASE_URL}/storage/v1/object/public/slips/${tx.slipImage}`}
+                          alt="slip"
+                          className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity"
+                        />
+                      </a>
+                    ) : (
+                      <span className="text-gray-200 text-xs">—</span>
+                    )}
                   </td>
                   {["admin", "manager"].includes(currentProfile?.role ?? "") && (
                     <td className="px-4 py-3 text-right">

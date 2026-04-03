@@ -2,6 +2,7 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import { ShopOrderItem } from "@/types";
 import PaymentActions from "@/components/admin/PaymentActions";
+import SlipUploadButton from "@/components/admin/SlipUploadButton";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 
 export default async function PaymentsPage({
@@ -171,8 +172,9 @@ export default async function PaymentsPage({
                 )}
 
                 {!slipUrl && m.payment_method === "promptpay" && (
-                  <div className="bg-yellow-50 rounded-xl px-3 py-2 mb-4 text-xs text-yellow-700">
-                    ⚠️ No slip uploaded yet.
+                  <div className="bg-yellow-50 rounded-xl px-3 py-2 mb-4 flex items-center gap-3">
+                    <span className="text-xs text-yellow-700">⚠️ No slip uploaded yet.</span>
+                    <SlipUploadButton memberId={m.id} />
                   </div>
                 )}
 
