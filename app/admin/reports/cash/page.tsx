@@ -27,6 +27,8 @@ async function voidTransaction(formData: FormData) {
       await admin.from("cash_sales").delete().eq("id", s.id);
     }
   } else if (source === "cash_sale") {
+    // Must delete drawer_log entries first due to FK constraint
+    await admin.from("drawer_log").delete().eq("sale_id", Number(id));
     await admin.from("cash_sales").delete().eq("id", Number(id));
   }
   revalidatePath("/admin/reports/cash");
@@ -95,12 +97,15 @@ export default async function RevenuePage({
   const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   if (!["admin", "manager", "owner"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
-  // POS / walk-in cash sales — exclude sale_type "membership" because those
-  // walk-in registrations are already counted via the member_registrations query below.
+  // POS / walk-in cash sales.
+  // Exclude membership-type sales that have a reference_id (those are linked to a
+  // member_registration that will be counted below via the approved query).
+  // BUT include membership-type sales with reference_id IS NULL — those are direct
+  // POS counter sales with no linked registration (e.g. walk-ins paid at the register).
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, amount, processed_at, sale_type, notes, staff_name")
-    .neq("sale_type", "membership")
+    .select("id, amount, processed_at, sale_type, notes, staff_name, reference_id")
+    .or("sale_type.neq.membership,reference_id.is.null")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
@@ -132,7 +137,10 @@ export default async function RevenuePage({
       id: s.id as number,
       source: "cash_sale" as const,
       time: s.processed_at as string,
-      description: (s.notes as string | null) ?? s.sale_type ?? "POS Sale",
+      description: (s.notes as string | null) ??
+        (s.sale_type === "membership"
+          ? `POS Membership${s.staff_name ? ` · ${s.staff_name}` : ""}`
+          : s.sale_type ?? "POS Sale"),
       method: "cash",
       amount: Number(s.amount),
     })),
