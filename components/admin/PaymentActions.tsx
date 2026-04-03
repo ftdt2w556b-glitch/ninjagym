@@ -33,13 +33,12 @@ export default function PaymentActions({
   memberName?: string;
   userRole?: string;
 }) {
-  const canApprove     = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
-  const canManage      = ["admin", "manager"].includes(userRole ?? ""); // undo/restore only
-  const canApproveCash = canApprove;
-  const [status, setStatus]         = useState<SlipStatus>(initialStatus);
-  const [busy, setBusy]             = useState<string | null>(null);
-  const [err, setErr]               = useState<string | null>(null);
-  const [confirmCashApprove, setConfirmCashApprove]       = useState(false);
+  const canApprove = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
+  const canManage  = ["admin", "manager"].includes(userRole ?? "");
+
+  const [status, setStatus]                               = useState<SlipStatus>(initialStatus);
+  const [busy, setBusy]                                   = useState<string | null>(null);
+  const [err, setErr]                                     = useState<string | null>(null);
   const [confirmWrongProgram, setConfirmWrongProgram]     = useState(false);
 
   async function doAction(action: string, nextStatus: SlipStatus, notes?: string) {
@@ -60,21 +59,22 @@ export default function PaymentActions({
         body: fd,
       });
       if (!res.ok) throw new Error(await res.text());
-    } catch (e) {
-      setStatus(prev); // revert
+    } catch {
+      setStatus(prev);
       setErr("Action failed. Please try again.");
     } finally {
       setBusy(null);
     }
   }
 
-  const isPending  = status === "pending_review" || status === "cash_pending";
-  const isApproved = status === "approved";
-  const isRejected = status === "rejected";
+  const isCashPending = status === "cash_pending";
+  const isPending     = status === "pending_review" || status === "cash_pending";
+  const isApproved    = status === "approved";
+  const isRejected    = status === "rejected";
 
   return (
     <div>
-      {/* Live status badge */}
+      {/* Status badge */}
       <div className="mb-3">
         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_BADGE[status]}`}>
           {busy && (
@@ -90,17 +90,49 @@ export default function PaymentActions({
       {err && <p className="text-xs text-red-500 mb-2">{err}</p>}
 
       <div className="flex gap-2 flex-wrap">
-        {/* Approve/Reject — available to all staff and above */}
-        {isPending && canApprove && (status !== "cash_pending" || canApproveCash) && !confirmCashApprove && !confirmWrongProgram && (
+
+        {/* ── CASH PENDING: must go through POS — no approve button ── */}
+        {isCashPending && !confirmWrongProgram && (
+          <div className="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-1">
+            <p className="text-xs font-bold text-blue-800 mb-1">💵 Cash payment — collect at POS</p>
+            <p className="text-xs text-blue-700 mb-3">
+              All cash must be recorded through the POS register to keep the drawer total accurate. Even exact amounts need to go through POS.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <a
+                href="https://ninjagym.com/pos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-[#1a56db] text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                → Open POS Register
+              </a>
+              {/* Reject is still allowed (wrong program, no-show, etc.) */}
+              <button
+                onClick={() => doAction("reject", "rejected")}
+                disabled={!!busy}
+                className="bg-red-100 text-red-600 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-red-200 disabled:opacity-50 transition-colors"
+              >
+                ✕ Reject
+              </button>
+              {canManage && recordType === "member" && (
+                <button
+                  onClick={() => setConfirmWrongProgram(true)}
+                  disabled={!!busy}
+                  className="bg-orange-100 text-orange-700 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-orange-200 disabled:opacity-50 transition-colors"
+                >
+                  ⚠️ Wrong Program
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── PROMPTPAY / SLIP PENDING: approve here ── */}
+        {status === "pending_review" && canApprove && !confirmWrongProgram && (
           <>
             <button
-              onClick={() => {
-                if (status === "cash_pending") {
-                  setConfirmCashApprove(true);
-                } else {
-                  doAction("approve", "approved");
-                }
-              }}
+              onClick={() => doAction("approve", "approved")}
               disabled={!!busy}
               className="bg-green-500 text-white font-semibold text-sm px-4 py-2 rounded-xl hover:bg-green-600 disabled:opacity-50 transition-colors"
             >
@@ -113,7 +145,6 @@ export default function PaymentActions({
             >
               ✕ Reject
             </button>
-            {/* Wrong Program — admin/manager only, members only */}
             {canManage && recordType === "member" && (
               <button
                 onClick={() => setConfirmWrongProgram(true)}
@@ -154,34 +185,10 @@ export default function PaymentActions({
           </div>
         )}
 
-        {/* Admin/manager: cash approval confirmation */}
-        {confirmCashApprove && (
-          <div className="w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-            <p className="text-xs font-bold text-orange-800 mb-1">⚠️ Cash payment: not collected at POS</p>
-            <p className="text-xs text-orange-700 mb-3">
-              Approving here will not record a cash sale in the drawer. Only approve if you have confirmed payment by other means.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setConfirmCashApprove(false); doAction("approve", "approved"); }}
-                disabled={!!busy}
-                className="bg-orange-500 text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
-              >
-                Approve anyway
-              </button>
-              <button
-                onClick={() => setConfirmCashApprove(false)}
-                className="bg-white text-gray-600 font-semibold text-xs px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
+        {/* Undo — admin/manager only */}
         {canManage && (isApproved || isRejected) && (
           <button
-            onClick={() => { doAction("restore", "pending_review"); }}
+            onClick={() => doAction("restore", "pending_review")}
             disabled={!!busy}
             className="bg-yellow-100 text-yellow-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-yellow-200 disabled:opacity-50 transition-colors"
           >
@@ -198,7 +205,6 @@ export default function PaymentActions({
           </a>
         )}
       </div>
-
     </div>
   );
 }
