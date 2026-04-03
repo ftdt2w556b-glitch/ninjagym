@@ -135,29 +135,20 @@ export default async function AdminPosPage({
 
   // Today's cash by staff (Bangkok time)
   const today = bangkokToday();
+  // ALL cash sales today — used for drawer calculations (no membership exclusion here;
+  // double-count prevention is only needed on the cash report page, not here)
   const { data: todaySales } = await admin
     .from("cash_sales")
     .select("amount, staff_name")
-    .neq("sale_type", "membership")
     .gte("processed_at", bangkokStartOfDay())
     .lte("processed_at", bangkokEndOfDay());
 
-  // Also count approved cash member payments today (matches sales report logic)
-  const { data: todayCashMembers } = await admin
-    .from("member_registrations")
-    .select("amount_paid, name")
-    .eq("slip_status", "approved")
-    .eq("payment_method", "cash")
-    .gte("slip_reviewed_at", bangkokStartOfDay())
-    .lte("slip_reviewed_at", bangkokEndOfDay());
-
-  // Today's box total + change given (non-membership cash sales only, matching todaySales filter)
+  // Box total + change given from all cash sales today
   let todayBoxTotal = 0;
   let todayChangeTotal = 0;
   const { data: todayNotes1kRows } = await admin
     .from("cash_sales")
     .select("notes_1k, change_given")
-    .neq("sale_type", "membership")
     .gte("processed_at", bangkokStartOfDay())
     .lte("processed_at", bangkokEndOfDay());
   if (todayNotes1kRows) {
@@ -174,10 +165,8 @@ export default async function AdminPosPage({
     const prev = staffMap.get(key) ?? { total: 0, count: 0 };
     staffMap.set(key, { total: prev.total + Number(s.amount), count: prev.count + 1 });
   }
-  // Include approved cash member payments (voided ones are excluded via slip_status filter)
-  const memberCashTotal = (todayCashMembers ?? []).reduce((s, r) => s + Number(r.amount_paid ?? 0), 0);
   const staffBreakdown = [...staffMap.entries()].sort((a, b) => b[1].total - a[1].total);
-  const todayTotal = (todaySales ?? []).reduce((s, r) => s + Number(r.amount), 0) + memberCashTotal;
+  const todayTotal = (todaySales ?? []).reduce((s, r) => s + Number(r.amount), 0);
   const hasUnattributed = staffMap.has("⚠️ Unattributed");
 
   const posUrl = "https://ninjagym.com/pos";
