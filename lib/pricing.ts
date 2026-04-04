@@ -2,6 +2,7 @@ import { MembershipType } from "@/types";
 
 export const MEMBERSHIP_TYPES: MembershipType[] = [
   // ── Single sessions (per kid) ──────────────────────────────
+  { id: "climb_unguided",   label: "Unguided Climb Zone (20 min)", perKid: true,  note: "Self-guided climb zone access for 20 minutes. No Guide required." },
   { id: "session_group",    label: "Group Session",                perKid: true,  note: "55-min entry into existing GROUP session. Not private." },
   { id: "session_1to1",     label: "1-to-1 Private Guide",         perKid: true,  note: "55-min private session with a dedicated Guide (if available)." },
   { id: "day_camp",         label: "Day Camp (10am–2pm)",          perKid: true,  note: "Mixed gaming and training. Drop-in before 2pm. Must be able to go to the restroom on their own or with siblings." },
