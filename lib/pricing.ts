@@ -2,14 +2,14 @@ import { MembershipType } from "@/types";
 
 export const MEMBERSHIP_TYPES: MembershipType[] = [
   // ── Single sessions (per kid) ──────────────────────────────
-  { id: "session_group",    label: "Group Session",                perKid: true,  note: "50-min guided group session with a Guide. Suitable for all levels." },
-  { id: "session_1to1",     label: "1-to-1 Private Session",       perKid: true,  note: "50-min private session with a dedicated Guide. Best for focused skill building." },
-  { id: "day_camp",         label: "Day Camp (10am–2pm)",          perKid: true,  note: "4-hour supervised day camp. Drop-in before 3pm. Includes climbing, parkour and ninja training." },
+  { id: "session_group",    label: "Group Session",                perKid: true,  note: "55-min entry into existing GROUP session. Not private." },
+  { id: "session_1to1",     label: "1-to-1 Private Guide",         perKid: true,  note: "55-min private session with a dedicated Guide (if available)." },
+  { id: "day_camp",         label: "Day Camp (10am–2pm)",          perKid: true,  note: "Mixed gaming and training. Drop-in before 2pm. Must be able to go to the restroom on their own or with siblings." },
   { id: "combo_game_train", label: "Combo Game & Train (2 hrs)",   perKid: true,  note: "2-hour session combining a guided training session with game room access." },
   { id: "all_day",          label: "All Day (max 8 hrs)",          perKid: true,  note: "Full day access up to 8 hours. Best value for a full day of ninja training." },
   { id: "birthday_event", label: "Birthday / Event Guest", perKid: false, note: "Registered via a birthday or group event booking." },
   // ── Monthly ────────────────────────────────────────────────
-  { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, timeBased: true, note: "Unlimited access for 30 days from approval. Scan in anytime. No booking needed. Great for regulars." },
+  { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, timeBased: true, note: "1 session per day access for 30 days from approval. Just drop and go. No booking needed. Great for regulars." },
   // ── Bulk session packs (sliding discount) ──────────────────
   { id: "group_bulk",   label: "Group Sessions (bulk)",    perKid: false, bulk: true, bulkBase: "price_session_group",    note: "Buy 2 to 20 sessions upfront. 1% off per session. Buy 10, save 10%. Max 20% off." },
   { id: "daycamp_bulk", label: "Day Camp Sessions (bulk)", perKid: false, bulk: true, bulkBase: "price_day_camp",         note: "Buy 2–20 day camp sessions upfront. 1% off per session purchased. Max 20% off." },
