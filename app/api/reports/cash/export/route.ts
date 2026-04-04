@@ -11,37 +11,44 @@ export async function GET(request: NextRequest) {
   if (!["admin", "manager", "owner"].includes(profile?.role ?? "")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
-
-  // The Revenue page passes full ISO timestamps with +07:00 offset
-  // Fall back to today (Bangkok) if not provided
   const today = bangkokToday();
   const from  = searchParams.get("from") ?? `${today}T00:00:00+07:00`;
   const to    = searchParams.get("to")   ?? `${today}T23:59:59+07:00`;
 
-  // Extract date portion for the filename
   const fromDate = from.split("T")[0];
   const toDate   = to.split("T")[0];
 
-  // ── 1. POS cash_sales — exclude membership type (counted via member_registrations) ──
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+
+  // ── 1. ALL POS cash_sales (single source of truth for cash) ───────────
   const { data: cashSales } = await admin
     .from("cash_sales")
-    .select("id, processed_at, sale_type, amount, payment_method, notes, profiles(name, email)")
-    .neq("sale_type", "membership")
+    .select("id, processed_at, sale_type, amount, notes, staff_name, reference_id")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: true });
 
-  // ── 2. Approved member registrations ─────────────────────────
+  // ── 2. Approved non-cash member registrations (PromptPay only) ─────────
   const { data: memberPayments } = await admin
     .from("member_registrations")
-    .select("id, name, membership_type, amount_paid, payment_method, slip_reviewed_at")
+    .select("id, name, membership_type, amount_paid, payment_method, slip_reviewed_at, slip_image")
     .eq("slip_status", "approved")
+    .neq("payment_method", "cash")
     .gte("slip_reviewed_at", from)
     .lte("slip_reviewed_at", to)
     .order("slip_reviewed_at", { ascending: true });
 
-  // ── Build unified rows ────────────────────────────────────────
-  type Row = {
+  // ── 3. Expenses for the period ─────────────────────────────────────────
+  const { data: expenses } = await admin
+    .from("expenses")
+    .select("id, expense_date, category, description, amount, receipt_url, added_by_name")
+    .eq("voided", false)
+    .gte("expense_date", fromDate)
+    .lte("expense_date", toDate)
+    .order("expense_date", { ascending: true });
+
+  // ── Build income rows ──────────────────────────────────────────────────
+  type IncomeRow = {
     id: string | number;
     date: string;
     time: string;
@@ -49,82 +56,111 @@ export async function GET(request: NextRequest) {
     description: string;
     method: string;
     amount: number;
-    source: string;
     staff: string;
     notes: string;
+    slip_url: string;
   };
 
-  const posRows: Row[] = (cashSales ?? []).map((s) => {
-    const dt = new Date(s.processed_at);
-    const prof = s.profiles as { name?: string; email?: string } | null;
+  const slipUrl = (path: string | null) =>
+    path ? `${SUPABASE_URL}/storage/v1/object/public/slips/${path}` : "";
+
+  const posRows: IncomeRow[] = (cashSales ?? []).map((s) => {
+    const dt = new Date(s.processed_at as string);
     return {
-      id: s.id,
+      id: s.id as number,
       date: dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }),
       time: dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true }),
-      type: s.sale_type ?? "POS",
-      description: s.notes ?? "",
-      method: s.payment_method ?? "cash",
+      type: (s.sale_type as string) ?? "POS",
+      description: (s.notes as string) ?? (s.sale_type === "membership" ? `POS Membership${s.staff_name ? ` · ${s.staff_name}` : ""}` : "POS Sale"),
+      method: "cash",
       amount: Number(s.amount),
-      source: "POS",
-      staff: prof?.name ?? prof?.email ?? "",
-      notes: s.notes ?? "",
+      staff: (s.staff_name as string) ?? "",
+      notes: (s.notes as string) ?? "",
+      slip_url: "",
     };
   });
 
-  const memberRows: Row[] = (memberPayments ?? []).map((m) => {
-    const dt = m.slip_reviewed_at ? new Date(m.slip_reviewed_at) : null;
+  const memberRows: IncomeRow[] = (memberPayments ?? []).map((m) => {
+    const dt = m.slip_reviewed_at ? new Date(m.slip_reviewed_at as string) : null;
     return {
       id: `R${m.id}`,
       date: dt ? dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : "",
       time: dt ? dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true }) : "",
       type: "Registration",
       description: `${m.name}: ${m.membership_type}`,
-      method: m.payment_method ?? "cash",
+      method: (m.payment_method as string) ?? "promptpay",
       amount: Number(m.amount_paid ?? 0),
-      source: "Registration",
       staff: "",
       notes: "",
+      slip_url: slipUrl(m.slip_image as string | null),
     };
   });
 
-  // Merge and sort chronologically
-  const allRows = [...posRows, ...memberRows].sort((a, b) =>
+  const allIncomeRows = [...posRows, ...memberRows].sort((a, b) =>
     `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)
   );
 
-  // ── Summary rows ─────────────────────────────────────────────
-  const cashTotal      = allRows.filter((r) => r.method === "cash").reduce((s, r) => s + r.amount, 0);
-  const transferTotal  = allRows.filter((r) => r.method !== "cash").reduce((s, r) => s + r.amount, 0);
-  const grandTotal     = cashTotal + transferTotal;
+  // ── Totals ─────────────────────────────────────────────────────────────
+  const cashTotal     = allIncomeRows.filter((r) => r.method === "cash").reduce((s, r) => s + r.amount, 0);
+  const transferTotal = allIncomeRows.filter((r) => r.method !== "cash").reduce((s, r) => s + r.amount, 0);
+  const grandTotal    = cashTotal + transferTotal;
+  const expenseTotal  = (expenses ?? []).reduce((s, e) => s + Number(e.amount), 0);
+  const netTotal      = grandTotal - expenseTotal;
 
-  // ── Build CSV ────────────────────────────────────────────────
-  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  // ── Build CSV ──────────────────────────────────────────────────────────
+  const escape = (v: string | number | null | undefined) =>
+    `"${String(v ?? "").replace(/"/g, '""')}"`;
 
-  const header = ["ID", "Date", "Time", "Type", "Description", "Method", "Amount (THB)", "Source", "Staff", "Notes"];
-
-  const dataRows = allRows.map((r) => [
-    r.id, r.date, r.time, r.type, r.description,
-    r.method, r.amount, r.source, r.staff, r.notes,
+  const incomeHeader = ["ID", "Date", "Time", "Type", "Description", "Method", "Amount (THB)", "Staff", "Notes", "Slip URL"];
+  const incomeDataRows = allIncomeRows.map((r) => [
+    r.id, r.date, r.time, r.type, r.description, r.method, r.amount, r.staff, r.notes, r.slip_url,
   ]);
 
-  const summaryRows = [
-    [],
-    ["", "", "", "", "", "CASH TOTAL", cashTotal, "", "", ""],
-    ["", "", "", "", "", "TRANSFER / PROMPTPAY TOTAL", transferTotal, "", "", ""],
-    ["", "", "", "", "", "GRAND TOTAL", grandTotal, "", "", ""],
-    ["", "", "", "", "", "TOTAL TRANSACTIONS", allRows.length, "", "", ""],
+  const expenseHeader = ["ID", "Date", "Category", "Description", "Amount (THB)", "Added By", "Receipt URL"];
+  const expenseDataRows = (expenses ?? []).map((e) => [
+    e.id,
+    e.expense_date,
+    e.category,
+    e.description ?? "",
+    Number(e.amount),
+    e.added_by_name ?? "",
+    e.receipt_url ? `${SUPABASE_URL}/storage/v1/object/public/${e.receipt_url}` : "",
+  ]);
+
+  const lines: string[] = [
+    // ── Income ──
+    `"=== INCOME ==="`,
+    incomeHeader.map(escape).join(","),
+    ...incomeDataRows.map((r) => r.map(escape).join(",")),
+    // ── Income summary ──
+    "",
+    `"","","","","","CASH TOTAL",${cashTotal}`,
+    `"","","","","","PROMPTPAY TOTAL",${transferTotal}`,
+    `"","","","","","INCOME TOTAL",${grandTotal}`,
+    "",
+    // ── Expenses ──
+    `"=== EXPENSES ==="`,
+    expenseHeader.map(escape).join(","),
+    ...(expenseDataRows.length > 0
+      ? expenseDataRows.map((r) => r.map(escape).join(","))
+      : [`"","No expenses recorded","","","","",""`]),
+    "",
+    `"","","","EXPENSE TOTAL","",${expenseTotal}`,
+    "",
+    // ── Net ──
+    `"=== NET ==="`,
+    `"Income","฿${grandTotal.toLocaleString()}"`,
+    `"Expenses","-฿${expenseTotal.toLocaleString()}"`,
+    `"NET TOTAL","฿${netTotal.toLocaleString()}"`,
+    `"Transactions",${allIncomeRows.length}`,
   ];
 
-  const csv = [
-    header.map(escape).join(","),
-    ...dataRows.map((r) => r.map(escape).join(",")),
-    ...summaryRows.map((r) => r.map(escape).join(",")),
-  ].join("\n");
+  const csv = lines.join("\n");
 
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="revenue-${fromDate}-to-${toDate}.csv"`,
+      "Content-Disposition": `attachment; filename="sales-${fromDate}-to-${toDate}.csv"`,
     },
   });
 }

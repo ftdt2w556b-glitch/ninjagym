@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
 import VoidTransactionButton from "@/components/admin/VoidTransactionButton";
+import ExpensesSection, { type Expense } from "@/components/admin/ExpensesSection";
 
 async function voidTransaction(formData: FormData) {
   "use server";
@@ -19,15 +20,12 @@ async function voidTransaction(formData: FormData) {
 
   if (source === "member") {
     await admin.from("member_registrations").update({ slip_status: "rejected" }).eq("id", Number(id));
-    // Also delete the linked cash_sale if one exists (created by quick-register)
-    // Must delete drawer_log entries first due to FK constraint
     const { data: linkedSales } = await admin.from("cash_sales").select("id").eq("reference_id", Number(id)).eq("sale_type", "membership");
     for (const s of linkedSales ?? []) {
       await admin.from("drawer_log").delete().eq("sale_id", s.id);
       await admin.from("cash_sales").delete().eq("id", s.id);
     }
   } else if (source === "cash_sale") {
-    // Must delete drawer_log entries first due to FK constraint
     await admin.from("drawer_log").delete().eq("sale_id", Number(id));
     await admin.from("cash_sales").delete().eq("id", Number(id));
   }
@@ -97,8 +95,11 @@ export default async function RevenuePage({
   const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
   if (!["admin", "manager", "owner"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
-  // ALL POS cash sales — cash_sales is the single source of truth for cash.
-  // Cash only happens at the POS register; no filtering by sale_type or reference_id.
+  const canEdit = ["admin", "manager"].includes(currentProfile?.role ?? "");
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+
+  // ── Income queries ────────────────────────────────────────────────────
+  // ALL POS cash sales — single source of truth for cash
   const { data: cashSales } = await admin
     .from("cash_sales")
     .select("id, amount, processed_at, sale_type, notes, staff_name, reference_id")
@@ -106,8 +107,7 @@ export default async function RevenuePage({
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
 
-  // Approved non-cash member registrations (PromptPay, transfer, etc.)
-  // Cash registrations are excluded — they are already counted via cash_sales above.
+  // Approved non-cash registrations (PromptPay only — cash excluded, counted via cash_sales)
   const { data: memberPayments } = await admin
     .from("member_registrations")
     .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image")
@@ -117,9 +117,22 @@ export default async function RevenuePage({
     .lte("slip_reviewed_at", to)
     .order("slip_reviewed_at", { ascending: false });
 
-  // Unified transaction list
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  // ── Expenses for this period ──────────────────────────────────────────
+  const fromDate = from.split("T")[0];
+  const toDate   = to.split("T")[0];
+  const { data: expensesRaw } = await admin
+    .from("expenses")
+    .select("*")
+    .eq("voided", false)
+    .gte("expense_date", fromDate)
+    .lte("expense_date", toDate)
+    .order("expense_date", { ascending: false })
+    .order("created_at",   { ascending: false });
 
+  const expenses: Expense[] = (expensesRaw ?? []) as Expense[];
+  const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  // ── Unified transaction list ──────────────────────────────────────────
   type TxRow = {
     id: number;
     source: "member" | "cash_sale";
@@ -153,12 +166,13 @@ export default async function RevenuePage({
     })),
   ].sort((a, b) => b.time.localeCompare(a.time));
 
-  // ── Totals ──────────────────────────────────────────────────────────
-  const cashTotal      = allTx.filter((t) => t.method === "cash").reduce((s, t) => s + t.amount, 0);
-  const transferTotal  = allTx.filter((t) => t.method !== "cash").reduce((s, t) => s + t.amount, 0);
-  const grandTotal     = cashTotal + transferTotal;
-  const cashCount      = allTx.filter((t) => t.method === "cash").length;
-  const transferCount  = allTx.filter((t) => t.method !== "cash").length;
+  // ── Totals ────────────────────────────────────────────────────────────
+  const cashTotal     = allTx.filter((t) => t.method === "cash").reduce((s, t) => s + t.amount, 0);
+  const transferTotal = allTx.filter((t) => t.method !== "cash").reduce((s, t) => s + t.amount, 0);
+  const grandTotal    = cashTotal + transferTotal;
+  const netTotal      = grandTotal - expenseTotal;
+  const cashCount     = allTx.filter((t) => t.method === "cash").length;
+  const transferCount = allTx.filter((t) => t.method !== "cash").length;
 
   const visibleTx = methodFilter === "cash"
     ? allTx.filter((t) => t.method === "cash")
@@ -220,22 +234,26 @@ export default async function RevenuePage({
       <p className="text-sm font-bold text-gray-700 mb-4">{label}</p>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-3xl font-bold text-green-600">฿{cashTotal.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-600">฿{cashTotal.toLocaleString()}</p>
           <p className="text-sm text-gray-500 mt-1">Cash ({cashCount} payments)</p>
         </div>
         <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-3xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-[#1a56db]">฿{transferTotal.toLocaleString()}</p>
           <p className="text-sm text-gray-500 mt-1">PromptPay ({transferCount} payments)</p>
         </div>
-        <div className="rounded-2xl p-5 text-white bg-gray-800">
-          <p className="text-3xl font-bold">฿{grandTotal.toLocaleString()}</p>
-          <p className="text-sm opacity-80 mt-1">Grand Total · {allTx.length} transactions</p>
+        <div className="bg-white rounded-2xl shadow p-5">
+          <p className="text-2xl font-bold text-red-500">−฿{expenseTotal.toLocaleString()}</p>
+          <p className="text-sm text-gray-500 mt-1">Expenses ({expenses.length})</p>
+        </div>
+        <div className={`rounded-2xl p-5 text-white ${netTotal >= 0 ? "bg-gray-800" : "bg-red-700"}`}>
+          <p className="text-2xl font-bold">฿{netTotal.toLocaleString()}</p>
+          <p className="text-sm opacity-80 mt-1">Net · {allTx.length} transactions</p>
         </div>
       </div>
 
-      {/* ── Transactions table ───────────────────────────────────────── */}
+      {/* ── Transactions table ──────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
           <h2 className="font-bold text-gray-900">
@@ -271,9 +289,7 @@ export default async function RevenuePage({
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Method</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
                 <th className="px-4 py-3 font-semibold text-gray-600">Slip</th>
-                {["admin", "manager"].includes(currentProfile?.role ?? "") && (
-                  <th className="px-4 py-3" />
-                )}
+                {canEdit && <th className="px-4 py-3" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -313,7 +329,7 @@ export default async function RevenuePage({
                       <span className="text-gray-200 text-xs">—</span>
                     )}
                   </td>
-                  {["admin", "manager"].includes(currentProfile?.role ?? "") && (
+                  {canEdit && (
                     <td className="px-4 py-3 text-right">
                       <VoidTransactionButton
                         action={voidTransaction}
@@ -328,7 +344,7 @@ export default async function RevenuePage({
               ))}
               {visibleTx.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center text-gray-400">
+                  <td colSpan={canEdit ? 6 : 5} className="px-4 py-10 text-center text-gray-400">
                     No payments recorded for this period.
                   </td>
                 </tr>
@@ -337,6 +353,24 @@ export default async function RevenuePage({
           </table>
         </div>
       </div>
+
+      {/* ── Expenses section ─────────────────────────────────────────────── */}
+      <ExpensesSection
+        initialExpenses={expenses}
+        from={from}
+        to={to}
+        supabaseUrl={SUPABASE_URL}
+        canEdit={canEdit}
+      />
+
+      {/* ── Net summary footer ───────────────────────────────────────────── */}
+      {expenseTotal > 0 && (
+        <div className="mt-4 bg-gray-50 rounded-2xl px-5 py-4 flex flex-wrap gap-6 text-sm">
+          <span className="text-gray-600">Income: <strong className="text-gray-900">฿{grandTotal.toLocaleString()}</strong></span>
+          <span className="text-gray-600">Expenses: <strong className="text-red-600">−฿{expenseTotal.toLocaleString()}</strong></span>
+          <span className="text-gray-800 font-bold">Net: ฿{netTotal.toLocaleString()}</span>
+        </div>
+      )}
     </div>
   );
 }
