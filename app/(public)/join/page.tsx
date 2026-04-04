@@ -235,7 +235,7 @@ export default function JoinPage() {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-            placeholder="e.g. Sarah Johnson"
+            placeholder="First and Last Name (or last Initial)"
           />
         </div>
 

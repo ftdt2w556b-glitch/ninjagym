@@ -11,7 +11,7 @@ export const LANGUAGES: { code: Lang; label: string; flag: string }[] = [
 const en = {
   // ── General ────────────────────────────────────────────────────────────────
   joinTitle: "Join NinjaGym",
-  nameLabel: "Your Name",
+  nameLabel: "Parent's Name",
   phoneLabel: "Phone Number",
   emailLabel: "Email Address",
   kidsNamesLabel: "Kids Names",
