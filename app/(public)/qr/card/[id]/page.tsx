@@ -94,14 +94,16 @@ export default async function QrCardPage({
     // Fetch kids_count for ALL check-ins (no limit) to correctly sum loyalty sessions
     admin
       .from("attendance_logs")
-      .select("kids_count, notes")
+      .select("kids_count, notes, membership_type")
       .in("member_id", allIds),
   ]);
 
   const checkIns = checkInsRaw ?? [];
 
   // Each check-in may cover multiple kids — sum them for loyalty/belt accuracy
-  function kidsFromLog(r: { kids_count?: number | null; notes?: string | null }) {
+  // Unguided Climb Zone (20 min) does NOT count toward free sessions
+  function kidsFromLog(r: { kids_count?: number | null; notes?: string | null; membership_type?: string | null }) {
+    if (r.membership_type === "climb_unguided") return 0;
     if (r.kids_count && r.kids_count > 1) return r.kids_count;
     const m = r.notes?.match(/\|\s*(\d+)\s*kids/i);
     return m ? parseInt(m[1], 10) : 1;
