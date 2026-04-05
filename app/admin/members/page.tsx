@@ -142,7 +142,7 @@ export default async function MembersPage({
   }
 
   // ── Check-ins tab data ───────────────────────────────────────
-  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null } | null }[] = [];
+  let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null; phone: string | null; email: string | null } | null }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
   const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
@@ -151,7 +151,7 @@ export default async function MembersPage({
     const { from, to } = getCheckInRange(checkInPeriod);
     let ciQuery = admin
       .from("attendance_logs")
-      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, membership_type, member_registrations(kids_names)")
+      .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, membership_type, member_registrations(kids_names, phone, email)")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
@@ -488,7 +488,10 @@ export default async function MembersPage({
                           {log.member_name ?? "Unknown"}
                         </Link>
                         {(() => {
-                          const names = log.kids_names || (log.member_registrations as { kids_names?: string | null } | null)?.kids_names;
+                          const reg = log.member_registrations as { kids_names?: string | null; phone?: string | null; email?: string | null } | null;
+                          const names = log.kids_names || reg?.kids_names;
+                          const phone = reg?.phone ?? null;
+                          const email = log.member_email || reg?.email ?? null;
                           const programLabel = log.membership_type
                             ? (MEMBERSHIP_TYPES.find((m) => m.id === log.membership_type)?.label ?? log.membership_type)
                             : null;
@@ -499,8 +502,13 @@ export default async function MembersPage({
                                   👧 {names}{(log.kids_count ?? 1) > 1 ? ` · ${log.kids_count} kids` : ""}
                                 </p>
                               )}
-                              {!names && log.member_email && (
-                                <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
+                              {phone && (
+                                <a href={`tel:${phone}`} className="text-xs text-green-700 font-semibold hover:underline truncate block">
+                                  📞 {phone}
+                                </a>
+                              )}
+                              {email && (
+                                <p className="text-xs text-gray-400 truncate">{email}</p>
                               )}
                               {programLabel && (
                                 <p className="text-xs text-gray-500 truncate">{programLabel}</p>
