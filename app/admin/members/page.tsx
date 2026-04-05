@@ -491,7 +491,7 @@ export default async function MembersPage({
                           const reg = log.member_registrations as { kids_names?: string | null; phone?: string | null; email?: string | null } | null;
                           const names = log.kids_names || reg?.kids_names;
                           const phone = reg?.phone ?? null;
-                          const email = log.member_email || reg?.email ?? null;
+                          const email = log.member_email || (reg?.email ?? null);
                           const programLabel = log.membership_type
                             ? (MEMBERSHIP_TYPES.find((m) => m.id === log.membership_type)?.label ?? log.membership_type)
                             : null;
