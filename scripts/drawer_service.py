@@ -9,7 +9,9 @@ SUPABASE_URL = "https://bwyprymiykkquszkjkje.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ3eXByeW1peWtrcXVzemtqa2plIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MjM0NzQsImV4cCI6MjA5MDE5OTQ3NH0._-kSPcDHu2TWO8Uj2cTrk81ySUV6eCfY9VmLnFFyKbc"
 RAWBT_WS = "ws://localhost:40213"
 POLL_INTERVAL = 2
-DRAWER_KICK = bytes([0x1B, 0x70, 0x00, 0x19, 0xFA])
+# Try both pin 2 and pin 1 — one of them will match the printer's drawer port
+DRAWER_KICK_P2 = bytes([0x1B, 0x70, 0x00, 0x19, 0xFA])
+DRAWER_KICK_P1 = bytes([0x1B, 0x70, 0x01, 0x19, 0xFA])
 
 last_id = 0
 
@@ -27,7 +29,8 @@ def fetch(path):
 def open_drawer():
     try:
         ws = websocket.create_connection(RAWBT_WS, timeout=3)
-        ws.send_binary(DRAWER_KICK)
+        ws.send_binary(DRAWER_KICK_P2)
+        ws.send_binary(DRAWER_KICK_P1)
         ws.close()
         print("Drawer opened OK")
     except Exception as e:
