@@ -648,77 +648,6 @@ export default function QrCardClient({
         </div>
       )}
 
-      {/* ── Attendance Calendar & Streak ── */}
-      {isApproved && totalCheckIns > 0 && (
-        <div className="mt-4 bg-gray-900 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Attendance</p>
-            <div className="flex items-center gap-2">
-              {streak > 0 && (
-                <span className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold px-2 py-0.5 rounded-full">
-                  🔥 {streak} week{streak !== 1 ? "s" : ""} streak
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Day-of-week header */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {["M","T","W","T","F","S","S"].map((d, i) => (
-              <div key={i} className="text-center text-gray-600 text-xs font-bold">{d}</div>
-            ))}
-          </div>
-
-          {/* 6-week dot grid */}
-          <div className="flex flex-col gap-1">
-            {calWeeks.map((week, wi) => (
-              <div key={wi} className="grid grid-cols-7 gap-1">
-                {week.map((day) => (
-                  <div
-                    key={day.dateStr}
-                    title={day.dateStr}
-                    className={`aspect-square rounded-md flex items-center justify-center ${
-                      day.isFuture
-                        ? "opacity-0"
-                        : day.isToday
-                        ? day.hasCheckIn
-                          ? "bg-[#ffe033] ring-2 ring-[#ffe033]/50"
-                          : "bg-gray-700 ring-2 ring-gray-500"
-                        : day.hasCheckIn
-                        ? "bg-[#ffe033]/80"
-                        : "bg-gray-800"
-                    }`}
-                  >
-                    {day.isToday && !day.hasCheckIn && (
-                      <div className="w-1 h-1 rounded-full bg-gray-500" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          {/* Milestone progress */}
-          <div className="mt-4 pt-4 border-t border-gray-700 flex items-center justify-between">
-            <div>
-              {topMilestone && (
-                <p className="text-gray-400 text-xs">
-                  🏆 Reached <span className="text-[#ffe033] font-bold">{topMilestone}</span> session milestone
-                </p>
-              )}
-              {nextMilestone && (
-                <p className="text-gray-600 text-xs mt-0.5">
-                  {nextMilestone - totalCheckIns} more to {nextMilestone}-session milestone
-                </p>
-              )}
-            </div>
-            <p className="text-gray-500 text-xs text-right">
-              {totalCheckIns}<br />
-              <span className="text-gray-600">total</span>
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* My Sessions — purchase history */}
       {(activePackages.length > 0 || pastPackages.length > 0) && (
@@ -735,7 +664,6 @@ export default function QrCardClient({
           memberEmail={member.email ?? null}
           currentType={member.membership_type}
           defaultKids={member.kids_count ?? 1}
-          recentCheckIns={checkIns.slice(0, 10)}
           activePackages={activePackages}
         />
       )}

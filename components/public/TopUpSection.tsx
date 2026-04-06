@@ -13,13 +13,6 @@ import {
 } from "@/lib/pricing";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
-interface CheckIn {
-  id: number;
-  check_in_at: string;
-  notes: string | null;
-  member_id?: number;
-}
-
 interface ActivePackage {
   id: number;
   membership_type: string;
@@ -35,7 +28,6 @@ interface Props {
   memberEmail?: string | null;
   currentType: string;
   defaultKids: number;
-  recentCheckIns: CheckIn[];
   activePackages?: ActivePackage[];
 }
 
@@ -46,7 +38,6 @@ export default function TopUpSection({
   memberEmail,
   currentType,
   defaultKids,
-  recentCheckIns,
   activePackages = [],
 }: Props) {
   const { t } = useLanguage();
@@ -394,43 +385,6 @@ export default function TopUpSection({
         )}
       </div>
 
-      {/* ── RECENT CHECK-INS ──────────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl p-5 shadow">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-          {t.recentCheckIns}
-        </p>
-        {recentCheckIns.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-1">{t.noCheckIns}</p>
-        ) : (
-          <div className="flex flex-col divide-y divide-gray-50">
-            {recentCheckIns.map((ci) => {
-              // If check-in is against a top-up registration, show which program
-              const pkg = ci.member_id
-                ? activePackages.find((p) => p.id === ci.member_id)
-                : null;
-              return (
-                <div key={ci.id} className="flex items-center justify-between py-2 gap-2">
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm text-gray-700">
-                      {new Date(ci.check_in_at).toLocaleDateString("en-US", {
-                        timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
-                      })}
-                    </span>
-                    {pkg && (
-                      <span className="text-xs text-[#1a56db] truncate">{pkg.membership_label}</span>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-400 shrink-0">
-                    {new Date(ci.check_in_at).toLocaleTimeString("en-US", {
-                      timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true,
-                    })}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
     </div>
   );
