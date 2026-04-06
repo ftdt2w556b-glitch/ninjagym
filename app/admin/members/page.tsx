@@ -5,6 +5,7 @@ import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import CheckInButton from "@/components/admin/CheckInButton";
 import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
+import DayDatePicker from "@/components/admin/DayDatePicker";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -460,9 +461,15 @@ export default async function MembersPage({
                   >
                     ‹
                   </Link>
-                  <span className="text-sm font-semibold text-gray-700 min-w-[100px] text-center">
-                    {periodLabels.day}
-                  </span>
+                  <input
+                    type="date"
+                    defaultValue={dayDate}
+                    max={bangkokToday()}
+                    onChange={undefined}
+                    className="text-sm font-semibold text-gray-700 bg-transparent border border-gray-200 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                    // Client-side navigation handled by DayDatePicker below
+                    data-day-picker
+                  />
                   {!isNextFuture && (
                     <Link
                       href={`/admin/members?tab=checkins&period=day&date=${nextDayStr}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
@@ -471,6 +478,7 @@ export default async function MembersPage({
                       ›
                     </Link>
                   )}
+                  <DayDatePicker />
                 </div>
               )}
             </div>
