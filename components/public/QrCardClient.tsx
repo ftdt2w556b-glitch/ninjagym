@@ -198,6 +198,7 @@ function SessionsList({
               timeZone: "Asia/Bangkok", month: "short", day: "numeric", year: "numeric",
             })}
             {pkg.amount_paid ? ` · ${Number(pkg.amount_paid).toLocaleString()} THB` : ""}
+            {pkg.sessions_purchased ? ` · Bought ${pkg.sessions_purchased}` : ""}
           </p>
         </div>
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
