@@ -5,7 +5,7 @@ import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import CheckInButton from "@/components/admin/CheckInButton";
 import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
-import DayDatePicker from "@/components/admin/DayDatePicker";
+import PeriodPicker from "@/components/admin/PeriodPicker";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -73,12 +73,17 @@ function getCheckInRange(period: CheckInPeriod, dateParam?: string): { from: str
     return { from: bangkokStartOfDay(target), to: bangkokEndOfDay(target) };
   }
   if (period === "month") {
-    const [y, m] = today.split("-");
-    return { from: bangkokStartOfDay(`${y}-${m}-01`), to: bangkokEndOfDay(today) };
+    // dateParam can be "YYYY-MM" or "YYYY-MM-DD" — extract year+month
+    const ym = dateParam && /^\d{4}-\d{2}/.test(dateParam) ? dateParam.slice(0, 7) : today.slice(0, 7);
+    const [y, m] = ym.split("-");
+    const lastDay = new Date(Number(y), Number(m), 0).getDate();
+    const endDate = ym === today.slice(0, 7) ? today : `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    return { from: bangkokStartOfDay(`${y}-${m}-01`), to: bangkokEndOfDay(endDate) };
   }
-  // year
-  const [y] = today.split("-");
-  return { from: bangkokStartOfDay(`${y}-01-01`), to: bangkokEndOfDay(today) };
+  // year — dateParam can be "YYYY" or "YYYY-MM-DD"
+  const yr = dateParam && /^\d{4}/.test(dateParam) ? dateParam.slice(0, 4) : today.slice(0, 4);
+  const endDate = yr === today.slice(0, 4) ? today : `${yr}-12-31`;
+  return { from: bangkokStartOfDay(`${yr}-01-01`), to: bangkokEndOfDay(endDate) };
 }
 
 export default async function MembersPage({
@@ -146,16 +151,20 @@ export default async function MembersPage({
   let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null; phone: string | null; email: string | null } | null }[] = [];
   let checkInCount = 0;
   const checkInPeriod = (["today", "day", "month", "year"].includes(period) ? period : "today") as CheckInPeriod;
-  const dayDate = checkInPeriod === "day" && dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : bangkokToday();
+  const todayStr = bangkokToday();
+  const dayDate = checkInPeriod === "day" && dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayStr;
+  const monthDate = dateParam && /^\d{4}-\d{2}/.test(dateParam) ? dateParam.slice(0, 7) : todayStr.slice(0, 7);
+  const yearDate = dateParam && /^\d{4}/.test(dateParam) ? dateParam.slice(0, 4) : todayStr.slice(0, 4);
   const periodLabels: Record<CheckInPeriod, string> = {
     today: "Today",
     day: formatBangkokDate(dayDate + "T12:00:00+07:00", { weekday: "short", month: "short", day: "numeric" }),
-    month: "This Month",
-    year: "This Year",
+    month: formatBangkokDate(`${monthDate}-15T12:00:00+07:00`, { month: "long", year: "numeric" }),
+    year: yearDate,
   };
 
   if (tab === "checkins") {
-    const { from, to } = getCheckInRange(checkInPeriod, dayDate);
+    const rangeDate = checkInPeriod === "day" ? dayDate : checkInPeriod === "month" ? monthDate : checkInPeriod === "year" ? yearDate : undefined;
+    const { from, to } = getCheckInRange(checkInPeriod, rangeDate);
     let ciQuery = admin
       .from("attendance_logs")
       .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, membership_type, member_registrations(kids_names, phone, email)")
@@ -245,7 +254,18 @@ export default async function MembersPage({
   nextDay.setDate(nextDay.getDate() + 1);
   const prevDayStr = prevDay.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
   const nextDayStr = nextDay.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
-  const isNextFuture = nextDayStr > bangkokToday();
+  const isDayNextFuture = nextDayStr > todayStr;
+
+  // Month-browsing: compute prev/next months
+  const [mY, mM] = monthDate.split("-").map(Number);
+  const prevMonth = mM === 1 ? `${mY - 1}-12` : `${mY}-${String(mM - 1).padStart(2, "0")}`;
+  const nextMonth = mM === 12 ? `${mY + 1}-01` : `${mY}-${String(mM + 1).padStart(2, "0")}`;
+  const isMonthNextFuture = nextMonth > todayStr.slice(0, 7);
+
+  // Year-browsing: compute prev/next years
+  const prevYear = String(Number(yearDate) - 1);
+  const nextYear = String(Number(yearDate) + 1);
+  const isYearNextFuture = nextYear > todayStr.slice(0, 4);
 
   return (
     <div>
@@ -437,12 +457,12 @@ export default async function MembersPage({
               </p>
             </div>
             {/* Period tabs */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
                 {checkInPeriods.map((p) => (
                   <Link
                     key={p.id}
-                    href={`/admin/members?tab=checkins&period=${p.id}${p.id === "day" ? `&date=${bangkokToday()}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    href={`/admin/members?tab=checkins&period=${p.id}${p.id === "day" ? `&date=${todayStr}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                     className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                       checkInPeriod === p.id
                         ? "bg-white text-gray-900 shadow-sm"
@@ -453,34 +473,71 @@ export default async function MembersPage({
                   </Link>
                 ))}
               </div>
+
+              {/* Day navigation */}
               {checkInPeriod === "day" && (
                 <div className="flex items-center gap-1">
                   <Link
                     href={`/admin/members?tab=checkins&period=day&date=${prevDayStr}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                     className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
-                  >
-                    ‹
-                  </Link>
+                  >‹</Link>
                   <input
                     type="date"
                     defaultValue={dayDate}
-                    max={bangkokToday()}
-                    onChange={undefined}
+                    max={todayStr}
                     className="text-sm font-semibold text-gray-700 bg-transparent border border-gray-200 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-                    // Client-side navigation handled by DayDatePicker below
-                    data-day-picker
+                    data-period-picker="day"
                   />
-                  {!isNextFuture && (
+                  {!isDayNextFuture && (
                     <Link
                       href={`/admin/members?tab=checkins&period=day&date=${nextDayStr}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                       className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
-                    >
-                      ›
-                    </Link>
+                    >›</Link>
                   )}
-                  <DayDatePicker />
                 </div>
               )}
+
+              {/* Month navigation */}
+              {checkInPeriod === "month" && (
+                <div className="flex items-center gap-1">
+                  <Link
+                    href={`/admin/members?tab=checkins&period=month&date=${prevMonth}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                  >‹</Link>
+                  <input
+                    type="month"
+                    defaultValue={monthDate}
+                    max={todayStr.slice(0, 7)}
+                    className="text-sm font-semibold text-gray-700 bg-transparent border border-gray-200 rounded-lg px-2 py-1 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                    data-period-picker="month"
+                  />
+                  {!isMonthNextFuture && (
+                    <Link
+                      href={`/admin/members?tab=checkins&period=month&date=${nextMonth}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                      className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                    >›</Link>
+                  )}
+                </div>
+              )}
+
+              {/* Year navigation */}
+              {checkInPeriod === "year" && (
+                <div className="flex items-center gap-1">
+                  <Link
+                    href={`/admin/members?tab=checkins&period=year&date=${prevYear}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                  >‹</Link>
+                  <span className="text-sm font-semibold text-gray-700 min-w-[50px] text-center">{yearDate}</span>
+                  {!isYearNextFuture && (
+                    <Link
+                      href={`/admin/members?tab=checkins&period=year&date=${nextYear}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                      className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                    >›</Link>
+                  )}
+                </div>
+              )}
+
+              <PeriodPicker />
             </div>
           </div>
 
