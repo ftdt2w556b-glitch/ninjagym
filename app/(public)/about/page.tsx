@@ -19,7 +19,7 @@ export default function AboutPage() {
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
           { stat: "Ages 3–10", label: "Learn by doing" },
-          { stat: "50 Min",    label: "Guided Course" },
+          { stat: "55 Min",    label: "Guided Course" },
           { stat: "10:00am",   label: "Opens Daily" },
         ].map((s) => (
           <div key={s.stat} className="bg-white/15 rounded-2xl p-3 text-center">
@@ -34,8 +34,8 @@ export default function AboutPage() {
         {/* Location & Hours */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <h2 className="font-bold text-[#1a56db] text-lg mb-3">Find Us</h2>
-          <p className="text-sm text-gray-700 font-semibold">Big C Bophut, ground floor</p>
-          <p className="text-sm text-gray-500 mb-3">Next to main entrance, near Ring Road and Starbucks, Koh Samui</p>
+          <p className="text-sm text-gray-700 font-semibold">Big C Bophut shopping mall, ground floor</p>
+          <p className="text-sm text-gray-500 mb-3">Right on Ring Road next to Starbucks Coffee</p>
           <a
             href="https://maps.app.goo.gl/eAfNRktaPpr9uhYi9"
             target="_blank"
@@ -45,7 +45,7 @@ export default function AboutPage() {
             <span>📍</span> Open in Google Maps
           </a>
           <div className="flex flex-col gap-1.5 text-sm text-gray-600">
-            <p>Opens <strong>9:30am</strong> daily (8am with advance notice)</p>
+            <p>Opens <strong>10:00am</strong> daily (8am with advance notice)</p>
             <p>Kid drop-in sessions available <strong>all day, every day</strong></p>
             <p>Day Camps: 10am to 2pm, drop-in before 2pm</p>
             <p>Adult sessions: <strong>8am</strong> or <strong>8pm</strong> by advance booking only</p>
@@ -108,7 +108,7 @@ export default function AboutPage() {
         {/* Member Loyalty Benefits */}
         <div className="bg-gray-900 rounded-2xl p-5 shadow text-white">
           <h2 className="font-bold text-lg mb-1">🥷 Member Benefits</h2>
-          <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card. No stamps, no apps.</p>
+          <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card.</p>
           <div className="flex flex-col gap-3">
             {[
               {
@@ -121,21 +121,6 @@ export default function AboutPage() {
                 title: "Ninja Belt Ranks",
                 desc: "Progress from White Belt to Black Belt as your session count grows.",
               },
-              {
-                icon: "🔥",
-                title: "Weekly Streak",
-                desc: "Keep your streak alive by coming at least once a week. Great motivation for kids.",
-              },
-              {
-                icon: "📅",
-                title: "Attendance Calendar",
-                desc: "Shows the last 6 weeks of attendance. Parents can always verify their child's sessions.",
-              },
-              {
-                icon: "🏆",
-                title: "Session Milestones",
-                desc: "Hit 10, 25, 50, 100 or more sessions and get a milestone badge. Something to be proud of.",
-              },
             ].map(({ icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3 bg-white/5 rounded-xl px-4 py-3">
                 <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
@@ -146,9 +131,6 @@ export default function AboutPage() {
               </div>
             ))}
           </div>
-          <p className="text-xs text-white/30 text-center mt-4">
-            All rewards are visible on your digital member card, accessible from the link in your registration email.
-          </p>
         </div>
 
         {/* Programs */}
@@ -294,7 +276,7 @@ export default function AboutPage() {
         <div className="bg-[#ffe033] rounded-2xl p-4 shadow">
           <p className="text-sm font-bold text-[#1a56db] mb-1">Registration</p>
           <p className="text-sm text-[#1a56db]">
-            Advance registration recommended. Bring your email receipt or use your member PIN at the front desk. Membership is prepared upon arrival.
+            Advance registration recommended. Bring your email receipt or use your member PIN at the front desk.
           </p>
         </div>
 
