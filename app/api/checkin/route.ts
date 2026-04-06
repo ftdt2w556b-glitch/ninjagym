@@ -80,10 +80,10 @@ export async function POST(request: NextRequest) {
 
     if (logErr) throw logErr;
 
-    // Decrement sessions_remaining if session-based
+    // Decrement sessions_remaining if session-based (deduct by kids count)
     let newSessions: number | null = member.sessions_remaining;
     if (member.sessions_remaining !== null && member.sessions_remaining > 0) {
-      newSessions = member.sessions_remaining - 1;
+      newSessions = Math.max(0, member.sessions_remaining - kidsCount);
       await admin
         .from("member_registrations")
         .update({ sessions_remaining: newSessions })

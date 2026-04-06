@@ -60,32 +60,32 @@ function isPackageActive(r: { membership_type: string; sessions_remaining: numbe
   return r.sessions_remaining === null || r.sessions_remaining > 0;
 }
 
-type CheckInPeriod = "today" | "week" | "month";
+type CheckInPeriod = "today" | "day" | "month" | "year";
 
-function getCheckInRange(period: CheckInPeriod): { from: string; to: string } {
+function getCheckInRange(period: CheckInPeriod, dateParam?: string): { from: string; to: string } {
   const today = bangkokToday();
   if (period === "today") {
     return { from: bangkokStartOfDay(today), to: bangkokEndOfDay(today) };
   }
-  if (period === "week") {
-    const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" }));
-    const day = d.getDay();
-    const diffToMon = day === 0 ? -6 : 1 - day;
-    const mon = new Date(d);
-    mon.setDate(d.getDate() + diffToMon);
-    const monStr = mon.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
-    return { from: bangkokStartOfDay(monStr), to: bangkokEndOfDay(today) };
+  if (period === "day") {
+    const target = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : today;
+    return { from: bangkokStartOfDay(target), to: bangkokEndOfDay(target) };
   }
-  const [y, m] = today.split("-");
-  return { from: bangkokStartOfDay(`${y}-${m}-01`), to: bangkokEndOfDay(today) };
+  if (period === "month") {
+    const [y, m] = today.split("-");
+    return { from: bangkokStartOfDay(`${y}-${m}-01`), to: bangkokEndOfDay(today) };
+  }
+  // year
+  const [y] = today.split("-");
+  return { from: bangkokStartOfDay(`${y}-01-01`), to: bangkokEndOfDay(today) };
 }
 
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; tab?: string; period?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; tab?: string; period?: string; date?: string }>;
 }) {
-  const { q, status, tab = "members", period = "today" } = await searchParams;
+  const { q, status, tab = "members", period = "today", date: dateParam } = await searchParams;
   const admin = createAdminClient();
 
   const supabase = await createSupabaseServerClient();
@@ -144,18 +144,24 @@ export default async function MembersPage({
   // ── Check-ins tab data ───────────────────────────────────────
   let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null; phone: string | null; email: string | null } | null }[] = [];
   let checkInCount = 0;
-  const checkInPeriod = (["today", "week", "month"].includes(period) ? period : "today") as CheckInPeriod;
-  const periodLabels: Record<CheckInPeriod, string> = { today: "Today", week: "This Week", month: "This Month" };
+  const checkInPeriod = (["today", "day", "month", "year"].includes(period) ? period : "today") as CheckInPeriod;
+  const dayDate = checkInPeriod === "day" && dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : bangkokToday();
+  const periodLabels: Record<CheckInPeriod, string> = {
+    today: "Today",
+    day: formatBangkokDate(dayDate + "T12:00:00+07:00", { weekday: "short", month: "short", day: "numeric" }),
+    month: "This Month",
+    year: "This Year",
+  };
 
   if (tab === "checkins") {
-    const { from, to } = getCheckInRange(checkInPeriod);
+    const { from, to } = getCheckInRange(checkInPeriod, dayDate);
     let ciQuery = admin
       .from("attendance_logs")
       .select("id, member_id, member_name, member_email, check_in_at, notes, kids_count, kids_names, membership_type, member_registrations(kids_names, phone, email)")
       .gte("check_in_at", from)
       .lte("check_in_at", to)
       .order("check_in_at", { ascending: false })
-      .limit(200);
+      .limit(checkInPeriod === "year" ? 20000 : 2000);
 
     if (q) ciQuery = ciQuery.ilike("member_name", `%${q}%`);
 
@@ -225,9 +231,20 @@ export default async function MembersPage({
 
   const checkInPeriods: { id: CheckInPeriod; label: string }[] = [
     { id: "today", label: "Today" },
-    { id: "week",  label: "This Week" },
-    { id: "month", label: "This Month" },
+    { id: "day",   label: "Day" },
+    { id: "month", label: "Month" },
+    { id: "year",  label: "Year" },
   ];
+
+  // Day-browsing: compute prev/next dates
+  const dayDateObj = new Date(dayDate + "T12:00:00+07:00");
+  const prevDay = new Date(dayDateObj);
+  prevDay.setDate(prevDay.getDate() - 1);
+  const nextDay = new Date(dayDateObj);
+  nextDay.setDate(nextDay.getDate() + 1);
+  const prevDayStr = prevDay.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const nextDayStr = nextDay.toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+  const isNextFuture = nextDayStr > bangkokToday();
 
   return (
     <div>
@@ -419,20 +436,43 @@ export default async function MembersPage({
               </p>
             </div>
             {/* Period tabs */}
-            <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-              {checkInPeriods.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/admin/members?tab=checkins&period=${p.id}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                    checkInPeriod === p.id
-                      ? "bg-white text-gray-900 shadow-sm"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {p.label}
-                </Link>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+                {checkInPeriods.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/admin/members?tab=checkins&period=${p.id}${p.id === "day" ? `&date=${bangkokToday()}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                      checkInPeriod === p.id
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {p.label}
+                  </Link>
+                ))}
+              </div>
+              {checkInPeriod === "day" && (
+                <div className="flex items-center gap-1">
+                  <Link
+                    href={`/admin/members?tab=checkins&period=day&date=${prevDayStr}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                  >
+                    ‹
+                  </Link>
+                  <span className="text-sm font-semibold text-gray-700 min-w-[100px] text-center">
+                    {periodLabels.day}
+                  </span>
+                  {!isNextFuture && (
+                    <Link
+                      href={`/admin/members?tab=checkins&period=day&date=${nextDayStr}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                      className="px-2 py-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 text-sm font-bold"
+                    >
+                      ›
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
