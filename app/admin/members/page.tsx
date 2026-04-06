@@ -129,7 +129,7 @@ export default async function MembersPage({
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`);
+    if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%,pin.ilike.%${q}%,kids_names.ilike.%${q}%`);
     if (status) query = query.eq("slip_status", status);
 
     const { data } = await query;
@@ -301,7 +301,7 @@ export default async function MembersPage({
               type="text"
               name="q"
               defaultValue={q}
-              placeholder="Search name, phone, email..."
+              placeholder="Search name, phone, email, PIN, kids..."
               className="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             />
             <select
