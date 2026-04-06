@@ -101,6 +101,7 @@ export default function JoinPage() {
   const [pendingMemberId, setPendingMemberId] = useState<number | null>(null);
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [cashStaffName, setCashStaffName] = useState("");
+  const [waterQty, setWaterQty] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -113,9 +114,11 @@ export default function JoinPage() {
   }
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === form.membership_type);
-  const price = selectedMt?.bulk
+  const WATER_PRICE = 15;
+  const basePrice = selectedMt?.bulk
     ? calcBulkPrice(BASE_PRICES[selectedMt.bulkBase!] ?? 0, sessionQty)
     : getPriceForType(form.membership_type, form.kids_count);
+  const price = basePrice + waterQty * WATER_PRICE;
 
   async function compressImage(file: File, maxPx: number): Promise<File> {
     return new Promise((resolve) => {
@@ -150,8 +153,9 @@ export default function JoinPage() {
       if (selectedMt?.bulk) body.append("sessions_remaining", String(sessionQty));
       const focusPart = sessionFocus ? `Focus: ${sessionFocus}` : "";
       const staffPart = form.payment_method === "cash" && cashStaffName ? `Staff: ${cashStaffName}` : "";
+      const waterPart = waterQty > 0 ? `Water x${waterQty} (+${waterQty * WATER_PRICE} THB)` : "";
       const notesPart = form.notes || "";
-      const combinedNotes = [focusPart, staffPart, notesPart].filter(Boolean).join(" | ");
+      const combinedNotes = [focusPart, staffPart, waterPart, notesPart].filter(Boolean).join(" | ");
       if (combinedNotes) body.append("notes", combinedNotes);
       if (slip && form.payment_method === "promptpay") {
         const compressed = await compressImage(slip, 1400);
@@ -402,6 +406,22 @@ export default function JoinPage() {
           </div>
         </div>
 
+        {/* Water add-on */}
+        <div className="bg-white rounded-2xl px-4 py-3 shadow flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💧</span>
+            <span className="text-sm font-semibold text-gray-700">Add Water</span>
+            <span className="text-xs text-gray-400">{formatTHB(WATER_PRICE)} each</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {waterQty > 0 && (
+              <button type="button" onClick={() => setWaterQty(Math.max(0, waterQty - 1))} className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center hover:bg-gray-200">−</button>
+            )}
+            <span className="text-sm font-bold text-gray-700 w-5 text-center">{waterQty}</span>
+            <button type="button" onClick={() => setWaterQty(Math.min(10, waterQty + 1))} className="w-7 h-7 rounded-full bg-[#1a56db] text-white font-bold text-sm flex items-center justify-center hover:bg-blue-700">+</button>
+          </div>
+        </div>
+
         {/* Price summary */}
         <div className="bg-[#ffe033] rounded-2xl px-4 py-3 flex items-center justify-between shadow">
           <span className="font-bangers text-lg text-[#1a56db] tracking-wide">TOTAL</span>
@@ -413,32 +433,19 @@ export default function JoinPage() {
           <label className="block text-sm font-bold text-gray-700 mb-2">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
             {/* Cash — green */}
-            <div className={`rounded-xl border-2 transition-colors ${
+            <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
             }`}>
-              <label className="flex items-center gap-3 px-3 py-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="payment_method"
-                  value="cash"
-                  checked={form.payment_method === "cash"}
-                  onChange={() => setForm({ ...form, payment_method: "cash" })}
-                  className="accent-green-500"
-                />
-                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption}</span>
-              </label>
-              {form.payment_method === "cash" && (
-                <div className="px-3 pb-3" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-xs font-semibold text-green-700 mb-1">Staff Name <span className="font-normal">(who received the cash)</span></p>
-                  <input
-                    type="text"
-                    value={cashStaffName}
-                    onChange={(e) => setCashStaffName(e.target.value)}
-                    className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
-                  />
-                </div>
-              )}
-            </div>
+              <input
+                type="radio"
+                name="payment_method"
+                value="cash"
+                checked={form.payment_method === "cash"}
+                onChange={() => setForm({ ...form, payment_method: "cash" })}
+                className="accent-green-500"
+              />
+              <span className="text-sm font-semibold text-green-700">💵 {t.cashOption}</span>
+            </label>
             {/* PromptPay — blue */}
             <label className={`flex items-center gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
