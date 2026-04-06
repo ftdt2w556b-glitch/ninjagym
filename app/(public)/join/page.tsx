@@ -167,6 +167,15 @@ export default function JoinPage() {
 
       if (!res.ok) throw new Error(data.error || "Submission failed");
 
+      // Record water add-on sale (non-blocking)
+      if (waterQty > 0) {
+        fetch("/api/water-addon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qty: waterQty, member_name: form.name, reference_id: data.id }),
+        }).catch(() => {});
+      }
+
       if (form.payment_method === "stripe") {
         setPendingMemberId(data.id);
         setPendingToken(data.token ?? null);

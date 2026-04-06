@@ -67,13 +67,16 @@ export default function TopUpSection({
   const [slip, setSlip]                   = useState<File | null>(null);
   const [stripeStep, setStripeStep]       = useState(false);
   const [pendingId, setPendingId]         = useState<number | null>(null);
+  const [waterQty, setWaterQty]           = useState(0);
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
   const isBulk     = !!selectedMt?.bulk;
+  const WATER_PRICE = 15;
 
-  const price = isBulk
+  const basePrice = isBulk
     ? calcBulkPrice(BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty)
     : getPriceForType(selectedType, kidsCount);
+  const price = basePrice + waterQty * WATER_PRICE;
 
   const discountPct = isBulk ? Math.min(bulkQty, 20) : 0;
 
@@ -113,7 +116,8 @@ export default function TopUpSection({
       body.append("sessions_remaining", isBulk ? String(bulkQty) : "1");
     }
     body.append("parent_member_id", String(memberId));
-    body.append("notes", `Top-up from member card #${memberId}`);
+    const waterNote = waterQty > 0 ? ` | Water x${waterQty} (+${waterQty * WATER_PRICE} THB)` : "";
+    body.append("notes", `Top-up from member card #${memberId}${waterNote}`);
     if (slipFile && slipFile.size > 0) {
       const compressed = await compressImage(slipFile, 1400);
       body.append("slip", compressed, slipFile.name);
@@ -124,6 +128,17 @@ export default function TopUpSection({
       const data = await res.json();
       setLoading(null);
       if (!res.ok) { setError(data.error ?? "Something went wrong"); return; }
+
+      // Record water add-on sale (non-blocking)
+      if (waterQty > 0) {
+        fetch("/api/water-addon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qty: waterQty, member_name: memberName, reference_id: data.id }),
+        }).catch(() => {});
+        setWaterQty(0);
+      }
+
       if (paymentMethod === "cash") {
         setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive. Staff will check you in.`);
       } else if (paymentMethod === "stripe") {
@@ -316,6 +331,22 @@ export default function TopUpSection({
           </div>
         ) : (
           <>
+            {/* Water add-on */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">💧</span>
+                <span className="text-sm font-semibold text-gray-700">Add Water</span>
+                <span className="text-xs text-gray-400">{formatTHB(WATER_PRICE)} each</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {waterQty > 0 && (
+                  <button type="button" onClick={() => setWaterQty(Math.max(0, waterQty - 1))} className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 font-bold text-sm flex items-center justify-center hover:bg-gray-200">−</button>
+                )}
+                <span className="text-sm font-bold text-gray-700 w-5 text-center">{waterQty}</span>
+                <button type="button" onClick={() => setWaterQty(Math.min(10, waterQty + 1))} className="w-7 h-7 rounded-full bg-[#1a56db] text-white font-bold text-sm flex items-center justify-center hover:bg-blue-700">+</button>
+              </div>
+            </div>
+
             {/* Live price summary */}
             <div className="bg-[#ffe033]/25 border border-[#ffe033] rounded-xl px-4 py-2.5 flex items-center justify-between mb-3">
               <div>
