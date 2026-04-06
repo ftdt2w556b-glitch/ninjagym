@@ -129,7 +129,11 @@ export default async function MembersPage({
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (q) query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%,pin.ilike.%${q}%,kids_names.ilike.%${q}%`);
+    if (q) {
+      const filters = [`name.ilike.%${q}%`, `phone.ilike.%${q}%`, `email.ilike.%${q}%`, `kids_names.ilike.%${q}%`];
+      if (/^\d+$/.test(q)) filters.push(`pin.eq.${q}`);
+      query = query.or(filters.join(","));
+    }
     if (status) query = query.eq("slip_status", status);
 
     const { data } = await query;
