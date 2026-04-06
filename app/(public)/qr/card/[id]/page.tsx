@@ -57,7 +57,7 @@ export default async function QrCardPage({
   // Fetch ALL top-ups (approved) for history + active detection
   const { data: topUps } = await admin
     .from("member_registrations")
-    .select("id, membership_type, sessions_remaining, slip_status, created_at, expires_at, amount_paid")
+    .select("id, membership_type, sessions_remaining, sessions_purchased, slip_status, created_at, expires_at, amount_paid")
     .eq("parent_member_id", Number(id))
     .eq("slip_status", "approved")
     .order("created_at", { ascending: false });
@@ -67,12 +67,13 @@ export default async function QrCardPage({
       id: member.id,
       membership_type: member.membership_type,
       sessions_remaining: member.sessions_remaining,
+      sessions_purchased: member.sessions_purchased ?? null,
       slip_status: member.slip_status,
       created_at: member.created_at,
       expires_at: member.expires_at ?? null,
       amount_paid: member.amount_paid ?? null,
     },
-    ...(topUps ?? []).map((r) => ({ ...r, expires_at: r.expires_at ?? null, amount_paid: r.amount_paid ?? null })),
+    ...(topUps ?? []).map((r) => ({ ...r, expires_at: r.expires_at ?? null, amount_paid: r.amount_paid ?? null, sessions_purchased: r.sessions_purchased ?? null })),
   ];
 
   const allIds = allRelated.map((r) => r.id);
@@ -130,6 +131,7 @@ export default async function QrCardPage({
       membership_type: r.membership_type,
       membership_label: mt?.label ?? r.membership_type,
       sessions_remaining: r.sessions_remaining,
+      sessions_purchased: r.sessions_purchased ?? null,
       expires_at: r.expires_at,
       time_based: !!mt?.timeBased,
       is_bulk: !!mt?.bulk,

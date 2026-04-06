@@ -158,8 +158,8 @@ function SessionsList({
   activePackages,
   pastPackages,
 }: {
-  activePackages: { id: number; membership_label: string; sessions_remaining: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
-  pastPackages:   { id: number; membership_label: string; sessions_remaining: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
+  activePackages: { id: number; membership_label: string; sessions_remaining: number | null; sessions_purchased?: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
+  pastPackages:   { id: number; membership_label: string; sessions_remaining: number | null; sessions_purchased?: number | null; expires_at: string | null; created_at: string; amount_paid?: number | null; time_based?: boolean }[];
 }) {
   const [showAll, setShowAll] = useState(false);
   const visiblePast = showAll ? pastPackages : pastPackages.slice(0, PAST_PREVIEW);
@@ -176,9 +176,12 @@ function SessionsList({
       return isActive ? "Active" : "Pending activation";
     }
     if (pkg.sessions_remaining !== null) {
-      return pkg.sessions_remaining === 0
-        ? "Used"
-        : `${pkg.sessions_remaining} session${pkg.sessions_remaining !== 1 ? "s" : ""} left`;
+      if (pkg.sessions_remaining === 0) return "Used";
+      const rem = pkg.sessions_remaining;
+      const total = pkg.sessions_purchased ?? null;
+      return total && total > rem
+        ? `${rem} of ${total} left`
+        : `${rem} session${rem !== 1 ? "s" : ""} left`;
     }
     return isActive ? "Active" : "Used";
   }

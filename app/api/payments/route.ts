@@ -91,13 +91,17 @@ export async function POST(request: NextRequest) {
           if (addedSessions > 0) {
             const { data: parent } = await admin
               .from("member_registrations")
-              .select("sessions_remaining")
+              .select("sessions_remaining, sessions_purchased")
               .eq("id", parentId)
               .single();
             const current = (parent?.sessions_remaining as number | null) ?? 0;
+            const currentPurchased = (parent?.sessions_purchased as number | null) ?? 0;
             await admin
               .from("member_registrations")
-              .update({ sessions_remaining: current + addedSessions })
+              .update({
+                sessions_remaining: current + addedSessions,
+                sessions_purchased: currentPurchased + addedSessions,
+              })
               .eq("id", parentId);
           }
         } catch (topUpErr) {

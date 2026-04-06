@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
         slip_uploaded_at,
         notes: notes || null,
         sessions_remaining,
+        sessions_purchased: sessions_remaining ?? null,
         parent_member_id,
         pin,
       })

@@ -110,11 +110,12 @@ export default async function MembersPage({
     membership_type: string; kids_count: number | null; kids_names: string | null;
     notes: string | null; slip_status: string; amount_paid: number | null;
     payment_method: string | null; created_at: string; sessions_remaining: number | null;
-    expires_at: string | null; pin: string | null;
+    sessions_purchased: number | null; expires_at: string | null; pin: string | null;
   };
   type TopUpRow = {
     id: number; parent_member_id: number; membership_type: string;
-    sessions_remaining: number | null; slip_status: string; expires_at: string | null; amount_paid: number | null;
+    sessions_remaining: number | null; sessions_purchased: number | null;
+    slip_status: string; expires_at: string | null; amount_paid: number | null;
   };
 
   // ── Members tab data ─────────────────────────────────────────
@@ -124,7 +125,7 @@ export default async function MembersPage({
   if (tab === "members") {
     let query = admin
       .from("member_registrations")
-      .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, expires_at, pin")
+      .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, sessions_purchased, expires_at, pin")
       .is("parent_member_id", null)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -141,7 +142,7 @@ export default async function MembersPage({
 
     const { data: allTopUps } = await admin
       .from("member_registrations")
-      .select("id, parent_member_id, membership_type, sessions_remaining, slip_status, expires_at, amount_paid")
+      .select("id, parent_member_id, membership_type, sessions_remaining, sessions_purchased, slip_status, expires_at, amount_paid")
       .not("parent_member_id", "is", null)
       .eq("slip_status", "approved");
 
@@ -375,6 +376,7 @@ export default async function MembersPage({
                                 regId={m.id}
                                 label={primaryLabel}
                                 sessions={m.sessions_remaining}
+                                sessionsPurchased={m.sessions_purchased}
                                 expiresAt={m.expires_at}
                                 membershipType={m.membership_type}
                                 isPrimary
@@ -391,6 +393,7 @@ export default async function MembersPage({
                                   regId={t.id}
                                   label={tLabel}
                                   sessions={t.sessions_remaining}
+                                  sessionsPurchased={t.sessions_purchased}
                                   expiresAt={t.expires_at}
                                   membershipType={t.membership_type}
                                   canCheckIn={canCheckIn}
@@ -666,6 +669,7 @@ function PackageRow({
   regId,
   label,
   sessions,
+  sessionsPurchased,
   expiresAt,
   membershipType,
   isPrimary = false,
@@ -676,6 +680,7 @@ function PackageRow({
   regId?: number;
   label: string;
   sessions: number | null;
+  sessionsPurchased?: number | null;
   expiresAt: string | null;
   membershipType: string;
   isPrimary?: boolean;
@@ -694,9 +699,10 @@ function PackageRow({
       </span>
     );
   } else if (sessions !== null) {
+    const showTotal = sessionsPurchased && sessionsPurchased > sessions;
     sessionBadge = (
       <span className={`text-xs font-medium ${sessions <= 1 ? "text-orange-500" : "text-blue-500"}`}>
-        {sessions} left
+        {showTotal ? `${sessions} of ${sessionsPurchased} left` : `${sessions} left`}
       </span>
     );
   }
