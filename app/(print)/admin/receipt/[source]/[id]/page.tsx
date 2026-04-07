@@ -65,8 +65,9 @@ export default async function ReceiptPage({
     notes = "";
 
     const items = data.items as Array<{ label: string }> | null;
-    if (items && items.length > 0) {
-      program = MEMBERSHIP_LABELS[items[0].label] ?? items[0].label;
+    const itemLabel = items?.[0]?.label;
+    if (itemLabel) {
+      program = MEMBERSHIP_LABELS[itemLabel] ?? itemLabel;
     } else {
       program = (MEMBERSHIP_LABELS[data.sale_type as string] ?? (data.sale_type as string)) || "POS Sale";
     }
