@@ -61,16 +61,16 @@ export default async function ReceiptPage({
     amount = Number(data.amount);
     paymentMethod = "Cash";
     staffName = (data.staff_name as string | null) ?? "";
-    notes = (data.notes as string | null) ?? "";
 
-    // Try to get member name from items or notes
-    if (data.notes) {
-      const m = (data.notes as string).match(/Quick walk-in:\s*(.+)/i);
-      if (m) memberName = m[1];
-    }
-    if (!memberName) memberName = notes || "Walk-in Customer";
+    // Extract member name from notes ("Quick walk-in: Name" or raw notes)
+    const rawNotes = (data.notes as string | null) ?? "";
+    const walkInMatch = rawNotes.match(/Quick walk-in:\s*(.+)/i);
+    memberName = walkInMatch ? walkInMatch[1] : "Walk-in Customer";
 
-    // Program from items
+    // Only show notes if it's not just the member name
+    notes = (!walkInMatch && rawNotes) ? rawNotes : "";
+
+    // Program from items array
     const items = data.items as Array<{ label: string }> | null;
     if (items && items.length > 0) {
       program = MEMBERSHIP_LABELS[items[0].label] ?? items[0].label;
@@ -134,7 +134,7 @@ export default async function ReceiptPage({
         <div className="page">
           <div className="header">
             <img
-              src="/images/512 Rick Tew Company Logo.png"
+              src="/images/rick-tew-logo.png"
               alt="Rick Tew Co., Ltd."
               className="logo"
             />

@@ -1,0 +1,238 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2869
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fnil\fcharset0 HelveticaNeue;\f1\fnil\fcharset0 HelveticaNeue-Bold;\f2\fnil\fcharset0 .AppleSystemUIFontMonospaced-Regular;
+\f3\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid201\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid3}
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}
+{\list\listtemplateid5\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid401\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid5}
+{\list\listtemplateid6\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid501\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid6}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}{\listoverride\listid5\listoverridecount0\ls5}{\listoverride\listid6\listoverridecount0\ls6}}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab560
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\fs26 \cf0 \
+\
+The XP-58 (Xprinter XP-58 / POS-58 series) is fully ESC/POS compatible. The cash drawer opens by sending a single short command sequence directly to the printer (the printer then pulses the RJ11 cash drawer port). No text, no paper feed needed \'97 just the raw bytes.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Exact cash drawer open command for XP-58\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 Use this byte sequence (the most reliable one listed specifically for XP-58 / XP-58iii models):\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Hex:
+\f0\b0  
+\fs30 1B 70 00 19 FA
+\fs26 \uc0\u8232 
+\f1\b Decimal:
+\f0\b0  
+\fs30 27, 112, 0, 25, 250
+\fs26 \
+In code, this is usually written as a byte array:\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f2\fs24 \cf0 // Java / Kotlin (Android)\
+byte[] openDrawer = new byte[] \{\
+    0x1B, 0x70, 0x00, 0x19, (byte)0xFA\
+    // or decimal: (byte)27, (byte)112, (byte)0, (byte)25, (byte)250\
+\};\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\fs26 \cf0 This is the standard 
+\fs30 ESC p m t1 t2
+\fs26  command where:\
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls1\ilvl0
+\f3\fs18 \cf0 {\listtext	\uc0\u8226 	}
+\f0\fs26 m = 0 (drawer pin 2 \'97 the one used on almost all XP-58 setups)\
+\ls1\ilvl0
+\f3\fs18 {\listtext	\uc0\u8226 	}
+\f0\fs26 t1 = 25, t2 = 250 (pulse timing that works reliably on this model)\
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 Some printers accept slight variations (e.g. 
+\fs30 1B 70 00 3C 78
+\fs26  or 
+\fs30 1B 70 00 60 120
+\fs26 ), but the 25/250 version is confirmed to work on XP-58 series.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 How to send it from your custom app (easiest options with RawBT already paired)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 Since you already have RawBT installed and the XP-58 paired via Bluetooth (as per the green steps), you have two simple paths. You 
+\f1\b do not need to reinvent Bluetooth connection
+\f0\b0  \'97 let RawBT handle it.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Option 1: Use RawBT Intents (simplest, no extra port/server needed)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 RawBT supports direct integration from other Android apps via Intents. Your app just sends the raw bytes to RawBT, and it forwards them over Bluetooth.\
+See the official integration guide: https://rawbt.ru/intents.html\uc0\u8232 (It\'92s only a few lines of code \'97 basically start an Activity with the byte data and printer name.)\
+This is the cleanest for a pure Android app.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Option 2: Use the \'93Server for RawBT\'94 companion app (this is probably what the green instructions meant by \'93HTTP port\'94)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 Install the free 
+\f1\b Server for RawBT
+\f0\b0  from Google Play (package: 
+\fs30 rawbt.server
+\fs26 ).\uc0\u8232 It turns RawBT into a local network service with:\
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls2\ilvl0
+\f3\fs18 \cf0 {\listtext	\uc0\u8226 	}
+\f0\fs26 Raw TCP port 
+\f1\b 9100
+\f0\b0  (direct ESC/POS printing \'97 very common)\
+\ls2\ilvl0
+\f3\fs18 {\listtext	\uc0\u8226 	}
+\f0\fs26 WebSocket API on port 
+\f1\b 40213
+\f0\b0 \
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 Your custom app (or even a web app on the same tablet) can then connect to 
+\fs30 http://127.0.0.1:9100
+\fs26  or the WebSocket and send the byte array above.\uc0\u8232 This matches the \'93find the HTTP port\'94 step in the green message (older versions sometimes showed ~8080; current is 40213/9100).\
+Once the server is running and the printer is selected in RawBT, just open a socket and write the bytes.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Option 3: Direct Bluetooth from your app (more code, but possible)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 If you don\'92t want to depend on RawBT at all, your app can open a BluetoothSocket to the paired XP-58 (UUID 
+\fs30 00001101-0000-1000-8000-00805F9B34FB
+\fs26 ) and write the bytes directly. But this is more work (permissions, connection handling, etc.). RawBT is usually the better bridge.\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b \cf0 Quick test right now (no code yet)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0 \cf0 In RawBT itself:\
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls3\ilvl0\cf0 {\listtext	0.	}Go to your paired XP-58 printer.\
+{\listtext	0.	}Look for \'93Send raw data\'94, \'93Test print\'94, or a way to paste hex/bytes.\
+{\listtext	0.	}Send the sequence 1B700019FA (or the decimal version).\
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 If the drawer pops open, you know the command is correct and the hardware is wired properly (cash drawer cable must be plugged into the printer\'92s RJ11 port).\
+Once you confirm the command works, just drop that exact byte array into your app\'92s print routine.\
+Let me know:\
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls4\ilvl0
+\f3\fs18 \cf0 {\listtext	\uc0\u8226 	}
+\f0\fs26 Which platform your app is built in (Android/Java/Kotlin, Flutter, web, etc.)\
+\ls4\ilvl0
+\f3\fs18 {\listtext	\uc0\u8226 	}
+\f0\fs26 Whether you installed the \'93Server for RawBT\'94 companion app\
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 \'85and I\'92ll give you the exact ready-to-copy code snippet for sending the drawer command. You\'92re very close \'97 this one command is all the printer-specific info you need!\
+\pard\pardeftab560\slleading20\pardirnatural\partightenfactor0
+\cf0 \
+\
+\
+\
+Yes, it will still work perfectly \'97 even if 
+\f1\b RawBT is only installed on the tablet
+\f0\b0  and your custom app is published on Google Play (and runs on that same tablet).\
+\pard\pardeftab560\sa40\partightenfactor0
+
+\f1\b\fs32 \cf0 Why it works\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0\fs26 \cf0 Your custom app and RawBT are both running on the 
+\f1\b same Android device
+\f0\b0  (the tablet). RawBT acts as a 
+\f1\b print bridge
+\f0\b0  for Bluetooth-connected printers like your XP-58. Your app can communicate with RawBT without any network or external server.\
+The two easiest and most reliable ways for your Google Play app to open the cash drawer:\
+\pard\pardeftab560\sa40\partightenfactor0
+
+\f1\b\fs32 \cf0 1. Best option: Use RawBT Intents (Recommended \'97 simplest code)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0\fs26 \cf0 RawBT provides a built-in 
+\f1\b Intent
+\f0\b0  system so any other Android app (including yours from Google Play) can send raw ESC/POS bytes directly to it.\
+Here is the exact ready-to-use Kotlin code (or Java equivalent) to open the cash drawer:\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f2\fs24 \cf0 // In your Activity or Fragment\
+fun openCashDrawer() \{\
+    val intent = Intent("ru.a402d.rawbtprinter.action.PRINT_RAWBT")\
+    intent.setPackage("ru.a402d.rawbtprinter")  // Ensures it goes to RawBT\
+\
+    // Cash drawer command for XP-58 (most reliable version)\
+    val drawerCommand = byteArrayOf(\
+        0x1B, 0x70, 0x00, 0x19, 0xFA.toByte()   // ESC p 0 25 250\
+    )\
+\
+    intent.putExtra("ru.a402d.rawbtprinter.extra.DATA", drawerCommand)\
+    // Optional: specify your printer name if you have multiple\
+    // intent.putExtra("ru.a402d.rawbtprinter.extra.PRINTER", "XP-58")\
+\
+    try \{\
+        startActivity(intent)\
+        // Success - RawBT will forward the command over Bluetooth to your XP-58\
+    \} catch (e: Exception) \{\
+        // Handle error (e.g. RawBT not installed)\
+        // You can show a message: "Please install RawBT from Google Play"\
+    \}\
+\}\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1\b\fs26 \cf0 Important notes:
+\f0\b0 \
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls5\ilvl0
+\f3\fs18 \cf0 {\listtext	\uc0\u8226 	}
+\f0\fs26 The user must have 
+\f1\b RawBT installed
+\f0\b0  and the 
+\f1\b XP-58 already paired
+\f0\b0  inside RawBT (as you were doing earlier).\
+\ls5\ilvl0
+\f3\fs18 {\listtext	\uc0\u8226 	}
+\f0\fs26 No extra permissions needed in your app beyond normal ones.\
+\ls5\ilvl0
+\f3\fs18 {\listtext	\uc0\u8226 	}
+\f0\fs26 This works even if your app is from Google Play \'97 it\'92s just standard Android inter-app communication.\
+\pard\pardeftab560\sa40\partightenfactor0
+
+\f1\b\fs32 \cf0 2. Alternative: Install \'93Server for RawBT\'94 + use local TCP port 9100\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0\fs26 \cf0 If you prefer socket-based sending (e.g. for easier cross-platform code later), install the free 
+\f1\b Server for RawBT
+\f0\b0  companion app on the same tablet. It runs a local raw TCP server on 
+\f1\b port 9100
+\f0\b0 .\
+Your app can then open a socket to 
+\fs30 127.0.0.1:9100
+\fs26  (localhost) and send the exact same byte array above. This is also fully local and works fine from a Google Play app on the tablet.\
+\pard\pardeftab560\sa40\partightenfactor0
+
+\f1\b\fs32 \cf0 Quick test right now (no code)\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f0\b0\fs26 \cf0 In RawBT, look for any \'93Send raw data\'94 or \'93Test raw bytes\'94 option and send these 5 bytes in hex:\uc0\u8232 
+\fs30 1B 70 00 19 FA
+\fs26 \
+If the drawer opens, the command is confirmed working on your hardware.\
+\pard\pardeftab560\sa40\partightenfactor0
+
+\f1\b\fs32 \cf0 Next steps for you\
+\pard\pardeftab560\pardirnatural\partightenfactor0
+\ls6\ilvl0
+\f0\b0\fs26 \cf0 {\listtext	0.	}Try the Intent code above in your app (start with a simple button that calls openCashDrawer()).\
+{\listtext	0.	}Make sure RawBT is running in the background and the XP-58 is selected as the default printer inside RawBT.\
+{\listtext	0.	}Test it \'97 the drawer should pop open instantly when your app sends the Intent.\
+\pard\pardeftab560\slleading20\partightenfactor0
+\cf0 If you run into any error (e.g. Intent not found), it usually means RawBT isn\'92t installed or the package name is slightly different \'97 let me know the exact error and I\'92ll adjust.\
+What language/framework is your app built with (Kotlin/Java native Android, Flutter, React Native, etc.)? I can give you the exact code snippet tailored to it. You\'92re very close \'97 this one command + Intent is all you need for the drawer!\
+}
