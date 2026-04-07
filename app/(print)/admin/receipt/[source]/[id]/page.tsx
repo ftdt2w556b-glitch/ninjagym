@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/server";
-import Image from "next/image";
 import PrintButton from "./PrintButton";
 
 const MEMBERSHIP_LABELS: Record<string, string> = {
@@ -45,7 +44,6 @@ export default async function ReceiptPage({
   let program = "";
   let paymentMethod = "";
   let amount = 0;
-  let staffName = "";
   let notes = "";
 
   if (source === "cash_sale") {
@@ -60,16 +58,12 @@ export default async function ReceiptPage({
     dateStr = bangkokDate(data.processed_at as string);
     amount = Number(data.amount);
     paymentMethod = "Cash";
-    staffName = (data.staff_name as string | null) ?? "";
 
-    // Extract member name from notes ("Quick walk-in: Name" or raw notes)
     const rawNotes = (data.notes as string | null) ?? "";
     const walkInMatch = rawNotes.match(/Quick walk-in:\s*(.+)/i);
     memberName = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
-
     notes = "";
 
-    // Program from items array
     const items = data.items as Array<{ label: string }> | null;
     if (items && items.length > 0) {
       program = MEMBERSHIP_LABELS[items[0].label] ?? items[0].label;
@@ -105,7 +99,7 @@ export default async function ReceiptPage({
           body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; }
           .page { background: white; max-width: 480px; margin: 40px auto; padding: 40px; box-shadow: 0 2px 20px rgba(0,0,0,0.1); }
           .header { text-align: center; border-bottom: 2px solid #1a56db; padding-bottom: 24px; margin-bottom: 24px; }
-          .logo { width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; }
+          .logo { display: block; width: 80px; height: 80px; object-fit: contain; margin: 0 auto 12px; }
           .company { font-size: 18px; font-weight: 700; color: #1a1a2e; }
           .company-sub { font-size: 12px; color: #666; margin-top: 2px; }
           .receipt-title { font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #1a56db; text-transform: uppercase; margin-top: 16px; }
@@ -162,12 +156,6 @@ export default async function ReceiptPage({
               <span className="label">Payment</span>
               <span className="value">{paymentMethod}</span>
             </div>
-            {staffName && (
-              <div className="row">
-                <span className="label">Served by</span>
-                <span className="value">{staffName}</span>
-              </div>
-            )}
             {notes && !notes.startsWith("Quick walk-in:") && (
               <div className="row">
                 <span className="label">Notes</span>
@@ -186,8 +174,8 @@ export default async function ReceiptPage({
           </div>
 
           <div className="footer">
-            This receipt is issued by Rick Tew Co., Ltd. for accounting purposes.<br />
-            Thank you for visiting NinjaGym!
+            This receipt is issued by Rick Tew Co., Ltd.<br />
+            Thank you for visiting Rick Tew&apos;s NinjaGym!
           </div>
 
           <PrintButton />

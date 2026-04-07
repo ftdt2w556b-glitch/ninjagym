@@ -70,7 +70,7 @@ export default async function PrintAllReceiptsPage({
 
   type Receipt = {
     no: string; date: string; customer: string;
-    program: string; method: string; amount: number; notes: string; staffName: string;
+    program: string; method: string; amount: number; notes: string;
   };
 
   const receipts: Receipt[] = [
@@ -90,7 +90,6 @@ export default async function PrintAllReceiptsPage({
         method: "Cash",
         amount: Number(s.amount),
         notes: "",
-        staffName: (s.staff_name as string | null) ?? "",
       };
     }),
     ...(memberPayments ?? []).map((m) => ({
@@ -101,7 +100,6 @@ export default async function PrintAllReceiptsPage({
       method: "PromptPay / Transfer",
       amount: Number(m.amount_paid ?? 0),
       notes: (m.notes as string | null) ?? "",
-      staffName: "",
     })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -120,11 +118,10 @@ export default async function PrintAllReceiptsPage({
           .controls { background: white; padding: 16px 32px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 16px; }
           .controls span { font-size: 14px; color: #555; }
           .print-btn { padding: 8px 24px; background: #1a56db; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-          .summary { background: white; padding: 12px 32px; border-bottom: 1px solid #eee; font-size: 13px; color: #555; }
           .receipt { background: white; max-width: 480px; margin: 32px auto; padding: 36px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); page-break-after: always; }
           .receipt:last-of-type { page-break-after: auto; }
           .header { text-align: center; border-bottom: 2px solid #1a56db; padding-bottom: 20px; margin-bottom: 20px; }
-          .logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 8px; }
+          .logo { display: block; width: 70px; height: 70px; object-fit: contain; margin: 0 auto 10px; }
           .company { font-size: 17px; font-weight: 700; color: #1a1a2e; }
           .company-sub { font-size: 11px; color: #888; margin-top: 2px; }
           .receipt-title { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #1a56db; text-transform: uppercase; margin-top: 14px; }
@@ -141,13 +138,13 @@ export default async function PrintAllReceiptsPage({
           .footer { text-align: center; margin-top: 18px; padding-top: 12px; border-top: 1px solid #eee; font-size: 10px; color: #ccc; }
           @media print {
             body { background: white; }
-            .controls, .summary { display: none !important; }
+            .controls { display: none !important; }
             .receipt { box-shadow: none; margin: 0; padding: 24px; max-width: 100%; }
           }
         `}</style>
       </head>
       <body>
-        <div className="controls no-print">
+        <div className="controls">
           <span>{receipts.length} receipts · {label} · Total ฿{total.toLocaleString()}</span>
           <PrintAllButton />
         </div>
@@ -167,7 +164,6 @@ export default async function PrintAllReceiptsPage({
               <div className="row"><span className="label">Customer</span><span className="value">{r.customer}</span></div>
               {r.program && <div className="row"><span className="label">Program</span><span className="value">{r.program}</span></div>}
               <div className="row"><span className="label">Payment</span><span className="value">{r.method}</span></div>
-              {r.staffName && <div className="row"><span className="label">Served by</span><span className="value">{r.staffName}</span></div>}
               {r.notes && <div className="row"><span className="label">Notes</span><span className="value">{r.notes}</span></div>}
             </div>
 
@@ -179,8 +175,8 @@ export default async function PrintAllReceiptsPage({
             <div className="paid-badge"><span>PAID</span></div>
 
             <div className="footer">
-              This receipt is issued by Rick Tew Co., Ltd. for accounting purposes.<br />
-              Thank you for visiting NinjaGym!
+              This receipt is issued by Rick Tew Co., Ltd.<br />
+              Thank you for visiting Rick Tew&apos;s NinjaGym!
             </div>
           </div>
         ))}
