@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import PrintAllButton from "./PrintAllButton";
-import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/dateUtils";
+import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 
 const MEMBERSHIP_LABELS: Record<string, string> = {
   session_group:    "Group Session",
