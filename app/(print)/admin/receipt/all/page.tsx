@@ -71,8 +71,13 @@ export default async function PrintAllReceiptsPage({
 
   const priceMap: Record<string, number> = {};
   for (const row of priceSettings ?? []) {
-    const type = (row.key as string).replace("price_", "");
-    priceMap[type] = Number(row.value);
+    priceMap[(row.key as string).replace("price_", "")] = Number(row.value);
+  }
+  const labelToKey = Object.fromEntries(Object.entries(MEMBERSHIP_LABELS).map(([k, v]) => [v, k]));
+  function withQty(label: string, typeKey: string, amt: number): string {
+    const unitPrice = priceMap[typeKey] ?? 0;
+    const qty = unitPrice > 0 && amt > 0 ? Math.round(amt / unitPrice) : 1;
+    return qty > 1 ? `${label} ×${qty}` : label;
   }
 
   type Receipt = {
@@ -92,9 +97,13 @@ export default async function PrintAllReceiptsPage({
         const programPart = rawItemName.includes(": ")
           ? rawItemName.split(": ").slice(1).join(": ")
           : rawItemName;
-        program = MEMBERSHIP_LABELS[programPart] ?? programPart;
+        const typeKey = MEMBERSHIP_LABELS[programPart] ? programPart : (labelToKey[programPart] ?? programPart);
+        const displayLabel = MEMBERSHIP_LABELS[typeKey] ?? programPart;
+        program = withQty(displayLabel, typeKey, Number(s.amount));
       } else {
-        program = (MEMBERSHIP_LABELS[s.sale_type as string] ?? (s.sale_type as string)) || "POS Sale";
+        const typeKey = s.sale_type as string;
+        const displayLabel = (MEMBERSHIP_LABELS[typeKey] ?? typeKey) || "POS Sale";
+        program = withQty(displayLabel, typeKey, Number(s.amount));
       }
       return {
         no: `CS-${String(s.id).padStart(5, "0")}`,

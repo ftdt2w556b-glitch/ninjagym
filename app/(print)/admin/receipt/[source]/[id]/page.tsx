@@ -38,6 +38,21 @@ export default async function ReceiptPage({
   const { source, id } = await params;
   const admin = createAdminClient();
 
+  // Fetch all prices once for qty calculation
+  const { data: priceRows } = await admin.from("settings").select("key, value").like("key", "price_%");
+  const priceMap: Record<string, number> = {};
+  for (const row of priceRows ?? []) {
+    priceMap[(row.key as string).replace("price_", "")] = Number(row.value);
+  }
+  // Reverse map: "Group Session" → "session_group"
+  const labelToKey = Object.fromEntries(Object.entries(MEMBERSHIP_LABELS).map(([k, v]) => [v, k]));
+
+  function withQty(label: string, typeKey: string, amt: number): string {
+    const unitPrice = priceMap[typeKey] ?? 0;
+    const qty = unitPrice > 0 && amt > 0 ? Math.round(amt / unitPrice) : 1;
+    return qty > 1 ? `${label} ×${qty}` : label;
+  }
+
   let receiptNo = "";
   let dateStr = "";
   let memberName = "";
@@ -71,9 +86,14 @@ export default async function ReceiptPage({
       const programPart = rawItemName.includes(": ")
         ? rawItemName.split(": ").slice(1).join(": ")
         : rawItemName;
-      program = MEMBERSHIP_LABELS[programPart] ?? programPart;
+      // programPart may be a key ("session_group") or a label ("Group Session")
+      const typeKey = MEMBERSHIP_LABELS[programPart] ? programPart : (labelToKey[programPart] ?? programPart);
+      const displayLabel = MEMBERSHIP_LABELS[typeKey] ?? programPart;
+      program = withQty(displayLabel, typeKey, amount);
     } else {
-      program = (MEMBERSHIP_LABELS[data.sale_type as string] ?? (data.sale_type as string)) || "POS Sale";
+      const typeKey = data.sale_type as string;
+      const displayLabel = (MEMBERSHIP_LABELS[typeKey] ?? typeKey) || "POS Sale";
+      program = withQty(displayLabel, typeKey, amount);
     }
   } else if (source === "member") {
     const { data } = await admin
@@ -92,11 +112,7 @@ export default async function ReceiptPage({
 
     const membershipType = data.membership_type as string;
     const baseLabel = MEMBERSHIP_LABELS[membershipType] ?? membershipType ?? "";
-    const { data: priceSetting } = await admin
-      .from("settings").select("value").eq("key", `price_${membershipType}`).maybeSingle();
-    const unitPrice = priceSetting ? Number(priceSetting.value) : 0;
-    const qty = unitPrice > 0 && amount > 0 ? Math.round(amount / unitPrice) : 1;
-    program = qty > 1 ? `${baseLabel} ×${qty}` : baseLabel;
+    program = withQty(baseLabel, membershipType, amount);
   } else {
     notFound();
   }
