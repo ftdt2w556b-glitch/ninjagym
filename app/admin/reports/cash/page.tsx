@@ -289,6 +289,7 @@ export default async function RevenuePage({
                 <th className="text-left px-4 py-3 font-semibold text-gray-600">Method</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600">Amount</th>
                 <th className="px-4 py-3 font-semibold text-gray-600">Slip</th>
+                <th className="px-4 py-3" />
                 {canEdit && <th className="px-4 py-3" />}
               </tr>
             </thead>
@@ -328,6 +329,17 @@ export default async function RevenuePage({
                     ) : (
                       <span className="text-gray-200 text-xs">—</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <a
+                      href={`/admin/receipt/${tx.source}/${tx.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="View receipt"
+                      className="text-gray-400 hover:text-blue-600 transition-colors text-xs"
+                    >
+                      🧾
+                    </a>
                   </td>
                   {canEdit && (
                     <td className="px-4 py-3 text-right">
