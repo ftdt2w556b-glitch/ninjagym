@@ -81,7 +81,7 @@ export default async function PrintAllReceiptsPage({
       const items = s.items as Array<{ label: string }> | null;
       const program = items?.[0]?.label
         ? (MEMBERSHIP_LABELS[items[0].label] ?? items[0].label)
-        : (MEMBERSHIP_LABELS[s.sale_type as string] ?? (s.sale_type as string) ?? "POS Sale");
+        : (MEMBERSHIP_LABELS[s.sale_type as string] ?? (s.sale_type as string) || "POS Sale");
       return {
         no: `CS-${String(s.id).padStart(5, "0")}`,
         date: bangkokDate(s.processed_at as string),
