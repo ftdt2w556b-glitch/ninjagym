@@ -68,7 +68,7 @@ export default async function ReceiptPage({
     if (items && items.length > 0) {
       program = MEMBERSHIP_LABELS[items[0].label] ?? items[0].label;
     } else {
-      program = MEMBERSHIP_LABELS[data.sale_type as string] ?? (data.sale_type as string) || "POS Sale";
+      program = (MEMBERSHIP_LABELS[data.sale_type as string] ?? (data.sale_type as string)) || "POS Sale";
     }
   } else if (source === "member") {
     const { data } = await admin
