@@ -191,7 +191,7 @@ export default async function RevenuePage({
         </div>
         <div className="flex gap-2">
           <a
-            href={`/admin/receipt/all?mode=${mode}&date=${dateParam}`}
+            href={`/admin/receipt/all?mode=${mode}&date=${date}`}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-[#1a56db] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
