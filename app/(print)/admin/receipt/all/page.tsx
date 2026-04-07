@@ -63,7 +63,7 @@ export default async function PrintAllReceiptsPage({
   const [{ data: cashSales }, { data: memberPayments }, { data: priceSettings }] = await Promise.all([
     admin.from("cash_sales").select("id, amount, processed_at, sale_type, notes, staff_name, items")
       .gte("processed_at", from).lte("processed_at", to).order("processed_at"),
-    admin.from("member_registrations").select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes")
+    admin.from("member_registrations").select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, sessions_purchased")
       .eq("slip_status", "approved").neq("payment_method", "cash")
       .gte("slip_reviewed_at", from).lte("slip_reviewed_at", to).order("slip_reviewed_at"),
     admin.from("settings").select("key, value").like("key", "price_%"),
@@ -119,13 +119,15 @@ export default async function PrintAllReceiptsPage({
       const membershipType = m.membership_type as string;
       const baseLabel = MEMBERSHIP_LABELS[membershipType] ?? membershipType ?? "";
       const amt = Number(m.amount_paid ?? 0);
-      const unitPrice = priceMap[membershipType] ?? 0;
-      const qty = unitPrice > 0 && amt > 0 ? Math.round(amt / unitPrice) : 1;
+      const sessionsPurchased = Number(m.sessions_purchased ?? 0);
+      const memberProgram = sessionsPurchased > 1
+        ? `${baseLabel} ×${sessionsPurchased}`
+        : withQty(baseLabel, membershipType, amt);
       return {
         no: `MR-${String(m.id).padStart(5, "0")}`,
         date: bangkokDate(m.slip_reviewed_at as string),
         customer: m.name as string,
-        program: qty > 1 ? `${baseLabel} ×${qty}` : baseLabel,
+        program: memberProgram,
         method: "PromptPay / Transfer",
         amount: amt,
         notes: (m.notes as string | null) ?? "",

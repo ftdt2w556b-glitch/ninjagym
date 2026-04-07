@@ -98,7 +98,7 @@ export default async function ReceiptPage({
   } else if (source === "member") {
     const { data } = await admin
       .from("member_registrations")
-      .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes")
+      .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, sessions_purchased")
       .eq("id", Number(id))
       .maybeSingle();
     if (!data) notFound();
@@ -112,7 +112,12 @@ export default async function ReceiptPage({
 
     const membershipType = data.membership_type as string;
     const baseLabel = MEMBERSHIP_LABELS[membershipType] ?? membershipType ?? "";
-    program = withQty(baseLabel, membershipType, amount);
+    const sessionsPurchased = Number(data.sessions_purchased ?? 0);
+    if (sessionsPurchased > 1) {
+      program = `${baseLabel} ×${sessionsPurchased}`;
+    } else {
+      program = withQty(baseLabel, membershipType, amount);
+    }
   } else {
     notFound();
   }
