@@ -60,13 +60,20 @@ export default async function PrintAllReceiptsPage({
     to = bangkokEndOfDay(`${y}-12-31`);
   }
 
-  const [{ data: cashSales }, { data: memberPayments }] = await Promise.all([
+  const [{ data: cashSales }, { data: memberPayments }, { data: priceSettings }] = await Promise.all([
     admin.from("cash_sales").select("id, amount, processed_at, sale_type, notes, staff_name, items")
       .gte("processed_at", from).lte("processed_at", to).order("processed_at"),
     admin.from("member_registrations").select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes")
       .eq("slip_status", "approved").neq("payment_method", "cash")
       .gte("slip_reviewed_at", from).lte("slip_reviewed_at", to).order("slip_reviewed_at"),
+    admin.from("settings").select("key, value").like("key", "price_%"),
   ]);
+
+  const priceMap: Record<string, number> = {};
+  for (const row of priceSettings ?? []) {
+    const type = (row.key as string).replace("price_", "");
+    priceMap[type] = Number(row.value);
+  }
 
   type Receipt = {
     no: string; date: string; customer: string;
@@ -78,11 +85,17 @@ export default async function PrintAllReceiptsPage({
       const rawNotes = (s.notes as string | null) ?? "";
       const walkInMatch = rawNotes.match(/Quick walk-in:\s*(.+)/i);
       const customer = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
-      const items = s.items as Array<{ label: string }> | null;
-      const itemLabel = items?.[0]?.label;
-      const program = itemLabel
-        ? (MEMBERSHIP_LABELS[itemLabel] ?? itemLabel)
-        : ((MEMBERSHIP_LABELS[s.sale_type as string] ?? (s.sale_type as string)) || "POS Sale");
+      const items = s.items as Array<{ name?: string; label?: string }> | null;
+      const rawItemName = items?.[0]?.name || items?.[0]?.label || "";
+      let program: string;
+      if (rawItemName) {
+        const programPart = rawItemName.includes(": ")
+          ? rawItemName.split(": ").slice(1).join(": ")
+          : rawItemName;
+        program = MEMBERSHIP_LABELS[programPart] ?? programPart;
+      } else {
+        program = (MEMBERSHIP_LABELS[s.sale_type as string] ?? (s.sale_type as string)) || "POS Sale";
+      }
       return {
         no: `CS-${String(s.id).padStart(5, "0")}`,
         date: bangkokDate(s.processed_at as string),
@@ -93,15 +106,22 @@ export default async function PrintAllReceiptsPage({
         notes: "",
       };
     }),
-    ...(memberPayments ?? []).map((m) => ({
-      no: `MR-${String(m.id).padStart(5, "0")}`,
-      date: bangkokDate(m.slip_reviewed_at as string),
-      customer: m.name as string,
-      program: MEMBERSHIP_LABELS[m.membership_type as string] ?? (m.membership_type as string) ?? "",
-      method: "PromptPay / Transfer",
-      amount: Number(m.amount_paid ?? 0),
-      notes: (m.notes as string | null) ?? "",
-    })),
+    ...(memberPayments ?? []).map((m) => {
+      const membershipType = m.membership_type as string;
+      const baseLabel = MEMBERSHIP_LABELS[membershipType] ?? membershipType ?? "";
+      const amt = Number(m.amount_paid ?? 0);
+      const unitPrice = priceMap[membershipType] ?? 0;
+      const qty = unitPrice > 0 && amt > 0 ? Math.round(amt / unitPrice) : 1;
+      return {
+        no: `MR-${String(m.id).padStart(5, "0")}`,
+        date: bangkokDate(m.slip_reviewed_at as string),
+        customer: m.name as string,
+        program: qty > 1 ? `${baseLabel} ×${qty}` : baseLabel,
+        method: "PromptPay / Transfer",
+        amount: amt,
+        notes: (m.notes as string | null) ?? "",
+      };
+    }),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
   if (receipts.length === 0) notFound();

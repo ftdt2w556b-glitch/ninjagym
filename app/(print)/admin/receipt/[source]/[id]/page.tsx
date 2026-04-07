@@ -64,10 +64,14 @@ export default async function ReceiptPage({
     memberName = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
     notes = "";
 
-    const items = data.items as Array<{ label: string }> | null;
-    const itemLabel = items?.[0]?.label;
-    if (itemLabel) {
-      program = MEMBERSHIP_LABELS[itemLabel] ?? itemLabel;
+    const items = data.items as Array<{ name?: string; label?: string }> | null;
+    const rawItemName = items?.[0]?.name || items?.[0]?.label || "";
+    if (rawItemName) {
+      // POS prefixes items with "CustomerName: Program" — strip the prefix
+      const programPart = rawItemName.includes(": ")
+        ? rawItemName.split(": ").slice(1).join(": ")
+        : rawItemName;
+      program = MEMBERSHIP_LABELS[programPart] ?? programPart;
     } else {
       program = (MEMBERSHIP_LABELS[data.sale_type as string] ?? (data.sale_type as string)) || "POS Sale";
     }
@@ -84,8 +88,15 @@ export default async function ReceiptPage({
     memberName = data.name as string;
     amount = Number(data.amount_paid ?? 0);
     paymentMethod = data.payment_method === "cash" ? "Cash" : "PromptPay / Transfer";
-    program = MEMBERSHIP_LABELS[data.membership_type as string] ?? (data.membership_type as string) ?? "";
     notes = (data.notes as string | null) ?? "";
+
+    const membershipType = data.membership_type as string;
+    const baseLabel = MEMBERSHIP_LABELS[membershipType] ?? membershipType ?? "";
+    const { data: priceSetting } = await admin
+      .from("settings").select("value").eq("key", `price_${membershipType}`).maybeSingle();
+    const unitPrice = priceSetting ? Number(priceSetting.value) : 0;
+    const qty = unitPrice > 0 && amount > 0 ? Math.round(amount / unitPrice) : 1;
+    program = qty > 1 ? `${baseLabel} ×${qty}` : baseLabel;
   } else {
     notFound();
   }
