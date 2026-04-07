@@ -77,7 +77,7 @@ export default async function PrintAllReceiptsPage({
     ...(cashSales ?? []).map((s) => {
       const rawNotes = (s.notes as string | null) ?? "";
       const walkInMatch = rawNotes.match(/Quick walk-in:\s*(.+)/i);
-      const customer = walkInMatch ? walkInMatch[1] : "Walk-in Customer";
+      const customer = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
       const items = s.items as Array<{ label: string }> | null;
       const program = items?.[0]?.label
         ? (MEMBERSHIP_LABELS[items[0].label] ?? items[0].label)
@@ -89,7 +89,7 @@ export default async function PrintAllReceiptsPage({
         program,
         method: "Cash",
         amount: Number(s.amount),
-        notes: (!walkInMatch && rawNotes) ? rawNotes : "",
+        notes: "",
         staffName: (s.staff_name as string | null) ?? "",
       };
     }),

@@ -65,10 +65,9 @@ export default async function ReceiptPage({
     // Extract member name from notes ("Quick walk-in: Name" or raw notes)
     const rawNotes = (data.notes as string | null) ?? "";
     const walkInMatch = rawNotes.match(/Quick walk-in:\s*(.+)/i);
-    memberName = walkInMatch ? walkInMatch[1] : "Walk-in Customer";
+    memberName = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
 
-    // Only show notes if it's not just the member name
-    notes = (!walkInMatch && rawNotes) ? rawNotes : "";
+    notes = "";
 
     // Program from items array
     const items = data.items as Array<{ label: string }> | null;
