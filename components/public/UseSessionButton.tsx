@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-type Phase = "idle" | "picking" | "confirming" | "submitting" | "pending" | "approved" | "rejected";
+type Phase = "idle" | "picking" | "confirming" | "submitting" | "pending" | "approved" | "rejected" | "already_in";
 
 interface Props {
   memberId: number;
@@ -27,20 +27,29 @@ export default function UseSessionButton({
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
-  // On mount: check if there's already a pending request for this member
+  // On mount: check for existing pending OR already checked in today
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
+
+    // Check pending first
     supabase
       .from("pending_checkins")
       .select("id, status")
       .eq("member_id", memberId)
       .eq("status", "pending")
       .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setPendingId(data.id);
+      .then(({ data: pendingData }) => {
+        if (pendingData) {
+          setPendingId(pendingData.id);
           setPhase("pending");
+          return;
         }
+        // Then check if already checked in today
+        fetch(`/api/checkin/status?member_id=${memberId}`)
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.today) setPhase("already_in");
+          });
       });
   }, [memberId]);
 
@@ -191,12 +200,16 @@ export default function UseSessionButton({
         <p className="text-4xl mb-2">✅</p>
         <p className="font-bold text-green-700 text-xl">Checked in!</p>
         <p className="text-green-600 text-sm mt-1">Have fun, {memberName.split(" ")[0]}!</p>
-        <button
-          onClick={() => { setPhase("idle"); setPendingId(null); }}
-          className="mt-4 text-xs text-gray-400 underline"
-        >
-          Done
-        </button>
+      </div>
+    );
+  }
+
+  // ── already checked in today ───────────────────────────────────────────────
+  if (phase === "already_in") {
+    return (
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 text-center mt-2">
+        <p className="font-bold text-blue-700">✓ Already checked in today</p>
+        <p className="text-blue-500 text-sm mt-1">See staff if you need another session</p>
       </div>
     );
   }
