@@ -6,6 +6,7 @@ import Image from "next/image";
 import ShareButton from "@/components/public/ShareButton";
 import TopUpSection from "@/components/public/TopUpSection";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
+import UseSessionButton from "@/components/public/UseSessionButton";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface CheckIn {
@@ -552,6 +553,24 @@ export default function QrCardClient({
         </div>
       </div>
 
+
+      {/* ── Use Session — parent-initiated check-in ─────────────── */}
+      {(() => {
+        const usablePkg = activePackages.find(
+          (p) => !p.time_based && p.sessions_remaining !== null && p.sessions_remaining > 0
+        );
+        if (!usablePkg) return null;
+        return (
+          <UseSessionButton
+            memberId={usablePkg.id}
+            memberName={member.name}
+            membershipLabel={usablePkg.membership_label}
+            sessionsRemaining={usablePkg.sessions_remaining ?? 0}
+            maxKids={member.kids_count ?? 1}
+            cardToken={cardToken}
+          />
+        );
+      })()}
 
       <ShareButton
         url={`${siteUrl}/qr/card/${member.id}?token=${cardToken}`}

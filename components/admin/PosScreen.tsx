@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
+import PendingCheckIns from "@/components/admin/PendingCheckIns";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 type InventoryRow = { item_id: string; variant: string; stock_qty: number };
@@ -925,6 +926,9 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
 
         {/* Left: Sale builder */}
         <div className="flex flex-col gap-4">
+
+          {/* Pending parent check-in requests */}
+          <PendingCheckIns staffName={activeStaff?.name ?? "Staff"} />
 
           {/* Pending cash registrations */}
           {pendingList.length > 0 && (
