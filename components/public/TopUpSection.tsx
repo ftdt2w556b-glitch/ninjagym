@@ -107,7 +107,8 @@ export default function TopUpSection({
     body.append("payment_method", paymentMethod);
     body.append("amount_paid", String(price));
     if (!selectedMt?.timeBased) {
-      body.append("sessions_remaining", isBulk ? String(bulkQty) : "1");
+      // Bulk packs track total sessions purchased; single sessions track per-kid (kidsCount)
+      body.append("sessions_remaining", isBulk ? String(bulkQty) : String(kidsCount));
     }
     body.append("parent_member_id", String(memberId));
     const waterNote = waterQty > 0 ? ` | Water x${waterQty} (+${waterQty * WATER_PRICE} THB)` : "";
