@@ -386,7 +386,6 @@ export default async function MembersPage({
                     <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Active Packages</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden md:table-cell">Kids</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Status</th>
-                    <th className="text-left px-4 py-3 font-semibold text-gray-600 hidden sm:table-cell">Amount</th>
                     <th className="text-left px-4 py-3 font-semibold text-gray-600">Actions</th>
                   </tr>
                 </thead>
@@ -456,9 +455,6 @@ export default async function MembersPage({
                         <td className="px-4 py-3 hidden md:table-cell text-gray-600">{m.kids_count}</td>
                         <td className="px-4 py-3">
                           <Badge label={slipStatusLabel(m.slip_status)} variant={slipStatusVariant(m.slip_status)} />
-                        </td>
-                        <td className="px-4 py-3 hidden sm:table-cell text-gray-600">
-                          {m.amount_paid ? `${Number(m.amount_paid).toLocaleString()} THB` : "-"}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
