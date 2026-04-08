@@ -5,6 +5,7 @@ import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import CheckInButton from "@/components/admin/CheckInButton";
 import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
+import EditCheckInButton from "@/components/admin/EditCheckInButton";
 import PeriodPicker from "@/components/admin/PeriodPicker";
 import {
   bangkokToday,
@@ -47,6 +48,50 @@ async function deleteCheckIn(formData: FormData) {
       await admin
         .from("member_registrations")
         .update({ sessions_remaining: reg.sessions_remaining + 1 })
+        .eq("id", log.member_id);
+    }
+  }
+
+  revalidatePath("/admin/members");
+}
+
+async function editCheckIn(formData: FormData) {
+  "use server";
+  const id = Number(formData.get("id"));
+  const newKidsCount = Number(formData.get("kids_count"));
+  const oldKidsCount = Number(formData.get("old_kids_count"));
+  if (!id || newKidsCount < 1) return;
+
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager", "owner"].includes(profile?.role ?? "")) return;
+
+  // Fetch the log to get member_id
+  const { data: log } = await admin
+    .from("attendance_logs")
+    .select("member_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  // Update kids_count on the log
+  await admin.from("attendance_logs").update({ kids_count: newKidsCount }).eq("id", id);
+
+  // Adjust sessions_remaining by the difference (positive diff = credit back, negative = deduct more)
+  const diff = oldKidsCount - newKidsCount;
+  if (diff !== 0 && log?.member_id) {
+    const { data: reg } = await admin
+      .from("member_registrations")
+      .select("sessions_remaining")
+      .eq("id", log.member_id)
+      .maybeSingle();
+    if (reg && reg.sessions_remaining !== null) {
+      await admin
+        .from("member_registrations")
+        .update({ sessions_remaining: reg.sessions_remaining + diff })
         .eq("id", log.member_id);
     }
   }
@@ -644,6 +689,14 @@ export default async function MembersPage({
                         >
                           View
                         </Link>
+                      )}
+                      {isAdminOrOwner && (
+                        <EditCheckInButton
+                          action={editCheckIn}
+                          id={log.id}
+                          currentKidsCount={log.kids_count ?? 1}
+                          memberName={log.member_name ?? "Unknown"}
+                        />
                       )}
                       {isAdminOrOwner && (
                         <DeleteCheckInButton
