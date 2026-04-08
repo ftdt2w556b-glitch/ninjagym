@@ -146,7 +146,7 @@ export default async function QrCardPage({
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const pastPackages = allRelated
-    .filter((r) => r.slip_status === "approved" && !packageIsActive(r))
+    .filter((r) => r.slip_status === "approved" && !packageIsActive(r) && (r.amount_paid ?? 0) > 0)
     .map(mapPackage)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
