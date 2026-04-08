@@ -7,6 +7,7 @@ type Phase = "idle" | "picking" | "confirming" | "submitting" | "pending" | "app
 
 interface Props {
   memberId: number;
+  authMemberId: number;   // parent registration ID — what the cardToken is signed for
   memberName: string;
   membershipLabel: string;
   sessionsRemaining: number;
@@ -16,6 +17,7 @@ interface Props {
 
 export default function UseSessionButton({
   memberId,
+  authMemberId,
   memberName,
   membershipLabel,
   sessionsRemaining,
@@ -81,6 +83,7 @@ export default function UseSessionButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           member_id: memberId,
+          auth_id: authMemberId,  // token was signed for the parent registration
           kids_count: kids,
           membership_type: membershipLabel, // use label as type for display
           membership_label: membershipLabel,

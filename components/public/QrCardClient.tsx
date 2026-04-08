@@ -568,6 +568,7 @@ export default function QrCardClient({
         return (
           <UseSessionButton
             memberId={usablePkg.id}
+            authMemberId={member.id}
             memberName={member.name}
             membershipLabel={usablePkg.membership_label}
             sessionsRemaining={usablePkg.sessions_remaining ?? 0}

@@ -3,9 +3,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { verifyMemberToken } from "@/lib/member-token";
 
 export async function POST(req: NextRequest) {
-  const { member_id, kids_count, membership_type, membership_label, token } = await req.json();
+  const { member_id, auth_id, kids_count, membership_type, membership_label, token } = await req.json();
 
-  if (!verifyMemberToken(Number(member_id), token)) {
+  // auth_id is the parent/main registration ID that the cardToken is signed for.
+  // member_id may be a top-up package with a different ID.
+  if (!verifyMemberToken(Number(auth_id ?? member_id), token)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
