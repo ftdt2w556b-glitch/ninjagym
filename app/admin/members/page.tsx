@@ -155,6 +155,7 @@ export default async function MembersPage({
     membership_type: string; kids_count: number | null; kids_names: string | null;
     notes: string | null; slip_status: string; amount_paid: number | null;
     payment_method: string | null; created_at: string; sessions_remaining: number | null;
+    loyalty_discount: number | null;
     sessions_purchased: number | null; expires_at: string | null; pin: string | null;
   };
   type TopUpRow = {
@@ -170,7 +171,7 @@ export default async function MembersPage({
   if (tab === "members") {
     let query = admin
       .from("member_registrations")
-      .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, sessions_purchased, expires_at, pin")
+      .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, sessions_purchased, expires_at, pin, loyalty_discount")
       .is("parent_member_id", null)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -405,6 +406,11 @@ export default async function MembersPage({
                                 PIN: {m.pin}
                               </span>
                             )}
+                            {m.loyalty_discount ? (
+                              <span className="text-xs bg-yellow-100 text-yellow-700 font-bold rounded px-1.5 py-0.5">
+                                ⭐ ฿{m.loyalty_discount} off
+                              </span>
+                            ) : null}
                           </div>
                           {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
                           {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}

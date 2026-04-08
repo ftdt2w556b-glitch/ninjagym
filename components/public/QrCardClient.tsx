@@ -150,6 +150,7 @@ interface Props {
   totalCheckIns: number;
   freeSessionsRedeemed: number;
   notifyPrefs?: { checkin?: boolean; low_sessions?: boolean; milestone?: boolean } | null;
+  loyaltyDiscount?: number;
 }
 
 // ── Sessions list with collapse for past purchases ────────────────────────────
@@ -252,6 +253,7 @@ export default function QrCardClient({
   totalCheckIns,
   freeSessionsRedeemed,
   notifyPrefs,
+  loyaltyDiscount = 0,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
   const [redeeming, setRedeeming]       = useState(false);
@@ -548,6 +550,9 @@ export default function QrCardClient({
 
         {/* Footer */}
         <div className="bg-gray-50 px-5 py-3 text-center border-t border-gray-100">
+          {loyaltyDiscount > 0 && (
+            <p className="text-xs font-bold text-yellow-600 mb-1">⭐ Loyalty member — ฿{loyaltyDiscount} off each program</p>
+          )}
           <p className="text-xs text-gray-400">Rick Tew&apos;s NinjaGym</p>
           <span className="sr-only">Koh Samui, Thailand</span>
         </div>

@@ -42,7 +42,7 @@ export default async function QrCardPage({
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, sessions_remaining, sessions_purchased, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin, free_sessions_redeemed, notify_prefs")
+    .select("id, name, phone, email, membership_type, sessions_remaining, sessions_purchased, slip_status, kids_names, kids_count, created_at, parent_member_id, expires_at, amount_paid, pin, free_sessions_redeemed, notify_prefs, loyalty_discount")
     .eq("id", id)
     .single();
 
@@ -173,6 +173,7 @@ export default async function QrCardPage({
       totalCheckIns={totalCheckIns ?? 0}
       freeSessionsRedeemed={member.free_sessions_redeemed ?? 0}
       notifyPrefs={member.notify_prefs ?? null}
+      loyaltyDiscount={(member as { loyalty_discount?: number | null }).loyalty_discount ?? 0}
     />
   );
 }

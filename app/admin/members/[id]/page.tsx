@@ -24,7 +24,7 @@ export default function EditMemberPage() {
   const [form, setForm] = useState({
     name: "", phone: "", email: "", kids_names: "", kids_count: 1,
     membership_type: "session_group", slip_status: "approved",
-    notes: "", sessions_remaining: "" as string | number, amount_paid: "" as string | number,
+    notes: "", sessions_remaining: "" as string | number, amount_paid: "" as string | number, loyalty_discount: 0,
   });
 
   useEffect(() => {
@@ -43,6 +43,7 @@ export default function EditMemberPage() {
           notes:              data.notes ?? "",
           sessions_remaining: data.sessions_remaining ?? "",
           amount_paid:        data.amount_paid ?? "",
+          loyalty_discount:   data.loyalty_discount ?? 0,
         });
       })
       .catch(() => setError("Failed to load member"))
@@ -199,6 +200,19 @@ export default function EditMemberPage() {
               value={form.amount_paid}
               onChange={(e) => setForm({ ...form, amount_paid: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">
+              ⭐ Loyalty Discount (THB)
+              <span className="ml-2 font-normal text-gray-400">— auto-shown to staff at check-in</span>
+            </label>
+            <input
+              type="number" min={0}
+              value={form.loyalty_discount}
+              onChange={(e) => setForm({ ...form, loyalty_discount: Number(e.target.value) })}
+              placeholder="0"
+              className="w-full border border-yellow-300 bg-yellow-50 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
           </div>
           <div>
