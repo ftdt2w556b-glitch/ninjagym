@@ -57,22 +57,52 @@ export async function POST(request: NextRequest) {
         sale_id: sale.id,
       });
 
-      // Update reference record slip_status to approved if provided
-      // Also patch membership_type/amount/sessions if a correction was made at the POS
+      // Approve pending cash membership registration + auto check-in.
+      // Parent already chose their program and kids count on their card —
+      // POS approval is the single staff action (payment + check-in combined).
       if (referenceId && saleType === "membership") {
+        // Fetch registration details for check-in
+        const { data: reg } = await admin
+          .from("member_registrations")
+          .select("name, kids_count, membership_type, sessions_remaining")
+          .eq("id", referenceId)
+          .single();
+
         const regUpdate: Record<string, unknown> = {
           slip_status: "approved",
           slip_reviewed_at: new Date().toISOString(),
         };
+        let finalType       = reg?.membership_type ?? "";
+        let finalSessions   = reg?.sessions_remaining ?? null;
         if (correctedMembershipType) {
           regUpdate.membership_type = correctedMembershipType;
-          regUpdate.amount_paid = amount; // already the corrected amount from cart
-          if (correctedSessions !== undefined) regUpdate.sessions_remaining = correctedSessions;
+          regUpdate.amount_paid     = amount;
+          if (correctedSessions !== undefined) {
+            regUpdate.sessions_remaining = correctedSessions;
+            finalSessions = correctedSessions;
+          }
+          finalType = correctedMembershipType;
         }
-        await admin
-          .from("member_registrations")
-          .update(regUpdate)
-          .eq("id", referenceId);
+        await admin.from("member_registrations").update(regUpdate).eq("id", referenceId);
+
+        // Auto check-in: parent is physically here paying cash for today's session
+        if (reg) {
+          const kidsCount = reg.kids_count ?? 1;
+          await admin.from("attendance_logs").insert({
+            member_id:       referenceId,
+            member_name:     reg.name,
+            kids_count:      kidsCount,
+            membership_type: finalType,
+            notes:           `Check-in by ${staffName ?? "staff"} | ${kidsCount} kid${kidsCount !== 1 ? "s" : ""}`,
+            check_in_at:     new Date().toISOString(),
+          });
+          if (finalSessions !== null) {
+            await admin
+              .from("member_registrations")
+              .update({ sessions_remaining: Math.max(0, finalSessions - kidsCount) })
+              .eq("id", referenceId);
+          }
+        }
       }
 
       // Decrement inventory for physical shop items
