@@ -88,8 +88,6 @@ export default function UseSessionButton({
     }
   }
 
-  const kidOptions = Array.from({ length: Math.max(maxKids, 1) }, (_, i) => i + 1);
-
   // ── idle ──────────────────────────────────────────────────────────────────
   if (phase === "idle") {
     return (
@@ -105,28 +103,29 @@ export default function UseSessionButton({
   // ── picking kids ──────────────────────────────────────────────────────────
   if (phase === "picking") {
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-4">
-        <p className="text-center font-bold text-gray-800 text-lg">How many kids today?</p>
-        <div className="flex justify-center gap-3 flex-wrap">
-          {kidOptions.map((n) => (
-            <button
-              key={n}
-              onClick={() => setKids(n)}
-              className={`w-16 h-16 rounded-2xl text-2xl font-bold transition-all border-2 ${
-                kids === n
-                  ? "bg-[#1a56db] text-white border-[#1a56db] scale-110 shadow-lg"
-                  : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
+      <div className="bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-5 mt-2">
+        <p className="text-center font-bold text-gray-800 text-xl">How many kids today?</p>
+        {/* +/- stepper */}
+        <div className="flex items-center justify-center gap-6">
+          <button
+            onClick={() => setKids((k) => Math.max(1, k - 1))}
+            className="w-16 h-16 rounded-2xl text-3xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all border border-gray-200"
+          >
+            −
+          </button>
+          <span className="text-6xl font-bold text-[#1a56db] w-16 text-center">{kids}</span>
+          <button
+            onClick={() => setKids((k) => Math.min(10, k + 1))}
+            className="w-16 h-16 rounded-2xl text-3xl font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all border border-gray-200"
+          >
+            +
+          </button>
         </div>
-        <div className="flex gap-3">
-          <button onClick={() => setPhase("idle")} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-semibold">Cancel</button>
+        <div className="flex gap-3 mt-1">
+          <button onClick={() => setPhase("idle")} className="flex-1 py-4 rounded-xl border border-gray-200 text-gray-500 font-semibold text-lg">Cancel</button>
           <button
             onClick={() => setPhase("confirming")}
-            className="flex-1 py-3 rounded-xl bg-[#1a56db] text-white font-bold"
+            className="flex-1 py-4 rounded-xl bg-[#1a56db] text-white font-bold text-lg"
           >
             Next →
           </button>
