@@ -95,9 +95,9 @@ export default function UseSessionButton({
     return (
       <button
         onClick={() => { setKids(maxKids > 0 ? maxKids : 1); setPhase("picking"); }}
-        className="w-full bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-xl rounded-2xl py-5 shadow-xl hover:brightness-110 active:scale-95 transition-all"
+        className="w-full bg-gradient-to-b from-[#4cff5e] to-[#1db02b] text-white font-bold text-2xl rounded-2xl py-6 mt-2 shadow-xl hover:brightness-110 active:scale-95 transition-all tracking-wide"
       >
-        ✅ Use Session
+        USE A SESSION
       </button>
     );
   }
