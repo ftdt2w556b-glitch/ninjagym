@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (!reg) return NextResponse.json({ error: "Member not found" }, { status: 404 });
-  if (reg.sessions_remaining !== null && reg.sessions_remaining < kids_count) {
+  if (reg.sessions_remaining !== null && reg.sessions_remaining < 1) {
     return NextResponse.json({ error: "Not enough sessions remaining" }, { status: 400 });
   }
 
