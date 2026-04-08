@@ -50,6 +50,13 @@ export async function POST(req: NextRequest) {
         .eq("id", pending.member_id);
     }
 
+    // Ensure the linked registration is approved (handles PromptPay or any edge case)
+    await admin
+      .from("member_registrations")
+      .update({ slip_status: "approved" })
+      .eq("id", pending.member_id)
+      .neq("slip_status", "approved");
+
     await admin
       .from("pending_checkins")
       .update({ status: "approved", handled_by: staff_name ?? "staff", handled_at: now })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendMemberConfirmation } from "@/lib/email";
 import { signMemberId } from "@/lib/member-token";
+import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 
 
 export async function POST(request: NextRequest) {
@@ -67,14 +68,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const slip_status =
-      payment_method === "self_register"
-        ? "approved"          // self-registration: auto-approved, 0 sessions, chooses program from card
-        : payment_method === "cash"
-        ? "cash_pending"
-        : payment_method === "stripe"
-        ? "pending_review"    // webhook will approve after successful payment
-        : "pending_review";
+    // All registrations are auto-approved immediately.
+    // Payment verification for cash/PromptPay happens via the pending_checkin
+    // approval flow — staff sees payment info on the Pending page and approves once.
+    const slip_status = payment_method === "stripe" ? "pending_review" : "approved";
 
     const { data, error } = await admin
       .from("member_registrations")
@@ -100,6 +97,23 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
+
+    // For cash/PromptPay purchases: create a pending_checkin immediately.
+    // This combines payment confirmation + check-in into a single staff action on the Pending page.
+    if (payment_method === "cash" || payment_method === "promptpay") {
+      const membershipLabel =
+        MEMBERSHIP_TYPES.find((m) => m.id === membership_type)?.label ?? membership_type;
+      await admin.from("pending_checkins").insert({
+        member_id:        data.id,
+        member_name:      name,
+        kids_count,
+        membership_type,
+        membership_label: membershipLabel,
+        payment_method,
+        amount_paid:      amount_paid ?? 0,
+        slip_image:       slip_image ?? null,
+      }).throwOnError();
+    }
 
     // Send confirmation email (fire-and-forget, don't block response)
     if (email) {
