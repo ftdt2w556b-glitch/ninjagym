@@ -191,7 +191,7 @@ export default function JoinPage() {
         {/* What happens next */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-800">
           <p className="font-bold mb-1">🥷 What happens next?</p>
-          <p>You&apos;ll get your member card with a PIN and QR code. From there you can pick your program and pay — Group Session, Climb Zone, Bulk sessions, and more.</p>
+          <p>You&apos;ll get your member card with a PIN number. Next, you pick your first program, number of kids attending and payment type.</p>
         </div>
 
         {error && (
