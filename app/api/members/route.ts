@@ -68,10 +68,12 @@ export async function POST(request: NextRequest) {
     }
 
     const slip_status =
-      payment_method === "cash"
+      payment_method === "self_register"
+        ? "approved"          // self-registration: auto-approved, 0 sessions, chooses program from card
+        : payment_method === "cash"
         ? "cash_pending"
         : payment_method === "stripe"
-        ? "pending_review" // webhook will approve after successful payment
+        ? "pending_review"    // webhook will approve after successful payment
         : "pending_review";
 
     const { data, error } = await admin
