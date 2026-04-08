@@ -29,6 +29,7 @@ interface Props {
   currentType: string;
   defaultKids: number;
   activePackages?: ActivePackage[];
+  loyaltyDiscount?: number;
 }
 
 export default function TopUpSection({
@@ -39,6 +40,7 @@ export default function TopUpSection({
   currentType,
   defaultKids,
   activePackages = [],
+  loyaltyDiscount = 0,
 }: Props) {
   const { t } = useLanguage();
 
@@ -67,7 +69,8 @@ export default function TopUpSection({
   const basePrice = isBulk
     ? calcBulkPrice(BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty)
     : getPriceForType(selectedType, kidsCount);
-  const price = basePrice + waterQty * WATER_PRICE;
+  const discountedBase = Math.max(0, basePrice - loyaltyDiscount);
+  const price = discountedBase + waterQty * WATER_PRICE;
 
   const discountPct = isBulk ? Math.min(bulkQty, 20) : 0;
 
@@ -201,7 +204,13 @@ export default function TopUpSection({
           </div>
           <div className="bg-[#ffe033] rounded-xl px-4 py-3 text-center">
             <p className="text-xs font-bold text-[#1a56db] uppercase tracking-wide mb-0.5">{t.payingFor}</p>
+            {loyaltyDiscount > 0 && (
+              <p className="text-xs text-[#1a56db]/60 line-through mb-0.5">{formatTHB(basePrice)}</p>
+            )}
             <p className="font-fredoka text-2xl text-[#1a56db]">{formatTHB(price)}</p>
+            {loyaltyDiscount > 0 && (
+              <p className="text-xs font-bold text-green-700 mt-0.5">⭐ Loyalty discount −{formatTHB(loyaltyDiscount)}</p>
+            )}
             {isBulk && (
               <p className="text-xs text-[#1a56db]/70 mt-0.5">
                 {bulkQty} {t.sessions} · {discountPct}% off
@@ -345,8 +354,16 @@ export default function TopUpSection({
                 {isBulk && (
                   <span className="text-xs text-gray-400 ml-2">· {bulkQty} sessions</span>
                 )}
+                {loyaltyDiscount > 0 && (
+                  <span className="ml-2 text-xs font-bold text-green-600">⭐ −{formatTHB(loyaltyDiscount)}</span>
+                )}
               </div>
-              <span className="font-fredoka text-xl text-[#1a56db]">{formatTHB(price)}</span>
+              <div className="flex flex-col items-end">
+                {loyaltyDiscount > 0 && (
+                  <span className="text-xs text-gray-400 line-through">{formatTHB(basePrice)}</span>
+                )}
+                <span className="font-fredoka text-xl text-[#1a56db]">{formatTHB(price)}</span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">

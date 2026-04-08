@@ -693,6 +693,7 @@ export default function QrCardClient({
           currentType={member.membership_type}
           defaultKids={member.kids_count ?? 1}
           activePackages={activePackages}
+          loyaltyDiscount={loyaltyDiscount}
         />
       )}
 
