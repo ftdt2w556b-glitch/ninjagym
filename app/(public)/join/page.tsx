@@ -32,7 +32,6 @@ export default function JoinPage() {
     phone: "",
     email: "",
     kids_names: "",
-    kids_count: 1,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -61,7 +60,7 @@ export default function JoinPage() {
       body.append("phone", form.phone);
       body.append("email", form.email);
       body.append("kids_names", form.kids_names);
-      body.append("kids_count", String(form.kids_count));
+      body.append("kids_count", "1");  // default; parent sets actual count when choosing program
       body.append("membership_type", "session_group");  // placeholder — no sessions yet
       body.append("payment_method", "self_register");   // auto-approved, 0 sessions
       body.append("sessions_remaining", "0");
@@ -173,18 +172,6 @@ export default function JoinPage() {
             {!form.kids_names.trim() && (
               <p className="text-xs text-red-500 mt-1">Required — so staff can find the right child.</p>
             )}
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">{t.kidsCountLabel}</label>
-            <select
-              value={form.kids_count}
-              onChange={(e) => setForm({ ...form, kids_count: Number(e.target.value) })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-            >
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
           </div>
         </div>
 
