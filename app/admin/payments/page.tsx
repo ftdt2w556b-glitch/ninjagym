@@ -4,6 +4,7 @@ import { ShopOrderItem } from "@/types";
 import PaymentActions from "@/components/admin/PaymentActions";
 import SlipUploadButton from "@/components/admin/SlipUploadButton";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
+import PendingCheckIns from "@/components/admin/PendingCheckIns";
 
 export default async function PaymentsPage({
   searchParams,
@@ -18,9 +19,10 @@ export default async function PaymentsPage({
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = user
-    ? await admin.from("profiles").select("role").eq("id", user.id).single()
+    ? await admin.from("profiles").select("role, name").eq("id", user.id).single()
     : { data: null };
   const userRole = profile?.role ?? "staff";
+  const staffName = (profile as { name?: string | null } | null)?.name ?? "Staff";
 
   // ── Members query (exclude birthday_event — managed via Events tab) ──
   let membersQuery = admin
@@ -82,6 +84,9 @@ export default async function PaymentsPage({
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-gray-900">Pending</h1>
       </div>
+
+      {/* Parent-initiated check-in requests */}
+      <PendingCheckIns staffName={staffName} />
 
       {/* Source tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
