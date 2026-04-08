@@ -68,10 +68,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // All registrations are auto-approved immediately.
-    // Payment verification for cash/PromptPay happens via the pending_checkin
-    // approval flow — staff sees payment info on the Pending page and approves once.
-    const slip_status = payment_method === "stripe" ? "pending_review" : "approved";
+    // Cash → goes to POS queue so staff can collect payment, open drawer, give change.
+    // PromptPay → auto-approved immediately; a pending_checkin is created so staff
+    //   verifies the slip and approves check-in in one tap on the Pending page.
+    // self_register / everything else → auto-approved (no payment yet).
+    const slip_status =
+      payment_method === "cash"   ? "cash_pending"   :
+      payment_method === "stripe" ? "pending_review"  :
+      "approved";
 
     const { data, error } = await admin
       .from("member_registrations")
@@ -98,9 +102,10 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // For cash/PromptPay purchases: create a pending_checkin immediately.
-    // This combines payment confirmation + check-in into a single staff action on the Pending page.
-    if (payment_method === "cash" || payment_method === "promptpay") {
+    // For PromptPay purchases only: create a pending_checkin immediately.
+    // Cash goes through POS (separate drawer/change flow). PromptPay combines
+    // slip verification + check-in into a single "Paid & In" tap on the Pending page.
+    if (payment_method === "promptpay") {
       const membershipLabel =
         MEMBERSHIP_TYPES.find((m) => m.id === membership_type)?.label ?? membership_type;
       await admin.from("pending_checkins").insert({
