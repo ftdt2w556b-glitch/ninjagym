@@ -93,7 +93,7 @@ export default async function RevenuePage({
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: currentProfile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
-  if (!["admin", "manager", "owner", "accountant"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
+  if (!["admin", "manager", "owner", "tax"].includes(currentProfile?.role ?? "")) redirect("/admin/dashboard");
 
   const canEdit = ["admin", "manager"].includes(currentProfile?.role ?? "");
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

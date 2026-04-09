@@ -200,6 +200,7 @@ export default async function StaffPage({
                         p.role === "admin"     ? "bg-purple-100 text-purple-700"
                         : p.role === "manager" ? "bg-teal-100 text-teal-700"
                         : p.role === "owner"   ? "bg-blue-100 text-blue-700"
+                        : p.role === "tax"     ? "bg-yellow-100 text-yellow-700"
                         : "bg-gray-100 text-gray-600"
                       }`}>
                         {p.role}
@@ -214,6 +215,7 @@ export default async function StaffPage({
                           <option value="manager">manager</option>
                           <option value="admin">admin</option>
                           <option value="owner">owner</option>
+                          <option value="tax">tax</option>
                         </select>
                         <button type="submit"
                           className="text-xs bg-[#1a56db] text-white px-2 py-1 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
@@ -293,6 +295,7 @@ export default async function StaffPage({
               <option value="manager">manager</option>
               <option value="admin">admin</option>
               <option value="owner">owner</option>
+              <option value="tax">tax</option>
             </select>
           </div>
           <button type="submit"

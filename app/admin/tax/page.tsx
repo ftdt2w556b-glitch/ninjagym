@@ -221,7 +221,7 @@ export default async function TaxPage({
   const admin    = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
-  if (!["admin", "owner", "accountant"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  if (!["admin", "owner", "tax"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
   // Accountants can view everything but cannot add/edit records
   const canEdit = ["admin", "owner"].includes(profile?.role ?? "");
 
@@ -854,7 +854,7 @@ export default async function TaxPage({
         <div className="space-y-6">
           <p className="text-sm text-gray-500">
             Downloads for <strong>{monthLabel}</strong>.
-            PP.30 CSV is for your records / accountant. PND .txt files import directly into RD Prep software.
+            PP.30 CSV is for your records / tax. PND .txt files import directly into RD Prep software.
           </p>
 
           {/* PP.30 */}
