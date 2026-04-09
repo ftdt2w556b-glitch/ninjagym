@@ -77,6 +77,11 @@ export async function POST(request: NextRequest) {
       payment_method === "stripe" ? "pending_review"  :
       "approved";
 
+    // PromptPay auto-approves immediately — stamp slip_reviewed_at so it
+    // appears in the Sales & Cash Report (which filters by that column).
+    const slip_reviewed_at =
+      payment_method === "promptpay" ? new Date().toISOString() : null;
+
     const { data, error } = await admin
       .from("member_registrations")
       .insert({
@@ -90,6 +95,7 @@ export async function POST(request: NextRequest) {
         amount_paid,
         slip_image,
         slip_status,
+        slip_reviewed_at,
         slip_uploaded_at,
         notes: notes || null,
         sessions_remaining,
