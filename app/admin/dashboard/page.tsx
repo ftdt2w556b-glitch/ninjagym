@@ -72,9 +72,11 @@ export default async function DashboardPage() {
       .gte("processed_at", bangkokStartOfDay())
       .lte("processed_at", bangkokEndOfDay()),
     // PromptPay "Paid & In" check-ins waiting for staff to verify slip + approve
+    // Only count rows with no status yet (null = unhandled; approved/rejected are done)
     admin
       .from("pending_checkins")
-      .select("*", { count: "exact", head: true }),
+      .select("*", { count: "exact", head: true })
+      .is("status", null),
   ]);
 
   // Fetch replies separately — fails gracefully if table doesn't exist yet
