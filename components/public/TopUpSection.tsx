@@ -30,6 +30,7 @@ interface Props {
   defaultKids: number;
   activePackages?: ActivePackage[];
   loyaltyDiscount?: number;
+  prices?: Record<string, number>; // live prices from DB settings (falls back to BASE_PRICES)
 }
 
 export default function TopUpSection({
@@ -41,6 +42,7 @@ export default function TopUpSection({
   defaultKids,
   activePackages = [],
   loyaltyDiscount = 0,
+  prices,
 }: Props) {
   const { t } = useLanguage();
 
@@ -66,9 +68,10 @@ export default function TopUpSection({
   const isBulk     = !!selectedMt?.bulk;
   const WATER_PRICE = 15;
 
+  const livePrice = prices ?? BASE_PRICES;
   const basePrice = isBulk
-    ? calcBulkPrice(BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty)
-    : getPriceForType(selectedType, kidsCount);
+    ? calcBulkPrice(livePrice[`price_${selectedMt!.bulkBase!}`] ?? BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty, livePrice)
+    : getPriceForType(selectedType, kidsCount, livePrice);
   const discountedBase = Math.max(0, basePrice - loyaltyDiscount);
   const price = discountedBase + waterQty * WATER_PRICE;
 

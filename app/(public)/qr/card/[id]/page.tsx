@@ -158,6 +158,16 @@ export default async function QrCardPage({
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const cardToken   = signMemberId(member.id);
 
+  // Fetch live prices from settings so program list reflects admin changes
+  const { data: priceRows } = await admin
+    .from("settings")
+    .select("key, value")
+    .like("key", "price_%");
+  const prices: Record<string, number> = {};
+  for (const row of priceRows ?? []) {
+    prices[row.key as string] = Number(row.value);
+  }
+
   return (
     <QrCardClient
       member={member}
@@ -174,6 +184,7 @@ export default async function QrCardPage({
       freeSessionsRedeemed={member.free_sessions_redeemed ?? 0}
       notifyPrefs={member.notify_prefs ?? null}
       loyaltyDiscount={(member as { loyalty_discount?: number | null }).loyalty_discount ?? 0}
+      prices={prices}
     />
   );
 }
