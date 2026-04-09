@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { openDrawerAndPrint, openDrawerOnly } from "@/lib/pos/bridge";
+import { openDrawerAndPrint, openDrawerOnly, selectDrawerPort } from "@/lib/pos/bridge";
 import { MEMBERSHIP_TYPES, BASE_PRICES, calcBulkPrice, formatTHB } from "@/lib/pricing";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
@@ -467,8 +467,15 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       body: JSON.stringify({ action: "open_drawer", staffId: activeStaff!.id, staffType: activeStaff!.staffType, staffName: activeStaff!.name, reason: "manual_open" }),
     });
     const bridgeOk = await openDrawerOnly(activeStaff!.name);
-    setDrawerMsg(bridgeOk ? "Drawer opened." : "Drawer command sent. Open manually if needed.");
-    setTimeout(() => setDrawerMsg(""), 3000);
+    setDrawerMsg(bridgeOk ? "Drawer opened." : "⚠️ Drawer did not open — tap Setup Drawer to select the port.");
+    setTimeout(() => setDrawerMsg(""), 5000);
+  }
+
+  async function setupDrawerPort() {
+    setDrawerMsg("Select the BT-100U port from the list...");
+    const ok = await selectDrawerPort();
+    setDrawerMsg(ok ? "✓ Port set. Drawer opened." : "⚠️ Port not selected or failed. Try again.");
+    setTimeout(() => setDrawerMsg(""), 5000);
   }
 
   function resetSale() {
@@ -848,6 +855,10 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
           <button onClick={manualOpenDrawer}
             className="bg-yellow-500 text-gray-900 font-bold text-sm px-4 py-2 rounded-xl hover:bg-yellow-400 transition-colors">
             Open Drawer
+          </button>
+          <button onClick={setupDrawerPort}
+            className="bg-gray-600 text-gray-200 text-xs px-3 py-2 rounded-xl hover:bg-gray-500 transition-colors">
+            Setup Drawer
           </button>
           <button onClick={() => {
             setScreen("select_staff");
