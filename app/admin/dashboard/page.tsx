@@ -16,6 +16,7 @@ export default async function DashboardPage() {
     : { data: null };
 
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
+  const isTaxRole      = profile?.role === "tax";
 
   const [
     { data: todayCheckInRows },
@@ -109,16 +110,21 @@ export default async function DashboardPage() {
   }
   const todayCheckIns = (todayCheckInRows ?? []).reduce((sum, r) => sum + kidsFromLog(r), 0);
 
-  const stats = [
-    ...(isAdminOrOwner
-      ? [{ label: "Check-ins Today", value: todayCheckIns, color: "bg-blue-100 text-blue-800", href: "/admin/members?tab=checkins" }]
-      : []),
-    { label: "Pending",          value: totalPending,   color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
-    { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800", href: "/admin/photos" },
-    ...(isAdminOrOwner
-      ? [{ label: "Revenue Today", value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" }]
-      : []),
-  ];
+  const stats = isTaxRole
+    // Tax role: only revenue overview, link to Sales and Tax pages
+    ? [
+        { label: "Revenue Today",  value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" },
+      ]
+    : [
+        ...(isAdminOrOwner
+          ? [{ label: "Check-ins Today", value: todayCheckIns, color: "bg-blue-100 text-blue-800", href: "/admin/members?tab=checkins" }]
+          : []),
+        { label: "Pending",          value: totalPending,       color: "bg-yellow-100 text-yellow-800", href: "/admin/payments" },
+        { label: "Photos to Review", value: pendingPhotos ?? 0, color: "bg-pink-100 text-pink-800",     href: "/admin/photos" },
+        ...(isAdminOrOwner
+          ? [{ label: "Revenue Today", value: `฿${revenueToday.toLocaleString()}`, color: "bg-emerald-100 text-emerald-800", href: "/admin/reports/cash" }]
+          : []),
+      ];
 
   // ── Server Actions ──────────────────────────────────────────────────────────
 
@@ -234,28 +240,41 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid gap-4 sm:grid-cols-2 mb-10">
-        <a href="https://ninjagym.com/pos" target="_blank" rel="noopener noreferrer"
-          className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
-          🧾 POS Cash Register
-        </a>
-        {isAdminOrOwner && (
-          <a href="/admin/pos"
-            className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors">
-            🛒 POS Counter
+      {isTaxRole ? (
+        <div className="grid gap-4 sm:grid-cols-2 mb-10">
+          <a href="/admin/reports/cash"
+            className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
+            📊 Sales Report
           </a>
-        )}
-        <a href="/join" target="_blank" rel="noopener noreferrer"
-          className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors">
-          ➕ New Registration
-        </a>
-        {isAdminOrOwner && (
-          <a href="/admin/payments"
-            className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors">
-            💳 Review Pending
+          <a href="/admin/tax"
+            className="block bg-emerald-600 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-emerald-700 transition-colors">
+            🧾 Tax & VAT
           </a>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 mb-10">
+          <a href="https://ninjagym.com/pos" target="_blank" rel="noopener noreferrer"
+            className="block bg-[#1a56db] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-blue-700 transition-colors">
+            🧾 POS Cash Register
+          </a>
+          {isAdminOrOwner && (
+            <a href="/admin/pos"
+              className="block bg-[#22c55e] text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-green-600 transition-colors">
+              🛒 POS Counter
+            </a>
+          )}
+          <a href="/join" target="_blank" rel="noopener noreferrer"
+            className="block bg-orange-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-orange-600 transition-colors">
+            ➕ New Registration
+          </a>
+          {isAdminOrOwner && (
+            <a href="/admin/payments"
+              className="block bg-yellow-500 text-white rounded-2xl p-5 text-center font-bold text-lg hover:bg-yellow-600 transition-colors">
+              💳 Review Pending
+            </a>
+          )}
+        </div>
+      )}
 
       {/* ── Q&A Widget ── */}
       <div className="border-t border-gray-200 pt-8">
