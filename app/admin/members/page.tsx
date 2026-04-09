@@ -635,17 +635,47 @@ export default async function MembersPage({
                 </div>
                 <ul className="divide-y divide-gray-50">
                   {dayLogs!.map((log) => (
-                    <li key={log.id} className="px-5 py-3 flex items-center gap-4">
-                      <span className="text-sm font-mono text-gray-400 w-12 shrink-0">
+                    <li key={log.id} className="px-4 py-3 flex items-start gap-3">
+                      <span className="text-sm font-mono text-gray-400 w-12 shrink-0 pt-0.5">
                         {formatBangkokTime(log.check_in_at)}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <Link
-                          href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
-                          className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
-                        >
-                          {log.member_name ?? "Unknown"}
-                        </Link>
+                        {/* Name + action buttons on same line */}
+                        <div className="flex items-center justify-between gap-2">
+                          <Link
+                            href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
+                            className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
+                          >
+                            {log.member_name ?? "Unknown"}
+                          </Link>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {log.member_id && (
+                              <Link
+                                href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
+                                className="text-xs text-[#1a56db] hover:underline"
+                              >
+                                View
+                              </Link>
+                            )}
+                            {isAdminOrOwner && (
+                              <EditCheckInButton
+                                action={editCheckIn}
+                                id={log.id}
+                                currentKidsCount={log.kids_count ?? 1}
+                                memberName={log.member_name ?? "Unknown"}
+                              />
+                            )}
+                            {isAdminOrOwner && (
+                              <DeleteCheckInButton
+                                action={deleteCheckIn}
+                                id={log.id}
+                                memberName={log.member_name ?? "Unknown"}
+                                time={formatBangkokTime(log.check_in_at)}
+                              />
+                            )}
+                          </div>
+                        </div>
+                        {/* Sub-details — always visible, wrap on small screens */}
                         {(() => {
                           const reg = log.member_registrations as { kids_names?: string | null; phone?: string | null; email?: string | null } | null;
                           const names = log.kids_names || reg?.kids_names;
@@ -654,60 +684,35 @@ export default async function MembersPage({
                           const programLabel = log.membership_type
                             ? (MEMBERSHIP_TYPES.find((m) => m.id === log.membership_type)?.label ?? log.membership_type)
                             : null;
+                          const notesText = log.notes
+                            ? log.notes
+                                .replace("Manual check-in by staff", "Check-in by staff")
+                                .replace(/\s*\|\s*\d+\s*kids/i, "")
+                                .trim()
+                            : "Check-in at approval";
                           return (
                             <>
                               {names && (
-                                <p className="text-xs font-semibold text-[#1a56db] truncate">
+                                <p className="text-xs font-semibold text-[#1a56db]">
                                   👧 {names}{(log.kids_count ?? 1) > 1 ? ` · ${log.kids_count} kids` : ""}
                                 </p>
                               )}
                               {phone && (
-                                <a href={`tel:${phone}`} className="text-xs text-green-700 font-semibold hover:underline truncate block">
+                                <a href={`tel:${phone}`} className="text-xs text-green-700 font-semibold hover:underline block">
                                   📞 {phone}
                                 </a>
                               )}
                               {email && (
-                                <p className="text-xs text-gray-400 truncate">{email}</p>
+                                <p className="text-xs text-gray-400">{email}</p>
                               )}
                               {programLabel && (
-                                <p className="text-xs text-gray-500 truncate">{programLabel}</p>
+                                <p className="text-xs text-gray-500">{programLabel}</p>
                               )}
+                              <p className="text-xs text-gray-400 italic">{notesText}</p>
                             </>
                           );
                         })()}
                       </div>
-                      <span className="text-xs text-gray-400 italic shrink-0">
-                        {log.notes
-                          ? log.notes
-                              .replace("Manual check-in by staff", "Check-in by staff")
-                              .replace(/\s*\|\s*\d+\s*kids/i, "")
-                              .trim()
-                          : "Check-in at approval"}
-                      </span>
-                      {log.member_id && (
-                        <Link
-                          href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
-                          className="text-xs text-[#1a56db] hover:underline shrink-0"
-                        >
-                          View
-                        </Link>
-                      )}
-                      {isAdminOrOwner && (
-                        <EditCheckInButton
-                          action={editCheckIn}
-                          id={log.id}
-                          currentKidsCount={log.kids_count ?? 1}
-                          memberName={log.member_name ?? "Unknown"}
-                        />
-                      )}
-                      {isAdminOrOwner && (
-                        <DeleteCheckInButton
-                          action={deleteCheckIn}
-                          id={log.id}
-                          memberName={log.member_name ?? "Unknown"}
-                          time={formatBangkokTime(log.check_in_at)}
-                        />
-                      )}
                     </li>
                   ))}
                 </ul>
