@@ -221,7 +221,9 @@ export default async function TaxPage({
   const admin    = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user!.id).single();
-  if (!["admin", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  if (!["admin", "owner", "accountant"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  // Accountants can view everything but cannot add/edit records
+  const canEdit = ["admin", "owner"].includes(profile?.role ?? "");
 
   const { data: company } = await admin
     .from("companies")
@@ -467,8 +469,8 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* Add Expense Form */}
-          <div className="bg-white rounded-2xl shadow p-6 mb-6">
+          {/* Add Expense Form — admin/owner only */}
+          {canEdit && <div className="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 className="font-bold text-gray-900 mb-5">Add Expense Invoice</h2>
             <form action={addExpenseAction}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
@@ -564,7 +566,7 @@ export default async function TaxPage({
                 + Add Expense
               </button>
             </form>
-          </div>
+          </div>}
 
           {/* Expense table */}
           <div className="bg-white rounded-2xl shadow overflow-hidden">
@@ -664,8 +666,8 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* Add WHT Form */}
-          <div className="bg-white rounded-2xl shadow p-6 mb-6">
+          {/* Add WHT Form — admin/owner only */}
+          {canEdit && <div className="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 className="font-bold text-gray-900 mb-5">Add WHT Record</h2>
             <form action={addWhtAction}>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
@@ -763,7 +765,7 @@ export default async function TaxPage({
                 + Add WHT Record
               </button>
             </form>
-          </div>
+          </div>}
 
           {/* WHT table */}
           <div className="bg-white rounded-2xl shadow overflow-hidden">
