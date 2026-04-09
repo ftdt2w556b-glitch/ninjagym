@@ -142,7 +142,10 @@ export default async function ReceiptPage({
           .row:last-child { border-bottom: none; }
           .label { color: #888; }
           .value { font-weight: 500; color: #1a1a1a; text-align: right; max-width: 60%; }
-          .total-row { display: flex; justify-content: space-between; padding: 12px 16px; background: #1a56db; border-radius: 8px; margin-top: 16px; }
+          .vat-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: #555; }
+          .vat-row .vat-label { color: #888; }
+          .vat-divider { border: none; border-top: 1px solid #e0e0e0; margin: 8px 0; }
+          .total-row { display: flex; justify-content: space-between; padding: 12px 16px; background: #1a56db; border-radius: 8px; margin-top: 8px; }
           .total-label { color: white; font-weight: 700; font-size: 15px; }
           .total-amount { color: white; font-weight: 700; font-size: 18px; }
           .paid-badge { text-align: center; margin-top: 20px; }
@@ -165,7 +168,9 @@ export default async function ReceiptPage({
               className="logo"
             />
             <div className="company">Rick Tew Co., Ltd.</div>
-            <div className="company-sub">Bangkok, Thailand · ninjagym.com</div>
+            <div className="company-sub">129/19 Moo.1 Bophut, Koh Samui, Suratthani 84320</div>
+            <div className="company-sub">Tax ID 0115566016978</div>
+            <div className="company-sub">Tel. 0826265991 · www.NinjaGym.com</div>
             <div className="receipt-title">Official Receipt</div>
             <div className="receipt-no">{receiptNo}</div>
           </div>
@@ -197,10 +202,27 @@ export default async function ReceiptPage({
             )}
           </div>
 
-          <div className="total-row">
-            <span className="total-label">Total Paid</span>
-            <span className="total-amount">฿{amount.toLocaleString()}</span>
-          </div>
+          {(() => {
+            const exVat = Math.round(amount / 1.07 * 100) / 100;
+            const vat   = Math.round((amount - exVat) * 100) / 100;
+            return (
+              <>
+                <div className="vat-row">
+                  <span className="vat-label">Total Excluding VAT</span>
+                  <span>฿{exVat.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="vat-row">
+                  <span className="vat-label">VAT 7%</span>
+                  <span>฿{vat.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <hr className="vat-divider" />
+                <div className="total-row">
+                  <span className="total-label">Grand Total</span>
+                  <span className="total-amount">฿{amount.toLocaleString()}</span>
+                </div>
+              </>
+            );
+          })()}
 
           <div className="paid-badge">
             <span>PAID</span>
