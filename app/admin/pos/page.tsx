@@ -487,9 +487,9 @@ export default async function AdminPosPage({
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">#</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Time</th>
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Staff</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Type</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-gray-500 text-xs">Member / Type</th>
                 <th className="text-right px-4 py-2.5 font-semibold text-gray-500 text-xs">Amount</th>
-                <th className="text-right px-4 py-2.5 font-semibold text-gray-500 text-xs">Change Given</th>
+                <th className="text-right px-4 py-2.5 font-semibold text-gray-500 text-xs">Cash Paid / Change</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -519,20 +519,28 @@ export default async function AdminPosPage({
                           walkin: "bg-gray-100 text-gray-600",
                         };
                         return (
-                          <div className="flex flex-wrap gap-1">
-                            {types.map((t) => (
-                              <span key={t} className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${colorMap[t as string] ?? "bg-gray-100 text-gray-600"}`}>
-                                {t}
-                              </span>
-                            ))}
+                          <div>
+                            {s.notes && (
+                              <p className="text-gray-800 font-medium text-xs mb-1">{s.notes as string}</p>
+                            )}
+                            <div className="flex flex-wrap gap-1">
+                              {types.map((t) => (
+                                <span key={t} className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize ${colorMap[t as string] ?? "bg-gray-100 text-gray-600"}`}>
+                                  {t}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         );
                       })()}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-gray-900">{Number(s.amount).toLocaleString()} THB</td>
                     <td className="px-4 py-3 text-right text-sm tabular-nums">
+                      {(s as Record<string, unknown>).amount_tendered != null && (
+                        <p className="text-gray-500 text-xs">paid ฿{Number((s as Record<string, unknown>).amount_tendered).toLocaleString()}</p>
+                      )}
                       {(s as Record<string, unknown>).change_given != null ? (
-                        <span className="text-orange-600 font-semibold">-฿{Number((s as Record<string, unknown>).change_given).toLocaleString()}</span>
+                        <span className="text-orange-600 font-semibold">฿{Number((s as Record<string, unknown>).change_given).toLocaleString()} change</span>
                       ) : (
                         <span className="text-gray-300">—</span>
                       )}
