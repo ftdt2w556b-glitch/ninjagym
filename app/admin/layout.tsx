@@ -39,6 +39,7 @@ export default async function AdminLayout({
     { href: "/admin/shop",              label: "Shop",       roles: ["admin", "manager"] },
     { href: "/admin/pos",               label: "POS",        roles: ["admin", "manager"] },
     { href: "/admin/reports/cash",      label: "Sales",      roles: ["admin", "manager", "owner"] },
+    { href: "/admin/tax",              label: "Tax",        roles: ["admin", "owner"] },
     { href: "/admin/staff",             label: "Users",     roles: ["admin"] },
     { href: "/admin/photos",            label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
     { href: "/admin/techniques",        label: "Skills",    roles: ["admin", "manager", "staff", "owner"] },
