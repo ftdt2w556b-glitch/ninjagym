@@ -167,6 +167,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
   async function handleQuickRegister() {
     if (!form.staffName) { setQrError("Please select the staff member on duty."); return; }
     if (!form.name.trim()) { setQrError("Parent / guardian name is required."); return; }
+    if (!form.kidsNames.trim()) { setQrError("Kids names are required — staff need this to find the right child."); return; }
 
     setQrLoading(true);
     setQrError("");
@@ -461,15 +462,18 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                 {/* Kids names */}
                 <div>
                   <label className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-1 block">
-                    Kids names
+                    Kids names <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.kidsNames}
                     onChange={(e) => setForm((f) => ({ ...f, kidsNames: e.target.value }))}
                     placeholder="e.g. Leo, Mia"
-                    className="w-full bg-gray-800 text-white border border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1a56db] placeholder-gray-500"
+                    className={`w-full bg-gray-800 text-white border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1a56db] placeholder-gray-500 ${
+                      !form.kidsNames.trim() ? "border-red-500" : "border-gray-600"
+                    }`}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Required — helps staff find the right child quickly</p>
                 </div>
 
                 {/* Kids count */}

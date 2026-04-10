@@ -4,7 +4,31 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
 import VoidTransactionButton from "@/components/admin/VoidTransactionButton";
+import EditAmountButton from "@/components/admin/EditAmountButton";
 import ExpensesSection, { type Expense } from "@/components/admin/ExpensesSection";
+
+async function editTransactionAmount(formData: FormData) {
+  "use server";
+  const id     = formData.get("id") as string;
+  const source = formData.get("source") as string;
+  const amount = Number(formData.get("amount"));
+  if (!id || !source || isNaN(amount) || amount < 1) return;
+
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+
+  if (source === "member") {
+    await admin.from("member_registrations").update({ amount_paid: amount }).eq("id", Number(id));
+  } else if (source === "cash_sale") {
+    await admin.from("cash_sales").update({ amount }).eq("id", Number(id));
+  }
+  revalidatePath("/admin/reports/cash");
+}
 
 async function voidTransaction(formData: FormData) {
   "use server";
@@ -353,13 +377,21 @@ export default async function RevenuePage({
                   </td>
                   {canEdit && (
                     <td className="px-4 py-3 text-right">
-                      <VoidTransactionButton
-                        action={voidTransaction}
-                        id={tx.id}
-                        source={tx.source}
-                        description={tx.description}
-                        amount={tx.amount}
-                      />
+                      <div className="flex items-center justify-end gap-1">
+                        <EditAmountButton
+                          action={editTransactionAmount}
+                          id={tx.id}
+                          source={tx.source}
+                          currentAmount={tx.amount}
+                        />
+                        <VoidTransactionButton
+                          action={voidTransaction}
+                          id={tx.id}
+                          source={tx.source}
+                          description={tx.description}
+                          amount={tx.amount}
+                        />
+                      </div>
                     </td>
                   )}
                 </tr>

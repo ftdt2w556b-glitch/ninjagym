@@ -33,7 +33,14 @@ export async function POST(req: NextRequest) {
     .eq("status", "pending")
     .maybeSingle();
 
-  if (existing) return NextResponse.json({ id: existing.id });
+  if (existing) {
+    // Parent may have gone back and changed their kids count — always update to latest selection
+    await admin
+      .from("pending_checkins")
+      .update({ kids_count, membership_type, membership_label })
+      .eq("id", existing.id);
+    return NextResponse.json({ id: existing.id });
+  }
 
   const { data, error } = await admin
     .from("pending_checkins")

@@ -62,6 +62,27 @@ export default async function PaymentsPage({
     source === "shop"    ? shopQuery    : Promise.resolve({ data: [] }),
   ]);
 
+  // Build fallback kids_names map: for members missing kids_names, look up by phone
+  // across all registrations so staff always see the kid's name without bouncing around
+  const phonesNeedingFallback = (members ?? [])
+    .filter((m) => !m.kids_names && m.phone)
+    .map((m) => m.phone as string);
+
+  const fallbackKidsNames: Record<string, string> = {};
+  if (source === "members" && phonesNeedingFallback.length > 0) {
+    const { data: fallbacks } = await admin
+      .from("member_registrations")
+      .select("phone, kids_names")
+      .in("phone", phonesNeedingFallback)
+      .not("kids_names", "is", null)
+      .limit(200);
+    for (const f of fallbacks ?? []) {
+      if (f.phone && f.kids_names && !fallbackKidsNames[f.phone]) {
+        fallbackKidsNames[f.phone as string] = f.kids_names as string;
+      }
+    }
+  }
+
   // pending counts for tab labels
   const [{ count: pendingMembers }, { count: pendingEvents }, { count: pendingShop }] = await Promise.all([
     admin.from("member_registrations").select("*", { count: "exact", head: true })
@@ -134,6 +155,7 @@ export default async function PaymentsPage({
             const slipUrl = m.slip_image
               ? `${SUPABASE_URL}/storage/v1/object/public/slips/${m.slip_image}`
               : null;
+            const fallbackName = !m.kids_names && m.phone ? fallbackKidsNames[m.phone] : null;
 
             return (
               <div key={m.id} className="bg-white rounded-2xl shadow p-5">
@@ -145,7 +167,9 @@ export default async function PaymentsPage({
                     </p>
                     {m.kids_names
                       ? <p className="text-sm font-bold text-[#1a56db] mt-0.5">👦 {m.kids_names}</p>
-                      : <p className="text-xs text-red-400 italic mt-0.5">⚠️ No kid name provided</p>
+                      : fallbackName
+                        ? <p className="text-sm font-semibold text-gray-500 mt-0.5">👦 {fallbackName} <span className="text-xs font-normal text-gray-400">(from member card)</span></p>
+                        : <p className="text-xs text-red-400 italic mt-0.5">⚠️ No kid name provided</p>
                     }
                     {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
                     {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
