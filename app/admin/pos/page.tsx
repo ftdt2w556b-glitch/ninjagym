@@ -389,7 +389,6 @@ export default async function AdminPosPage({
               </form>
             )}
           </div>
-        </div>
 
         {/* Cash removed from drawer */}
         <div className="mt-5 pt-5 border-t border-gray-100">
