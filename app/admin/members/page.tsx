@@ -168,13 +168,21 @@ export default async function MembersPage({
   let members: MemberRow[] | null = null;
   let topUpsByParent = new Map<number, TopUpRow[]>();
 
+  let totalMemberCount = 0;
+
   if (tab === "members") {
+    // Get real total count first (unfiltered, excluding top-ups)
+    const { count: rawCount } = await admin
+      .from("member_registrations")
+      .select("*", { count: "exact", head: true })
+      .is("parent_member_id", null);
+    totalMemberCount = rawCount ?? 0;
+
     let query = admin
       .from("member_registrations")
       .select("id, name, phone, email, membership_type, kids_count, kids_names, notes, slip_status, amount_paid, payment_method, created_at, sessions_remaining, sessions_purchased, expires_at, pin, loyalty_discount")
       .is("parent_member_id", null)
-      .order("created_at", { ascending: false })
-      .limit(100);
+      .order("created_at", { ascending: false });
 
     if (q) {
       const filters = [`name.ilike.%${q}%`, `phone.ilike.%${q}%`, `email.ilike.%${q}%`, `kids_names.ilike.%${q}%`];
@@ -342,7 +350,12 @@ export default async function MembersPage({
         <>
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl font-bold text-gray-900">Members</h1>
-            <span className="text-sm text-gray-500">{members?.length ?? 0} members</span>
+            <span className="text-sm text-gray-500">
+              {(q || status)
+                ? <>{members?.length ?? 0} of {totalMemberCount} members</>
+                : <>{totalMemberCount} members</>
+              }
+            </span>
           </div>
 
           {/* Search + filter */}
