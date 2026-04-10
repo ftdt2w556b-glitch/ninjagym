@@ -158,7 +158,7 @@ export default function UseSessionButton({
         <div className="bg-blue-50 rounded-xl p-4 text-center">
           <p className="text-[#1a56db] font-bold text-2xl">{kids} kid{kids !== 1 ? "s" : ""}</p>
           <p className="text-gray-600 text-sm">{membershipLabel}</p>
-          <p className="text-gray-400 text-xs mt-1">{sessionsRemaining} session{sessionsRemaining !== 1 ? "s" : ""} remaining after this</p>
+          <p className="text-gray-400 text-xs mt-1">{Math.max(0, sessionsRemaining - kids)} session{Math.max(0, sessionsRemaining - kids) !== 1 ? "s" : ""} remaining after this</p>
         </div>
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <div className="flex gap-3">
