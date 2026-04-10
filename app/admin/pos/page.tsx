@@ -301,9 +301,8 @@ export default async function AdminPosPage({
           Also editable directly on the POS screen (admin/manager only).
         </p>
 
-        {/* Today's drawer tally */}
-        {todayTotal > 0 && (
-          <div className="mt-5 pt-5 border-t border-gray-100">
+        {/* Today's drawer tally — always shown so Expected in Drawer is visible at day start */}
+        <div className="mt-5 pt-5 border-t border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Today&apos;s Drawer Check</p>
             <div className="grid grid-cols-2 gap-3 text-sm mb-3">
               <div className="bg-gray-50 rounded-xl p-3">
@@ -390,7 +389,7 @@ export default async function AdminPosPage({
               </form>
             )}
           </div>
-        )}
+        </div>
 
         {/* Cash removed from drawer */}
         <div className="mt-5 pt-5 border-t border-gray-100">
