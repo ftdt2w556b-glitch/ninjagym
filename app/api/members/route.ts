@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
         member_id:        data.id,
         member_name:      name,
         kids_count,
+        kids_names:       kids_names || null,
         membership_type,
         membership_label: membershipLabel,
         payment_method,
