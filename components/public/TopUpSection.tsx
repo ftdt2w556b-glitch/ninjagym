@@ -59,6 +59,7 @@ export default function TopUpSection({
   const [success, setSuccess]             = useState<string | null>(null);
   const [error, setError]                 = useState<string | null>(null);
   const [showPromptPay, setShowPromptPay] = useState(false);
+  const [showAllDesc, setShowAllDesc]     = useState(false);
   const [slip, setSlip]                   = useState<File | null>(null);
   const [stripeStep, setStripeStep]       = useState(false);
   const [pendingId, setPendingId]         = useState<number | null>(null);
@@ -265,12 +266,43 @@ export default function TopUpSection({
         <select
           value={selectedType}
           onChange={(e) => { setSelectedType(e.target.value); setSuccess(null); setError(null); }}
-          className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] mb-3"
+          className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] mb-2"
         >
           {MEMBERSHIP_TYPES.filter((mt) => mt.id !== "birthday_event").map((mt) => (
             <option key={mt.id} value={mt.id}>{mt.label}</option>
           ))}
         </select>
+
+        {/* Selected program description */}
+        {selectedMt?.note && (
+          <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2 mb-3 leading-relaxed">
+            ℹ️ {selectedMt.note}
+          </p>
+        )}
+
+        {/* All program descriptions — collapsible */}
+        <button
+          type="button"
+          onClick={() => setShowAllDesc((v) => !v)}
+          className="text-xs text-[#1a56db] underline mb-3 block"
+        >
+          {showAllDesc ? "▲ Hide program descriptions" : "▼ All program descriptions"}
+        </button>
+        {showAllDesc && (
+          <div className="border border-gray-100 rounded-xl overflow-hidden mb-3">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wide px-4 py-2 bg-gray-50 border-b border-gray-100">
+              Program Descriptions
+            </p>
+            <div className="divide-y divide-gray-50">
+              {MEMBERSHIP_TYPES.filter((mt) => mt.id !== "birthday_event" && mt.note).map((mt) => (
+                <div key={mt.id} className="px-4 py-3">
+                  <p className="text-xs font-semibold text-gray-800 mb-0.5">{mt.label}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{mt.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Bulk qty slider — appears only for bulk types */}
         {isBulk && (

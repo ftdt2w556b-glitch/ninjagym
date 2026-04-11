@@ -118,7 +118,7 @@ const en = {
   payCashGym: "Pay Cash at the Gym. Tell staff when you arrive",
   payCardDisabled: "Pay by Credit / Debit Card",
   continueTraining: "Choose a Program",
-  continueTrainingHint: "Pick a program, pay, and you're in.",
+  continueTrainingHint: "Register in advance with number of kids (or guests).",
   registerProgram: "+ Register for This Program",
   recentCheckIns: "Recent Check-ins",
   noCheckIns: "No check-ins recorded yet",
