@@ -68,19 +68,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cash → goes to POS queue so staff can collect payment, open drawer, give change.
-    // PromptPay → auto-approved immediately; a pending_checkin is created so staff
-    //   verifies the slip and approves check-in in one tap on the Pending page.
-    // self_register / everything else → auto-approved (no payment yet).
+    // Cash       → POS queue so staff can collect payment and open drawer.
+    // PromptPay  → pending_review until staff taps "Paid & In" on the Pending page.
+    //              slip_reviewed_at is stamped at that point (by handle route).
+    // self_register / everything else → auto-approved (no payment to verify).
     const slip_status =
-      payment_method === "cash"   ? "cash_pending"   :
-      payment_method === "stripe" ? "pending_review"  :
+      payment_method === "cash"      ? "cash_pending"   :
+      payment_method === "promptpay" ? "pending_review"  :
+      payment_method === "stripe"    ? "pending_review"  :
       "approved";
 
-    // PromptPay auto-approves immediately — stamp slip_reviewed_at so it
-    // appears in the Sales & Cash Report (which filters by that column).
-    const slip_reviewed_at =
-      payment_method === "promptpay" ? new Date().toISOString() : null;
+    // slip_reviewed_at is only set when staff approves — not at submission time.
+    const slip_reviewed_at = null;
 
     const { data, error } = await admin
       .from("member_registrations")

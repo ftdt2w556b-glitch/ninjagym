@@ -50,10 +50,10 @@ export async function POST(req: NextRequest) {
         .eq("id", pending.member_id);
     }
 
-    // Ensure the linked registration is approved (handles PromptPay or any edge case)
+    // Approve the linked registration and stamp slip_reviewed_at for Sales report
     await admin
       .from("member_registrations")
-      .update({ slip_status: "approved" })
+      .update({ slip_status: "approved", slip_reviewed_at: now })
       .eq("id", pending.member_id)
       .neq("slip_status", "approved");
 
@@ -63,6 +63,13 @@ export async function POST(req: NextRequest) {
       .eq("id", id);
 
   } else if (action === "reject") {
+    // Mark the linked registration as rejected too
+    await admin
+      .from("member_registrations")
+      .update({ slip_status: "rejected" })
+      .eq("id", pending.member_id)
+      .neq("slip_status", "rejected");
+
     await admin
       .from("pending_checkins")
       .update({ status: "rejected", handled_by: staff_name ?? "staff", handled_at: now })
