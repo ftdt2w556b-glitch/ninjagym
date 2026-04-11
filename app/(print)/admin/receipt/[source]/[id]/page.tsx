@@ -79,17 +79,30 @@ export default async function ReceiptPage({
     memberName = walkInMatch ? walkInMatch[1] : (rawNotes || "Walk-in Customer");
     notes = "";
 
-    const items = data.items as Array<{ name?: string; label?: string }> | null;
+    const items = data.items as Array<{ name?: string; label?: string; qty?: number }> | null;
     const rawItemName = items?.[0]?.name || items?.[0]?.label || "";
     if (rawItemName) {
       // POS prefixes items with "CustomerName: Program" — strip the prefix
       const programPart = rawItemName.includes(": ")
         ? rawItemName.split(": ").slice(1).join(": ")
         : rawItemName;
-      // programPart may be a key ("session_group") or a label ("Group Session")
-      const typeKey = MEMBERSHIP_LABELS[programPart] ? programPart : (labelToKey[programPart] ?? programPart);
-      const displayLabel = MEMBERSHIP_LABELS[typeKey] ?? programPart;
-      program = withQty(displayLabel, typeKey, amount);
+
+      // If qty is already encoded in the label (e.g. "Group Sessions (bulk) ×10 (10% off)")
+      // use it directly — stripping the discount suffix for cleaner receipt display
+      if (programPart.includes("×")) {
+        program = programPart.replace(/\s*\(\d+%\s*off\)/i, "").trim();
+      } else {
+        // programPart may be a type key ("group_bulk") or display label ("Group Sessions (bulk)")
+        const typeKey = MEMBERSHIP_LABELS[programPart] ? programPart : (labelToKey[programPart] ?? programPart);
+        const displayLabel = MEMBERSHIP_LABELS[typeKey] ?? programPart;
+        // For bulk packs, also check items[0].qty for session count
+        const bulkSessionCount = items?.[0]?.qty && items[0].qty > 1 ? items[0].qty : null;
+        if (bulkSessionCount) {
+          program = `${displayLabel} ×${bulkSessionCount}`;
+        } else {
+          program = withQty(displayLabel, typeKey, amount);
+        }
+      }
     } else {
       const typeKey = data.sale_type as string;
       const displayLabel = (MEMBERSHIP_LABELS[typeKey] ?? typeKey) || "POS Sale";
