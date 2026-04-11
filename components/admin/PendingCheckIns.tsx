@@ -14,6 +14,9 @@ interface PendingCheckin {
   payment_method: string | null;
   amount_paid: number | null;
   slip_image: string | null;
+  // enriched from member_registrations
+  kids_names?: string | null;
+  pin?: string | null;
 }
 
 interface Props {
@@ -33,7 +36,22 @@ export default function PendingCheckIns({ staffName }: Props) {
       .select("id, member_id, member_name, kids_count, membership_label, requested_at, status, payment_method, amount_paid, slip_image")
       .eq("status", "pending")
       .order("requested_at", { ascending: true });
-    setItems((data ?? []) as PendingCheckin[]);
+
+    const rows = (data ?? []) as PendingCheckin[];
+
+    // Enrich with kids_names and pin from member_registrations
+    if (rows.length > 0) {
+      const memberIds = rows.map((r) => r.member_id);
+      const { data: members } = await supabase
+        .from("member_registrations")
+        .select("id, kids_names, pin")
+        .in("id", memberIds);
+      const memberMap: Record<number, { kids_names?: string | null; pin?: string | null }> = {};
+      for (const m of members ?? []) memberMap[m.id] = { kids_names: m.kids_names, pin: m.pin };
+      for (const r of rows) Object.assign(r, memberMap[r.member_id] ?? {});
+    }
+
+    setItems(rows);
   }, []);
 
   useEffect(() => {
@@ -109,10 +127,19 @@ export default function PendingCheckIns({ staffName }: Props) {
                     kid{item.kids_count !== 1 ? "s" : ""}
                   </span>
                 </p>
+                {item.kids_names && (
+                  <p className="text-sm font-semibold text-gray-700 mt-1">👦 {item.kids_names}</p>
+                )}
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-400 mb-1">Membership</p>
                 <p className="text-sm font-semibold text-gray-700">{item.membership_label || "Session"}</p>
+                {item.pin && (
+                  <div className="mt-2">
+                    <p className="text-xs text-gray-400">PIN</p>
+                    <p className="text-lg font-black text-gray-800 tracking-widest">{item.pin}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -141,6 +168,13 @@ export default function PendingCheckIns({ staffName }: Props) {
                 )}
               </div>
             )}
+
+            {/* Staff double-check reminder */}
+            <div className="bg-amber-900/20 rounded-xl px-3 py-2 mb-3">
+              <p className="text-xs font-semibold text-amber-900 leading-snug">
+                ⚠️ Double-check before approving: number of kids, payment slip date, program, and amount paid match.
+              </p>
+            </div>
 
             {/* Approve / Reject */}
             <div className="flex gap-2">
