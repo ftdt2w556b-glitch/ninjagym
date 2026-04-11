@@ -12,6 +12,7 @@ interface Props {
   membershipLabel: string;
   sessionsRemaining: number;
   maxKids: number;      // member's registered kids_count
+  defaultKidsNames?: string; // pre-fill from member card
   cardToken: string;
 }
 
@@ -22,10 +23,12 @@ export default function UseSessionButton({
   membershipLabel,
   sessionsRemaining,
   maxKids,
+  defaultKidsNames = "",
   cardToken,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [kids, setKids] = useState(maxKids > 0 ? maxKids : 1);
+  const [kidsNames, setKidsNames] = useState(defaultKidsNames);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
@@ -85,6 +88,7 @@ export default function UseSessionButton({
           member_id: memberId,
           auth_id: authMemberId,  // token was signed for the parent registration
           kids_count: kids,
+          kids_names: kidsNames.trim() || null,
           membership_type: membershipLabel, // use label as type for display
           membership_label: membershipLabel,
           token: cardToken,
@@ -132,6 +136,19 @@ export default function UseSessionButton({
           >
             +
           </button>
+        </div>
+        {/* Kids names — staff need this to find the right child */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-600 mb-1">
+            Kids names <span className="text-gray-400 font-normal">(helps staff find the right child)</span>
+          </label>
+          <input
+            type="text"
+            value={kidsNames}
+            onChange={(e) => setKidsNames(e.target.value)}
+            placeholder="e.g. Nami, Luffy"
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+          />
         </div>
         <div className="flex gap-3 mt-1">
           <button onClick={() => setPhase("idle")} className="flex-1 py-4 rounded-xl border border-gray-200 text-gray-500 font-semibold text-lg">Cancel</button>

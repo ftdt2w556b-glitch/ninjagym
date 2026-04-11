@@ -577,6 +577,7 @@ export default function QrCardClient({
             membershipLabel={usablePkg.membership_label}
             sessionsRemaining={usablePkg.sessions_remaining ?? 0}
             maxKids={member.kids_count ?? 1}
+            defaultKidsNames={member.kids_names ?? ""}
             cardToken={cardToken}
           />
         );

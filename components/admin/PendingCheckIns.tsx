@@ -8,6 +8,7 @@ interface PendingCheckin {
   member_id: number;
   member_name: string;
   kids_count: number;
+  kids_names: string | null;
   membership_label: string;
   requested_at: string;
   status: string;
@@ -15,7 +16,6 @@ interface PendingCheckin {
   amount_paid: number | null;
   slip_image: string | null;
   // enriched from member_registrations
-  kids_names?: string | null;
   pin?: string | null;
 }
 
@@ -33,44 +33,41 @@ export default function PendingCheckIns({ staffName }: Props) {
     const supabase = createSupabaseBrowserClient();
     const { data } = await supabase
       .from("pending_checkins")
-      .select("id, member_id, member_name, kids_count, membership_label, requested_at, status, payment_method, amount_paid, slip_image")
+      .select("id, member_id, member_name, kids_count, kids_names, membership_label, requested_at, status, payment_method, amount_paid, slip_image")
       .eq("status", "pending")
       .order("requested_at", { ascending: true });
 
     const rows = (data ?? []) as PendingCheckin[];
 
-    // Enrich with kids_names and pin from member_registrations
-    // member_id may point to a top-up record — follow parent_member_id if kids_names is missing
+    // Enrich with PIN from member_registrations (follow parent_member_id for top-ups)
     if (rows.length > 0) {
       const memberIds = rows.map((r) => r.member_id);
       const { data: members } = await supabase
         .from("member_registrations")
-        .select("id, kids_names, pin, parent_member_id")
+        .select("id, pin, parent_member_id")
         .in("id", memberIds);
 
-      type MemberInfo = { kids_names?: string | null; pin?: string | null; parent_member_id?: number | null };
+      type MemberInfo = { pin?: string | null; parent_member_id?: number | null };
       const memberMap: Record<number, MemberInfo> = {};
-      for (const m of members ?? []) memberMap[m.id] = { kids_names: m.kids_names, pin: m.pin, parent_member_id: m.parent_member_id };
+      for (const m of members ?? []) memberMap[m.id] = { pin: m.pin, parent_member_id: m.parent_member_id };
 
-      // For top-up records (parent_member_id set) with no kids_names, fetch the parent
       const parentIds = [...new Set(
         Object.values(memberMap)
-          .filter((m) => !m.kids_names && m.parent_member_id)
+          .filter((m) => !m.pin && m.parent_member_id)
           .map((m) => m.parent_member_id as number)
       )];
       if (parentIds.length > 0) {
         const { data: parents } = await supabase
           .from("member_registrations")
-          .select("id, kids_names, pin")
+          .select("id, pin")
           .in("id", parentIds);
-        for (const p of parents ?? []) memberMap[p.id] = { kids_names: p.kids_names, pin: p.pin };
+        for (const p of parents ?? []) memberMap[p.id] = { pin: p.pin };
       }
 
       for (const r of rows) {
         const direct = memberMap[r.member_id];
         const parent = direct?.parent_member_id ? memberMap[direct.parent_member_id] : null;
-        r.kids_names = direct?.kids_names ?? parent?.kids_names ?? null;
-        r.pin        = direct?.pin        ?? parent?.pin        ?? null;
+        r.pin = direct?.pin ?? parent?.pin ?? null;
       }
     }
 
