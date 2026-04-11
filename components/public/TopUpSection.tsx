@@ -134,7 +134,7 @@ export default function TopUpSection({
         fetch("/api/water-addon", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ qty: waterQty, member_name: memberName, reference_id: data.id }),
+          body: JSON.stringify({ qty: waterQty, member_name: memberName, reference_id: data.id, payment_method: paymentMethod }),
         }).catch(() => {});
         setWaterQty(0);
       }
