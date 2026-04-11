@@ -55,6 +55,7 @@ export default function TopUpSection({
 
   const [selectedType, setSelectedType] = useState(safeInitial);
   const [kidsCount, setKidsCount]       = useState(defaultKids);
+  const [kidsNames, setKidsNames]       = useState("");
   const [bulkQty, setBulkQty]           = useState(5); // default qty for bulk packs
 
   const [loading, setLoading]             = useState<string | null>(null);
@@ -109,6 +110,7 @@ export default function TopUpSection({
     if (memberEmail) body.append("email", memberEmail);
     body.append("membership_type", selectedType);
     body.append("kids_count", String(kidsCount));
+    if (kidsNames.trim()) body.append("kids_names", kidsNames.trim());
     body.append("payment_method", paymentMethod);
     body.append("amount_paid", String(price));
     if (!selectedMt?.timeBased) {
@@ -303,25 +305,34 @@ export default function TopUpSection({
           </div>
         )}
 
-        {/* Kids count — not shown for bulk (bulk packs are per-pack, not per-kid) */}
+        {/* Kids count + names — not shown for bulk (bulk packs are per-pack, not per-kid) */}
         {!isBulk && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600">{t.numChildren}</span>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setKidsCount(Math.max(1, kidsCount - 1))}
-                className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
-              >
-                -
-              </button>
-              <span className="font-bold text-gray-800 w-4 text-center">{kidsCount}</span>
-              <button
-                onClick={() => setKidsCount(Math.min(10, kidsCount + 1))}
-                className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
-              >
-                +
-              </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">{t.numChildren}</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setKidsCount(Math.max(1, kidsCount - 1))}
+                  className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
+                >
+                  -
+                </button>
+                <span className="font-bold text-gray-800 w-4 text-center">{kidsCount}</span>
+                <button
+                  onClick={() => setKidsCount(Math.min(10, kidsCount + 1))}
+                  className="w-9 h-9 rounded-full border border-gray-300 text-gray-600 font-bold text-lg flex items-center justify-center hover:bg-gray-50"
+                >
+                  +
+                </button>
+              </div>
             </div>
+            <input
+              type="text"
+              value={kidsNames}
+              onChange={(e) => setKidsNames(e.target.value)}
+              placeholder="Kids names, e.g. Nami, Luffy"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] text-gray-700"
+            />
           </div>
         )}
       </div>
