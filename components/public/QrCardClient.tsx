@@ -152,6 +152,7 @@ interface Props {
   notifyPrefs?: { checkin?: boolean; low_sessions?: boolean; milestone?: boolean } | null;
   loyaltyDiscount?: number;
   prices?: Record<string, number>;
+  descriptions?: Record<string, string>;
 }
 
 // ── Sessions list with collapse for past purchases ────────────────────────────
@@ -256,6 +257,7 @@ export default function QrCardClient({
   notifyPrefs,
   loyaltyDiscount = 0,
   prices,
+  descriptions,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
   const [redeeming, setRedeeming]       = useState(false);
@@ -692,6 +694,7 @@ export default function QrCardClient({
           memberId={member.id}
           memberName={member.name}
           prices={prices}
+          descriptions={descriptions}
           memberPhone={member.phone ?? null}
           memberEmail={member.email ?? null}
           currentType={member.membership_type}

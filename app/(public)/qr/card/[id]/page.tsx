@@ -158,14 +158,17 @@ export default async function QrCardPage({
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const cardToken   = signMemberId(member.id);
 
-  // Fetch live prices from settings so program list reflects admin changes
-  const { data: priceRows } = await admin
+  // Fetch live prices and descriptions from settings so program list reflects admin changes
+  const { data: settingsRows } = await admin
     .from("settings")
     .select("key, value")
-    .like("key", "price_%");
+    .or("key.like.price_%,key.like.desc_%");
   const prices: Record<string, number> = {};
-  for (const row of priceRows ?? []) {
-    prices[row.key as string] = Number(row.value);
+  const descriptions: Record<string, string> = {};
+  for (const row of settingsRows ?? []) {
+    const key = row.key as string;
+    if (key.startsWith("price_")) prices[key] = Number(row.value);
+    else if (key.startsWith("desc_")) descriptions[key] = row.value as string;
   }
 
   return (
@@ -185,6 +188,7 @@ export default async function QrCardPage({
       notifyPrefs={member.notify_prefs ?? null}
       loyaltyDiscount={(member as { loyalty_discount?: number | null }).loyalty_discount ?? 0}
       prices={prices}
+      descriptions={descriptions}
     />
   );
 }
