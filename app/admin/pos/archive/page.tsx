@@ -17,6 +17,7 @@ async function voidCashSale(formData: FormData) {
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager"].includes(profile?.role ?? "")) return;
   await admin.from("drawer_log").delete().eq("sale_id", Number(id));
+  await admin.from("tax_invoices").delete().eq("cash_sale_id", Number(id));
   await admin.from("cash_sales").delete().eq("id", Number(id));
   revalidatePath("/admin/pos/archive");
 }
