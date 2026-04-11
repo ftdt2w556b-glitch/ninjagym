@@ -40,15 +40,38 @@ export default function PendingCheckIns({ staffName }: Props) {
     const rows = (data ?? []) as PendingCheckin[];
 
     // Enrich with kids_names and pin from member_registrations
+    // member_id may point to a top-up record — follow parent_member_id if kids_names is missing
     if (rows.length > 0) {
       const memberIds = rows.map((r) => r.member_id);
       const { data: members } = await supabase
         .from("member_registrations")
-        .select("id, kids_names, pin")
+        .select("id, kids_names, pin, parent_member_id")
         .in("id", memberIds);
-      const memberMap: Record<number, { kids_names?: string | null; pin?: string | null }> = {};
-      for (const m of members ?? []) memberMap[m.id] = { kids_names: m.kids_names, pin: m.pin };
-      for (const r of rows) Object.assign(r, memberMap[r.member_id] ?? {});
+
+      type MemberInfo = { kids_names?: string | null; pin?: string | null; parent_member_id?: number | null };
+      const memberMap: Record<number, MemberInfo> = {};
+      for (const m of members ?? []) memberMap[m.id] = { kids_names: m.kids_names, pin: m.pin, parent_member_id: m.parent_member_id };
+
+      // For top-up records (parent_member_id set) with no kids_names, fetch the parent
+      const parentIds = [...new Set(
+        Object.values(memberMap)
+          .filter((m) => !m.kids_names && m.parent_member_id)
+          .map((m) => m.parent_member_id as number)
+      )];
+      if (parentIds.length > 0) {
+        const { data: parents } = await supabase
+          .from("member_registrations")
+          .select("id, kids_names, pin")
+          .in("id", parentIds);
+        for (const p of parents ?? []) memberMap[p.id] = { kids_names: p.kids_names, pin: p.pin };
+      }
+
+      for (const r of rows) {
+        const direct = memberMap[r.member_id];
+        const parent = direct?.parent_member_id ? memberMap[direct.parent_member_id] : null;
+        r.kids_names = direct?.kids_names ?? parent?.kids_names ?? null;
+        r.pin        = direct?.pin        ?? parent?.pin        ?? null;
+      }
     }
 
     setItems(rows);
