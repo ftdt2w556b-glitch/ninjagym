@@ -259,7 +259,9 @@ export default function EditMemberPage() {
         {packages.filter((p) => p.slip_status !== "rejected").length > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Top-Up Packages</h2>
-            <p className="text-xs text-gray-400 -mt-1">Purchase history. Adjust sessions on a package if a check-in was logged incorrectly.</p>
+            {packages.some((p) => p.slip_status !== "rejected" && p.sessions_remaining !== null && p.sessions_remaining > 0) && (
+              <p className="text-xs text-gray-400 -mt-1">Adjust sessions if a check-in was logged incorrectly.</p>
+            )}
             {packages.filter((p) => p.slip_status !== "rejected").map((pkg) => {
               const isExhausted = pkg.sessions_remaining !== null && pkg.sessions_remaining === 0;
               const label = MEMBERSHIP_TYPES.find((m) => m.id === pkg.membership_type)?.label ?? pkg.membership_type;
