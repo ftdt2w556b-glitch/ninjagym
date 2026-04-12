@@ -3,7 +3,6 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
-import CheckInButton from "@/components/admin/CheckInButton";
 import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
 import EditCheckInButton from "@/components/admin/EditCheckInButton";
 import PeriodPicker from "@/components/admin/PeriodPicker";
@@ -143,7 +142,6 @@ export default async function MembersPage({
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await admin.from("profiles").select("role, name").eq("id", user!.id).single();
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
-  const canCheckIn = ["admin", "manager", "owner", "staff"].includes(profile?.role ?? "");
 
   const tabs = [
     { id: "members",  label: "Members" },
@@ -436,16 +434,12 @@ export default async function MembersPage({
                           <div className="flex flex-col gap-1">
                             {isPackageActive(m) && (
                               <PackageRow
-                                regId={m.id}
                                 label={primaryLabel}
                                 sessions={m.sessions_remaining}
                                 sessionsPurchased={m.sessions_purchased}
                                 expiresAt={m.expires_at}
                                 membershipType={m.membership_type}
                                 isPrimary
-                                canCheckIn={canCheckIn}
-                                staffName={profile?.name ?? undefined}
-                                kidsCount={m.kids_count ?? 1}
                               />
                             )}
                             {topUps.filter((t) => isPackageActive(t)).map((t) => {
@@ -453,15 +447,11 @@ export default async function MembersPage({
                               return (
                                 <PackageRow
                                   key={t.id}
-                                  regId={t.id}
                                   label={tLabel}
                                   sessions={t.sessions_remaining}
                                   sessionsPurchased={t.sessions_purchased}
                                   expiresAt={t.expires_at}
                                   membershipType={t.membership_type}
-                                  canCheckIn={canCheckIn}
-                                  staffName={profile?.name ?? undefined}
-                                  kidsCount={m.kids_count ?? 1}
                                 />
                               );
                             })}
@@ -739,27 +729,19 @@ export default async function MembersPage({
 }
 
 function PackageRow({
-  regId,
   label,
   sessions,
   sessionsPurchased,
   expiresAt,
   membershipType,
   isPrimary = false,
-  canCheckIn = false,
-  staffName,
-  kidsCount = 1,
 }: {
-  regId?: number;
   label: string;
   sessions: number | null;
   sessionsPurchased?: number | null;
   expiresAt: string | null;
   membershipType: string;
   isPrimary?: boolean;
-  canCheckIn?: boolean;
-  staffName?: string;
-  kidsCount?: number;
 }) {
   const isMonthly = membershipType === "monthly_flex";
 
@@ -780,14 +762,11 @@ function PackageRow({
     );
   }
 
-  const showCheckIn = canCheckIn && !isMonthly && regId !== undefined;
-
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {!isPrimary && <span className="text-gray-300 text-xs">+</span>}
       <span className={`text-xs ${isPrimary ? "text-gray-700 font-medium" : "text-gray-500"}`}>{label}</span>
       {sessionBadge}
-      {showCheckIn && <CheckInButton regId={regId!} label={label} sessionsRemaining={sessions} staffName={staffName} kidsCount={kidsCount} />}
     </div>
   );
 }
