@@ -256,61 +256,58 @@ export default function EditMemberPage() {
           </div>
         </div>
 
-        {packages.length > 0 && (
+        {packages.filter((p) => p.slip_status !== "rejected").length > 0 && (
           <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Top-Up Packages</h2>
-            <p className="text-xs text-gray-400 -mt-1">Adjust sessions on individual packages purchased by this member.</p>
-            {packages.map((pkg) => {
+            <p className="text-xs text-gray-400 -mt-1">Purchase history. Adjust sessions on a package if a check-in was logged incorrectly.</p>
+            {packages.filter((p) => p.slip_status !== "rejected").map((pkg) => {
+              const isExhausted = pkg.sessions_remaining !== null && pkg.sessions_remaining === 0;
               const label = MEMBERSHIP_TYPES.find((m) => m.id === pkg.membership_type)?.label ?? pkg.membership_type;
               const purchased = pkg.sessions_purchased != null ? `${pkg.sessions_purchased} purchased` : null;
               const date = new Date(pkg.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
               return (
-                <div key={pkg.id} className="border border-gray-100 rounded-xl p-3">
+                <div key={pkg.id} className={`border rounded-xl p-3 ${isExhausted ? "border-gray-100 opacity-50" : "border-gray-200"}`}>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{label}</p>
+                      <p className={`text-sm font-semibold ${isExhausted ? "text-gray-400" : "text-gray-800"}`}>{label}{isExhausted ? " — used" : ""}</p>
                       <p className="text-xs text-gray-400">
                         #{pkg.id} · {date}
                         {purchased ? ` · ${purchased}` : ""}
-                        {" · "}
-                        <span className={
-                          pkg.slip_status === "approved" ? "text-green-600" :
-                          pkg.slip_status === "rejected" ? "text-red-500" :
-                          "text-yellow-600"
-                        }>{pkg.slip_status}</span>
                       </p>
                     </div>
                     <span className="text-xs text-gray-400 shrink-0">
                       {pkg.amount_paid != null ? `฿${pkg.amount_paid.toLocaleString()}` : ""}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-semibold text-gray-500 shrink-0">Sessions remaining</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={pkg.sessions_remaining ?? ""}
-                      onChange={(e) =>
-                        setPackages((prev) =>
-                          prev.map((p) =>
-                            p.id === pkg.id
-                              ? { ...p, sessions_remaining: e.target.value === "" ? null : Number(e.target.value) }
-                              : p
+                  {!isExhausted && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs font-semibold text-gray-500 shrink-0">Sessions remaining</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={pkg.sessions_remaining ?? ""}
+                        onChange={(e) =>
+                          setPackages((prev) =>
+                            prev.map((p) =>
+                              p.id === pkg.id
+                                ? { ...p, sessions_remaining: e.target.value === "" ? null : Number(e.target.value) }
+                                : p
+                            )
                           )
-                        )
-                      }
-                      placeholder="—"
-                      className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-                    />
-                    <button
-                      type="button"
-                      disabled={packageSaving[pkg.id]}
-                      onClick={() => savePackage(pkg)}
-                      className="text-xs bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                      {packageSaving[pkg.id] ? "…" : "Save"}
-                    </button>
-                  </div>
+                        }
+                        placeholder="—"
+                        className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                      />
+                      <button
+                        type="button"
+                        disabled={packageSaving[pkg.id]}
+                        onClick={() => savePackage(pkg)}
+                        className="text-xs bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                      >
+                        {packageSaving[pkg.id] ? "…" : "Save"}
+                      </button>
+                    </div>
+                  )}
                   {packageError[pkg.id] && (
                     <p className="text-xs text-red-500 mt-1">{packageError[pkg.id]}</p>
                   )}
