@@ -29,6 +29,7 @@ export default function UseSessionButton({
   const [phase, setPhase] = useState<Phase>("idle");
   const [kids, setKids] = useState(maxKids > 0 ? maxKids : 1);
   const [kidsNames, setKidsNames] = useState(defaultKidsNames);
+  const [namesError, setNamesError] = useState(false);
   const [pendingId, setPendingId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
@@ -137,23 +138,27 @@ export default function UseSessionButton({
             +
           </button>
         </div>
-        {/* Kids names — staff need this to find the right child */}
+        {/* Kids names — required so staff can find the right child */}
         <div>
           <label className="block text-sm font-semibold text-gray-600 mb-1">
-            Kids names <span className="text-gray-400 font-normal">(helps staff find the right child)</span>
+            Kids names <span className="text-red-400">*</span>
           </label>
           <input
             type="text"
             value={kidsNames}
-            onChange={(e) => setKidsNames(e.target.value)}
+            onChange={(e) => { setKidsNames(e.target.value); setNamesError(false); }}
             placeholder="e.g. Nami, Luffy"
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            className={`w-full border rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${namesError ? "border-red-400 bg-red-50" : "border-gray-200"}`}
           />
+          {namesError && <p className="text-red-500 text-sm mt-1">Please enter the kids names so staff can find them.</p>}
         </div>
         <div className="flex gap-3 mt-1">
           <button onClick={() => setPhase("idle")} className="flex-1 py-4 rounded-xl border border-gray-200 text-gray-500 font-semibold text-lg">Cancel</button>
           <button
-            onClick={() => setPhase("confirming")}
+            onClick={() => {
+              if (!kidsNames.trim()) { setNamesError(true); return; }
+              setPhase("confirming");
+            }}
             className="flex-1 py-4 rounded-xl bg-[#1a56db] text-white font-bold text-lg"
           >
             Next →
@@ -165,18 +170,29 @@ export default function UseSessionButton({
 
   // ── confirming ────────────────────────────────────────────────────────────
   if (phase === "confirming") {
+    const afterSessions = sessionsRemaining - kids;
     return (
-      <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-4">
-        <div className="text-center">
-          <p className="text-4xl mb-2">🤔</p>
-          <p className="font-bold text-gray-800 text-xl">Are you sure?</p>
-          <p className="text-gray-500 text-sm mt-1">{memberName}</p>
+      <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col gap-3 mt-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-bold text-gray-800 text-lg">Confirm check-in</p>
+            <p className="text-gray-400 text-sm">{memberName}</p>
+          </div>
+          <p className="text-4xl">🤔</p>
         </div>
-        <div className="bg-blue-50 rounded-xl p-4 text-center">
-          <p className="text-[#1a56db] font-bold text-2xl">{kids} kid{kids !== 1 ? "s" : ""}</p>
-          <p className="text-gray-600 text-sm">{membershipLabel}</p>
-          <p className="text-gray-400 text-xs mt-1">{Math.max(0, sessionsRemaining - kids)} session{Math.max(0, sessionsRemaining - kids) !== 1 ? "s" : ""} remaining after this</p>
+        <div className="bg-blue-50 rounded-xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <p className="text-[#1a56db] font-bold text-3xl">{kids} kid{kids !== 1 ? "s" : ""}</p>
+            <p className="text-gray-500 text-sm">{membershipLabel}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-gray-400">After this</p>
+            <p className={`text-lg font-bold ${afterSessions <= 0 ? "text-red-500" : afterSessions <= 2 ? "text-orange-500" : "text-gray-700"}`}>
+              {Math.max(0, afterSessions)} left
+            </p>
+          </div>
         </div>
+        {kidsNames && <p className="text-xs text-gray-500 text-center">👦 {kidsNames}</p>}
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <div className="flex gap-3">
           <button onClick={() => setPhase("picking")} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-500 font-semibold">← Back</button>

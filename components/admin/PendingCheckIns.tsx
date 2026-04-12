@@ -107,6 +107,7 @@ export default function PendingCheckIns({ staffName }: Props) {
         body: JSON.stringify({ id, action, staff_name: staffName }),
       });
       setItems((prev) => prev.filter((p) => p.id !== id));
+      await fetchPending(); // re-fetch to clear any ghost records
     } finally {
       setHandling((h) => { const n = { ...h }; delete n[id]; return n; });
     }

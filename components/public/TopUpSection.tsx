@@ -68,39 +68,55 @@ export default function TopUpSection({
   const [pendingId, setPendingId]         = useState<number | null>(null);
   const [waterQty, setWaterQty]           = useState(0);
 
-  // Detect an in-flight PromptPay/Stripe purchase awaiting staff approval (survives page refresh)
+  // Detect an in-flight PromptPay purchase awaiting staff approval (survives page refresh)
+  // Uses sessionStorage (set on submit) + pending_checkins verification (public RLS)
   const [pendingPurchase, setPendingPurchase] = useState<{
     label: string; amount: number | null; method: string | null;
   } | null>(null);
 
+  const SESSION_KEY = `pending_topup_${memberId}`;
+
   useEffect(() => {
+    let stored: { regId: number; label: string; amount: number; method: string } | null = null;
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) stored = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!stored) return;
+
+    // Verify it's still pending via pending_checkins (has public SELECT RLS)
     const supabase = createSupabaseBrowserClient();
     supabase
-      .from("member_registrations")
-      .select("id, membership_type, amount_paid, payment_method")
-      .eq("parent_member_id", memberId)
-      .eq("slip_status", "pending_review")
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .from("pending_checkins")
+      .select("id, status")
+      .eq("member_id", stored.regId)
+      .eq("status", "pending")
       .maybeSingle()
-      .then(({ data }) => {
-        if (!data) return;
-        const label = MEMBERSHIP_TYPES.find((m) => m.id === data.membership_type)?.label ?? data.membership_type;
-        setPendingPurchase({ label, amount: data.amount_paid, method: data.payment_method });
+      .then(({ data: pending }) => {
+        if (!pending) {
+          // Already approved/rejected — clear storage and don't block form
+          sessionStorage.removeItem(SESSION_KEY);
+          return;
+        }
+        setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method });
 
-        // Subscribe so it auto-clears when staff approves/rejects
+        // Auto-clear when staff approves/rejects (realtime)
         const channel = supabase
-          .channel(`topup-pending-${data.id}`)
+          .channel(`topup-pending-${pending.id}`)
           .on("postgres_changes", {
             event: "UPDATE", schema: "public",
-            table: "member_registrations", filter: `id=eq.${data.id}`,
+            table: "pending_checkins", filter: `id=eq.${pending.id}`,
           }, (payload) => {
-            const updated = payload.new as { slip_status: string };
-            if (updated.slip_status !== "pending_review") setPendingPurchase(null);
+            const updated = payload.new as { status: string };
+            if (updated.status !== "pending") {
+              sessionStorage.removeItem(SESSION_KEY);
+              setPendingPurchase(null);
+            }
           })
           .subscribe();
         return () => { supabase.removeChannel(channel); };
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
@@ -137,6 +153,10 @@ export default function TopUpSection({
   }
 
   async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe", slipFile?: File | null) {
+    if (!kidsNames.trim()) {
+      setError("Please enter the kids names before continuing.");
+      return;
+    }
     setLoading(paymentMethod);
     setError(null);
 
@@ -183,7 +203,13 @@ export default function TopUpSection({
         setPendingId(data.id);
         setStripeStep(true);
       } else {
-        // PromptPay submitted with slip
+        // PromptPay submitted with slip — store in sessionStorage so page refresh shows pending state
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          regId: data.id,
+          label: selectedMt?.label ?? selectedType,
+          amount: price,
+          method: paymentMethod,
+        }));
         setShowPromptPay(false);
         setSlip(null);
         setSuccess(`Payment slip submitted! ✅ Staff will approve your ${selectedMt?.label} shortly.`);
@@ -381,9 +407,9 @@ export default function TopUpSection({
             <input
               type="text"
               value={kidsNames}
-              onChange={(e) => setKidsNames(e.target.value)}
-              placeholder="Kids names, e.g. Nami, Luffy"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] text-gray-700"
+              onChange={(e) => { setKidsNames(e.target.value); if (error) setError(null); }}
+              placeholder="Kids names, e.g. Nami, Luffy ✱ required"
+              className={`w-full border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] text-gray-700 ${!kidsNames.trim() ? "border-orange-300 bg-orange-50" : "border-gray-200"}`}
             />
           </div>
         )}
