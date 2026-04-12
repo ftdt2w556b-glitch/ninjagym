@@ -12,6 +12,16 @@ const STATUS_OPTIONS = [
   { value: "rejected",       label: "Rejected" },
 ];
 
+interface Package {
+  id: number;
+  membership_type: string;
+  sessions_remaining: number | null;
+  sessions_purchased: number | null;
+  amount_paid: number | null;
+  slip_status: string;
+  created_at: string;
+}
+
 export default function EditMemberPage() {
   const router = useRouter();
   const params = useParams();
@@ -21,6 +31,9 @@ export default function EditMemberPage() {
   const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError]       = useState("");
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [packageSaving, setPackageSaving] = useState<Record<number, boolean>>({});
+  const [packageError, setPackageError] = useState<Record<number, string>>({});
   const [form, setForm] = useState({
     name: "", phone: "", email: "", kids_names: "", kids_count: 1,
     membership_type: "session_group", slip_status: "approved",
@@ -45,10 +58,27 @@ export default function EditMemberPage() {
           amount_paid:        data.amount_paid ?? "",
           loyalty_discount:   data.loyalty_discount ?? 0,
         });
+        setPackages(data.packages ?? []);
       })
       .catch(() => setError("Failed to load member"))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function savePackage(pkg: Package) {
+    setPackageSaving((s) => ({ ...s, [pkg.id]: true }));
+    setPackageError((e) => { const n = { ...e }; delete n[pkg.id]; return n; });
+    try {
+      const res = await fetch(`/api/members/${pkg.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessions_remaining: pkg.sessions_remaining }),
+      });
+      const data = await res.json();
+      if (!res.ok) setPackageError((e) => ({ ...e, [pkg.id]: data.error ?? "Save failed" }));
+    } finally {
+      setPackageSaving((s) => { const n = { ...s }; delete n[pkg.id]; return n; });
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -225,6 +255,70 @@ export default function EditMemberPage() {
             />
           </div>
         </div>
+
+        {packages.length > 0 && (
+          <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">Top-Up Packages</h2>
+            <p className="text-xs text-gray-400 -mt-1">Adjust sessions on individual packages purchased by this member.</p>
+            {packages.map((pkg) => {
+              const label = MEMBERSHIP_TYPES.find((m) => m.id === pkg.membership_type)?.label ?? pkg.membership_type;
+              const purchased = pkg.sessions_purchased != null ? `${pkg.sessions_purchased} purchased` : null;
+              const date = new Date(pkg.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+              return (
+                <div key={pkg.id} className="border border-gray-100 rounded-xl p-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{label}</p>
+                      <p className="text-xs text-gray-400">
+                        #{pkg.id} · {date}
+                        {purchased ? ` · ${purchased}` : ""}
+                        {" · "}
+                        <span className={
+                          pkg.slip_status === "approved" ? "text-green-600" :
+                          pkg.slip_status === "rejected" ? "text-red-500" :
+                          "text-yellow-600"
+                        }>{pkg.slip_status}</span>
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {pkg.amount_paid != null ? `฿${pkg.amount_paid.toLocaleString()}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-semibold text-gray-500 shrink-0">Sessions remaining</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={pkg.sessions_remaining ?? ""}
+                      onChange={(e) =>
+                        setPackages((prev) =>
+                          prev.map((p) =>
+                            p.id === pkg.id
+                              ? { ...p, sessions_remaining: e.target.value === "" ? null : Number(e.target.value) }
+                              : p
+                          )
+                        )
+                      }
+                      placeholder="—"
+                      className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                    />
+                    <button
+                      type="button"
+                      disabled={packageSaving[pkg.id]}
+                      onClick={() => savePackage(pkg)}
+                      className="text-xs bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {packageSaving[pkg.id] ? "…" : "Save"}
+                    </button>
+                  </div>
+                  {packageError[pkg.id] && (
+                    <p className="text-xs text-red-500 mt-1">{packageError[pkg.id]}</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <button
           type="submit"

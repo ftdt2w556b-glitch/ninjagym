@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import Image from "next/image";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 import {
@@ -66,6 +67,41 @@ export default function TopUpSection({
   const [stripeStep, setStripeStep]       = useState(false);
   const [pendingId, setPendingId]         = useState<number | null>(null);
   const [waterQty, setWaterQty]           = useState(0);
+
+  // Detect an in-flight PromptPay/Stripe purchase awaiting staff approval (survives page refresh)
+  const [pendingPurchase, setPendingPurchase] = useState<{
+    label: string; amount: number | null; method: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase
+      .from("member_registrations")
+      .select("id, membership_type, amount_paid, payment_method")
+      .eq("parent_member_id", memberId)
+      .eq("slip_status", "pending_review")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const label = MEMBERSHIP_TYPES.find((m) => m.id === data.membership_type)?.label ?? data.membership_type;
+        setPendingPurchase({ label, amount: data.amount_paid, method: data.payment_method });
+
+        // Subscribe so it auto-clears when staff approves/rejects
+        const channel = supabase
+          .channel(`topup-pending-${data.id}`)
+          .on("postgres_changes", {
+            event: "UPDATE", schema: "public",
+            table: "member_registrations", filter: `id=eq.${data.id}`,
+          }, (payload) => {
+            const updated = payload.new as { slip_status: string };
+            if (updated.slip_status !== "pending_review") setPendingPurchase(null);
+          })
+          .subscribe();
+        return () => { supabase.removeChannel(channel); };
+      });
+  }, [memberId]);
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
   const isBulk     = !!selectedMt?.bulk;
@@ -156,6 +192,22 @@ export default function TopUpSection({
       setLoading(null);
       setError("Something went wrong. Please try again.");
     }
+  }
+
+  // ── Pending purchase (PromptPay/Stripe awaiting staff approval) — survives page refresh ──
+  if (pendingPurchase && !success) {
+    return (
+      <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 text-center">
+        <p className="text-3xl mb-2">⏳</p>
+        <p className="font-bold text-amber-800 text-lg">Payment awaiting approval</p>
+        <p className="text-amber-600 text-sm mt-1">{pendingPurchase.label}</p>
+        {pendingPurchase.amount != null && (
+          <p className="text-amber-500 text-sm">฿{pendingPurchase.amount.toLocaleString()} · {pendingPurchase.method ?? "online"}</p>
+        )}
+        <p className="text-gray-400 text-xs mt-3">Staff will approve your payment shortly. Please wait.</p>
+        <p className="text-gray-300 text-xs mt-1">Do not submit again — your request is already in the queue.</p>
+      </div>
+    );
   }
 
   // ── Stripe payment screen ─────────────────────────────────────────────────

@@ -227,9 +227,22 @@ export default function UseSessionButton({
   // ── already checked in today ───────────────────────────────────────────────
   if (phase === "already_in") {
     return (
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 text-center mt-2">
-        <p className="font-bold text-blue-700">✓ Already checked in today</p>
-        <p className="text-blue-500 text-sm mt-1">See staff if you need another session</p>
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4 mt-2 flex flex-col gap-3">
+        <div className="text-center">
+          <p className="font-bold text-blue-700">✓ Already checked in today</p>
+          <p className="text-blue-500 text-sm mt-1">Your kid(s) already have a session logged for today.</p>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+          <p className="text-xs font-semibold text-amber-700 leading-snug">
+            ⚠️ Each program package allows one session per visit. A second check-in today will use another session from your package.
+          </p>
+        </div>
+        <button
+          onClick={() => { setKids(maxKids > 0 ? maxKids : 1); setPhase("picking"); }}
+          className="w-full py-3 rounded-xl border-2 border-blue-300 text-blue-700 font-semibold text-sm hover:bg-blue-100 transition-colors"
+        >
+          Check in again anyway →
+        </button>
       </div>
     );
   }

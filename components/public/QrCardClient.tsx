@@ -262,6 +262,7 @@ export default function QrCardClient({
   const { t, lang, setLang } = useLanguage();
   const [redeeming, setRedeeming]       = useState(false);
   const [redeemDone, setRedeemDone]     = useState(false);
+  const [redeemClaimed, setRedeemClaimed] = useState(false); // true after Redeem tapped this session
   const [localRedeemed, setLocalRedeemed] = useState(freeSessionsRedeemed);
   const [localPrefs, setLocalPrefs]     = useState({
     checkin:      notifyPrefs?.checkin      ?? false,
@@ -312,6 +313,7 @@ export default function QrCardClient({
 
   async function handleRedeem() {
     if (redeeming || freeSessionsAvailable < 1) return;
+    if (!confirm("Redeem 1 free session? This will mark your loyalty reward as used.")) return;
     setRedeeming(true);
     try {
       const res = await fetch(`/api/members/${member.id}`, {
@@ -321,6 +323,7 @@ export default function QrCardClient({
       });
       if (res.ok) {
         setLocalRedeemed((v) => v + 1);
+        setRedeemClaimed(true);  // keep banner visible this session
         setRedeemDone(true);
         setTimeout(() => setRedeemDone(false), 3000);
       }
@@ -652,26 +655,29 @@ export default function QrCardClient({
                 : `${sessionsInCycle}/10 sessions toward next free session`}
             </p>
 
-            {/* Free session available banner */}
-            {freeSessionsAvailable > 0 && (
+            {/* Free session available banner — stays visible after claiming */}
+            {redeemClaimed ? (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
+                <p className="text-green-400 font-bold text-sm">✅ Free session claimed!</p>
+                <p className="text-green-400/70 text-xs mt-0.5">Show this screen to staff — they will let you in</p>
+              </div>
+            ) : freeSessionsAvailable > 0 ? (
               <div className="bg-[#ffe033]/10 border border-[#ffe033]/30 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-[#ffe033] font-bold text-sm">
                     🎁 {freeSessionsAvailable} Free Session{freeSessionsAvailable !== 1 ? "s" : ""} Ready!
                   </p>
-                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Show this to staff at check-in</p>
+                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Tap Redeem and show staff</p>
                 </div>
-                {fromAdmin && (
-                  <button
-                    onClick={handleRedeem}
-                    disabled={redeeming}
-                    className="ml-3 bg-[#ffe033] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-300 disabled:opacity-50 transition-colors shrink-0"
-                  >
-                    {redeemDone ? "✓ Done!" : redeeming ? "..." : "Redeem"}
-                  </button>
-                )}
+                <button
+                  onClick={handleRedeem}
+                  disabled={redeeming}
+                  className="ml-3 bg-[#ffe033] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-300 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {redeeming ? "..." : "Redeem"}
+                </button>
               </div>
-            )}
+            ) : null}
 
             {freeSessionsAvailable === 0 && (
               <p className="text-center text-gray-600 text-xs">

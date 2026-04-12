@@ -16,7 +16,7 @@ async function requireAdmin(request: NextRequest) {
   return user;
 }
 
-/** GET /api/members/[id] — fetch a single member (admin only) */
+/** GET /api/members/[id] — fetch a single member + top-up packages (admin only) */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -33,7 +33,15 @@ export async function GET(
     .single();
 
   if (error || !data) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(data);
+
+  // Also fetch child top-up packages
+  const { data: packages } = await admin
+    .from("member_registrations")
+    .select("id, membership_type, sessions_remaining, sessions_purchased, amount_paid, slip_status, created_at")
+    .eq("parent_member_id", id)
+    .order("id", { ascending: true });
+
+  return NextResponse.json({ ...data, packages: packages ?? [] });
 }
 
 /** PATCH /api/members/[id] — update member fields (admin only) */
