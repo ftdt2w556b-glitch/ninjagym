@@ -708,6 +708,7 @@ export default function QrCardClient({
           defaultKids={member.kids_count ?? 1}
           activePackages={activePackages}
           loyaltyDiscount={loyaltyDiscount}
+          cardToken={cardToken}
         />
       )}
 

@@ -33,6 +33,7 @@ interface Props {
   loyaltyDiscount?: number;
   prices?: Record<string, number>; // live prices from DB settings (falls back to BASE_PRICES)
   descriptions?: Record<string, string>; // live descriptions from DB settings (falls back to mt.note)
+  cardToken?: string; // needed for parent-initiated cancel
 }
 
 export default function TopUpSection({
@@ -46,6 +47,7 @@ export default function TopUpSection({
   loyaltyDiscount = 0,
   prices,
   descriptions,
+  cardToken,
 }: Props) {
   const { t } = useLanguage();
 
@@ -71,8 +73,10 @@ export default function TopUpSection({
   // Detect an in-flight PromptPay purchase awaiting staff approval (survives page refresh)
   // Uses sessionStorage (set on submit) + pending_checkins verification (public RLS)
   const [pendingPurchase, setPendingPurchase] = useState<{
-    label: string; amount: number | null; method: string | null;
+    label: string; amount: number | null; method: string | null; regId?: number;
   } | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   const SESSION_KEY = `pending_topup_${memberId}`;
 
@@ -98,7 +102,7 @@ export default function TopUpSection({
           sessionStorage.removeItem(SESSION_KEY);
           return;
         }
-        setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method });
+        setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
 
         // Auto-clear when staff approves/rejects (realtime)
         const channel = supabase
@@ -220,18 +224,51 @@ export default function TopUpSection({
     }
   }
 
-  // ── Pending purchase (PromptPay/Stripe awaiting staff approval) — survives page refresh ──
+  // ── Pending purchase (PromptPay awaiting staff approval) — survives page refresh ──
+  async function cancelPending() {
+    if (!pendingPurchase?.regId || !cardToken) {
+      // No API call possible — just clear locally so parent can resubmit
+      sessionStorage.removeItem(SESSION_KEY);
+      setPendingPurchase(null);
+      return;
+    }
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch("/api/checkin/cancel-topup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reg_id: pendingPurchase.regId, parent_member_id: memberId, token: cardToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCancelError(data.error ?? "Could not cancel. Ask staff to reject it."); return; }
+      sessionStorage.removeItem(SESSION_KEY);
+      setPendingPurchase(null);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   if (pendingPurchase && !success) {
     return (
-      <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 text-center">
-        <p className="text-3xl mb-2">⏳</p>
-        <p className="font-bold text-amber-800 text-lg">Payment awaiting approval</p>
-        <p className="text-amber-600 text-sm mt-1">{pendingPurchase.label}</p>
-        {pendingPurchase.amount != null && (
-          <p className="text-amber-500 text-sm">฿{pendingPurchase.amount.toLocaleString()} · {pendingPurchase.method ?? "online"}</p>
-        )}
-        <p className="text-gray-400 text-xs mt-3">Staff will approve your payment shortly. Please wait.</p>
-        <p className="text-gray-300 text-xs mt-1">Do not submit again — your request is already in the queue.</p>
+      <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex flex-col gap-3">
+        <div className="text-center">
+          <p className="text-2xl mb-1">⏳</p>
+          <p className="font-bold text-amber-800 text-lg">Payment slip submitted</p>
+          <p className="text-amber-700 text-sm">{pendingPurchase.label}</p>
+          {pendingPurchase.amount != null && (
+            <p className="text-amber-600 text-sm">฿{pendingPurchase.amount.toLocaleString()}</p>
+          )}
+          <p className="text-gray-500 text-xs mt-2">Staff will approve shortly.</p>
+        </div>
+        {cancelError && <p className="text-red-500 text-xs text-center">{cancelError}</p>}
+        <button
+          onClick={cancelPending}
+          disabled={cancelling}
+          className="w-full py-2.5 rounded-xl border-2 border-amber-400 text-amber-800 font-semibold text-sm hover:bg-amber-100 transition-colors disabled:opacity-50"
+        >
+          {cancelling ? "Cancelling…" : "✕ Wrong program or slip? Cancel and resubmit"}
+        </button>
       </div>
     );
   }
