@@ -29,6 +29,7 @@ export default async function PaymentsPage({
     .from("member_registrations")
     .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
     .neq("membership_type", "birthday_event")
+    .neq("payment_method", "self_register")   // auto-approved at join — no payment to review
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -87,6 +88,7 @@ export default async function PaymentsPage({
   const [{ count: pendingMembers }, { count: pendingEvents }, { count: pendingShop }] = await Promise.all([
     admin.from("member_registrations").select("*", { count: "exact", head: true })
       .neq("membership_type", "birthday_event")
+      .neq("payment_method", "self_register")
       .in("slip_status", ["pending_review", "cash_pending"]),
     admin.from("event_bookings").select("*", { count: "exact", head: true })
       .in("slip_status", ["pending_review", "cash_pending"]),
