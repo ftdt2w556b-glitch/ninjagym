@@ -9,9 +9,36 @@ import PendingCheckIns from "@/components/admin/PendingCheckIns";
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; member?: string; source?: string }>;
+  searchParams: Promise<{ status?: string; member?: string; source?: string; cleaned?: string }>;
 }) {
-  const { status, member, source = "members" } = await searchParams;
+  const { status, member, source = "members", cleaned } = await searchParams;
+
+  async function cleanupTestRecords(_fd: FormData) {
+    "use server";
+    const supabaseInner = await createSupabaseServerClient();
+    const { data: { user: caller } } = await supabaseInner.auth.getUser();
+    if (!caller) redirect("/admin/payments?source=members");
+    const adminClient = createAdminClient();
+    const { data: callerProfile } = await adminClient
+      .from("profiles").select("role").eq("id", caller.id).single();
+    if (!["admin", "owner"].includes(callerProfile?.role ?? ""))
+      redirect("/admin/payments?source=members");
+
+    const { data: testRecords } = await adminClient
+      .from("member_registrations")
+      .select("id")
+      .ilike("name", "%test%")
+      .in("slip_status", ["approved", "rejected"]);
+
+    if (testRecords && testRecords.length > 0) {
+      const ids = testRecords.map((r) => r.id);
+      await adminClient.from("pending_checkins").delete().in("member_id", ids);
+      await adminClient.from("attendance_logs").delete().in("member_id", ids);
+      await adminClient.from("member_registrations").delete().in("id", ids);
+    }
+    redirect("/admin/payments?source=members&cleaned=1");
+  }
+
   const admin = createAdminClient();
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -111,6 +138,12 @@ export default async function PaymentsPage({
       {/* Parent-initiated check-in requests */}
       <PendingCheckIns staffName={staffName} />
 
+      {cleaned === "1" && (
+        <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 mb-4 font-semibold">
+          ✓ TEST records deleted.
+        </div>
+      )}
+
       {/* Source tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
         {[
@@ -152,6 +185,16 @@ export default async function PaymentsPage({
       {/* ── Members list ── */}
       {source === "members" && (
         <div className="flex flex-col gap-4">
+          {["admin", "owner"].includes(userRole) && (
+            <form action={cleanupTestRecords} className="self-end">
+              <button
+                type="submit"
+                className="text-xs text-red-400 hover:text-red-600 border border-red-200 hover:border-red-300 rounded-lg px-3 py-1.5 transition-colors"
+              >
+                🗑 Delete all TEST records
+              </button>
+            </form>
+          )}
           {members?.map((m) => {
             const typeLabel = MEMBERSHIP_TYPES.find((t) => t.id === m.membership_type)?.label ?? m.membership_type;
             const slipUrl = m.slip_image

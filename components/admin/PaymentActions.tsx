@@ -35,11 +35,14 @@ export default function PaymentActions({
 }) {
   const canApprove = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
   const canManage  = ["admin", "manager"].includes(userRole ?? "");
+  const canDelete  = ["admin", "owner"].includes(userRole ?? "");
 
   const [status, setStatus]                               = useState<SlipStatus>(initialStatus);
   const [busy, setBusy]                                   = useState<string | null>(null);
   const [err, setErr]                                     = useState<string | null>(null);
   const [confirmWrongProgram, setConfirmWrongProgram]     = useState(false);
+  const [confirmDelete, setConfirmDelete]                 = useState(false);
+  const [deleted, setDeleted]                             = useState(false);
 
   async function doAction(action: string, nextStatus: SlipStatus, notes?: string) {
     setBusy(action);
@@ -66,6 +69,27 @@ export default function PaymentActions({
       setBusy(null);
     }
   }
+
+  async function doDelete() {
+    setBusy("delete");
+    setErr(null);
+    try {
+      const endpoint =
+        recordType === "member" ? `/api/members/${id}` :
+        recordType === "event"  ? `/api/events/${id}`  :
+        `/api/shop/orders/${id}`;
+      const res = await fetch(endpoint, { method: "DELETE" });
+      if (!res.ok) throw new Error(await res.text());
+      setDeleted(true);
+    } catch {
+      setErr("Delete failed. Please try again.");
+      setConfirmDelete(false);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  if (deleted) return null;
 
   const isCashPending = status === "cash_pending";
   const isPending     = status === "pending_review" || status === "cash_pending";
@@ -203,6 +227,36 @@ export default function PaymentActions({
           >
             View Member Card
           </a>
+        )}
+
+        {/* Delete — admin/owner only, approved or rejected records */}
+        {canDelete && (isApproved || isRejected) && !confirmDelete && (
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={!!busy}
+            className="text-xs text-red-400 hover:text-red-600 px-2 py-2 transition-colors disabled:opacity-50"
+          >
+            🗑 Delete
+          </button>
+        )}
+        {canDelete && confirmDelete && (
+          <div className="w-full flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2 mt-1">
+            <span className="text-xs text-red-700 font-semibold">Permanently delete this record?</span>
+            <button
+              onClick={doDelete}
+              disabled={!!busy}
+              className="text-xs bg-red-500 text-white font-semibold px-3 py-1 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {busy === "delete" ? "Deleting…" : "Yes, delete"}
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              disabled={!!busy}
+              className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         )}
       </div>
     </div>
