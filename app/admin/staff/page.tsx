@@ -184,14 +184,13 @@ export default async function StaffPage({
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Name</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Email</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Role</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Change Role</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">PIN</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">Password</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600">On POS</th>
-                <th className="text-left px-3 py-3 font-semibold text-gray-600"></th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">Name</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">Email</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">Role</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">PIN</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">Password</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600">On POS</th>
+                <th className="text-left px-2 py-3 font-semibold text-gray-600"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -202,23 +201,12 @@ export default async function StaffPage({
 
                 return (
                   <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">
+                    <td className="px-2 py-3 font-medium text-gray-900 whitespace-nowrap">
                       {p.name ?? "—"}
                       {isSelf && <span className="ml-1 text-xs text-[#1a56db] font-semibold">(you)</span>}
                     </td>
-                    <td className="px-3 py-3 text-gray-500 text-xs">{p.email}</td>
-                    <td className="px-3 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
-                        p.role === "admin"     ? "bg-purple-100 text-purple-700"
-                        : p.role === "manager" ? "bg-teal-100 text-teal-700"
-                        : p.role === "owner"   ? "bg-blue-100 text-blue-700"
-                        : p.role === "tax"     ? "bg-yellow-100 text-yellow-700"
-                        : "bg-gray-100 text-gray-600"
-                      }`}>
-                        {p.role}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3 text-gray-500 text-xs">{p.email}</td>
+                    <td className="px-2 py-3">
                       <form action={updateRole} className="flex items-center gap-1">
                         <input type="hidden" name="id" value={p.id} />
                         <select name="role" defaultValue={p.role}
@@ -235,7 +223,7 @@ export default async function StaffPage({
                         </button>
                       </form>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <form action={setPin} className="flex items-center gap-1">
                         <input type="hidden" name="id" value={p.id} />
                         <input type="password" name="pin" maxLength={4}
@@ -247,19 +235,19 @@ export default async function StaffPage({
                         </button>
                       </form>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <form action={resetPassword} className="flex items-center gap-1">
                         <input type="hidden" name="id" value={p.id} />
                         <input type="password" name="password" minLength={6}
-                          placeholder="New password"
-                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
+                          placeholder="Password"
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-20 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
                         <button type="submit"
                           className="text-xs bg-gray-600 text-white px-2 py-1 rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap">
                           Set
                         </button>
                       </form>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-2 py-3">
                       <form action={togglePosRoster} className="flex items-center">
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="current" value={String(p.show_on_pos ?? false)} />
@@ -275,7 +263,7 @@ export default async function StaffPage({
                         </button>
                       </form>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    <td className="px-2 py-3 whitespace-nowrap">
                       {canDelete ? (
                         <DeleteUserButton
                           action={deleteUser}
