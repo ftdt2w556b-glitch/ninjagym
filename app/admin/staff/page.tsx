@@ -79,6 +79,17 @@ export default async function StaffPage({
     redirect("/admin/staff");
   }
 
+  async function resetPassword(formData: FormData) {
+    "use server";
+    const id = formData.get("id") as string;
+    const password = (formData.get("password") as string)?.trim();
+    if (!id || !password || password.length < 6) redirect("/admin/staff?error=Password+must+be+at+least+6+characters");
+    const adminClient = createAdminClient();
+    const { error } = await adminClient.auth.admin.updateUserById(id, { password });
+    if (error) redirect(`/admin/staff?error=${encodeURIComponent(error.message)}`);
+    redirect("/admin/staff?created=1");
+  }
+
   async function setPin(formData: FormData) {
     "use server";
     const id = formData.get("id") as string;
@@ -158,7 +169,7 @@ export default async function StaffPage({
 
       {params.created === "1" && (
         <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 mb-6 font-semibold">
-          ✓ Account created successfully.
+          ✓ Saved successfully.
         </div>
       )}
       {params.error && (
@@ -178,6 +189,7 @@ export default async function StaffPage({
                 <th className="text-left px-3 py-3 font-semibold text-gray-600">Role</th>
                 <th className="text-left px-3 py-3 font-semibold text-gray-600">Change Role</th>
                 <th className="text-left px-3 py-3 font-semibold text-gray-600">PIN</th>
+                <th className="text-left px-3 py-3 font-semibold text-gray-600">Password</th>
                 <th className="text-left px-3 py-3 font-semibold text-gray-600">On POS</th>
                 <th className="text-left px-3 py-3 font-semibold text-gray-600"></th>
               </tr>
@@ -232,6 +244,18 @@ export default async function StaffPage({
                         <button type="submit"
                           className="text-xs bg-gray-600 text-white px-2 py-1 rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap">
                           {p.pin ? "Change" : "Set"}
+                        </button>
+                      </form>
+                    </td>
+                    <td className="px-3 py-3">
+                      <form action={resetPassword} className="flex items-center gap-1">
+                        <input type="hidden" name="id" value={p.id} />
+                        <input type="password" name="password" minLength={6}
+                          placeholder="New password"
+                          className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-24 focus:outline-none focus:ring-1 focus:ring-[#1a56db]" />
+                        <button type="submit"
+                          className="text-xs bg-gray-600 text-white px-2 py-1 rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap">
+                          Set
                         </button>
                       </form>
                     </td>
