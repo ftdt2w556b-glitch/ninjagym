@@ -115,6 +115,7 @@ export async function DELETE(
   }
 
   // Delete remaining related records
+  await admin.from("pending_checkins").delete().eq("member_id", id);
   await admin.from("attendance_logs").delete().eq("member_id", id);
   await admin.from("cash_sales").delete().eq("reference_id", id);
 

@@ -81,8 +81,8 @@ export default function PaymentActions({
       const res = await fetch(endpoint, { method: "DELETE" });
       if (!res.ok) throw new Error(await res.text());
       setDeleted(true);
-    } catch {
-      setErr("Delete failed. Please try again.");
+    } catch (e) {
+      setErr(`Delete failed: ${e instanceof Error ? e.message : "Please try again."}`);
       setConfirmDelete(false);
     } finally {
       setBusy(null);
