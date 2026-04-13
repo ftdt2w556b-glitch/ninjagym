@@ -114,8 +114,9 @@ export async function DELETE(
     await admin.from("member_registrations").delete().eq("id", child.id);
   }
 
-  // Delete remaining related records
+  // Delete remaining related records (order matters — clear FKs before parent)
   await admin.from("pending_checkins").delete().eq("member_id", id);
+  await admin.from("tax_invoices").delete().eq("member_registration_id", id);
   await admin.from("attendance_logs").delete().eq("member_id", id);
   await admin.from("cash_sales").delete().eq("reference_id", id);
 
