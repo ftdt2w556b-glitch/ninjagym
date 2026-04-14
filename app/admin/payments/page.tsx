@@ -57,18 +57,23 @@ export default async function PaymentsPage({
     .from("member_registrations")
     .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
     .neq("membership_type", "birthday_event")
-    .neq("payment_method", "self_register")   // auto-approved at join — no payment to review
-    .order("created_at", { ascending: false })
-    .limit(100);
+    .neq("payment_method", "self_register");  // auto-approved at join — no payment to review
 
   if (status) {
-    membersQuery = membersQuery.eq("slip_status", status).limit(500);
+    // Approved/Rejected: sort by slip_reviewed_at so today's check-ins always appear at top
+    membersQuery = membersQuery
+      .eq("slip_status", status)
+      .order("slip_reviewed_at", { ascending: false, nullsFirst: false })
+      .limit(500);
   } else {
-    membersQuery = membersQuery.in("slip_status", ["pending_review", "cash_pending"]);
-    // PromptPay pending_review is already shown as the orange check-in card (pending_checkins).
-    // Hide it here to avoid the duplicate white card confusing staff.
-    // It reappears correctly in the Approved / Rejected history views.
-    membersQuery = membersQuery.neq("payment_method", "promptpay");
+    membersQuery = membersQuery
+      .in("slip_status", ["pending_review", "cash_pending"])
+      // PromptPay pending_review is already shown as the orange check-in card (pending_checkins).
+      // Hide it here to avoid the duplicate white card confusing staff.
+      // It reappears correctly in the Approved / Rejected history views.
+      .neq("payment_method", "promptpay")
+      .order("created_at", { ascending: false })
+      .limit(100);
   }
   if (member) membersQuery = membersQuery.eq("id", member);
   if (q) membersQuery = membersQuery.ilike("name", `%${q}%`);

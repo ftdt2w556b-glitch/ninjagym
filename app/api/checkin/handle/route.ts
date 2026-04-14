@@ -50,12 +50,18 @@ export async function POST(req: NextRequest) {
         .eq("id", pending.member_id);
     }
 
-    // Approve the linked registration and stamp slip_reviewed_at for Sales report
+    // Always stamp slip_reviewed_at — used to sort today's approvals to the top
     await admin
       .from("member_registrations")
-      .update({ slip_status: "approved", slip_reviewed_at: now })
+      .update({ slip_reviewed_at: now })
+      .eq("id", pending.member_id);
+
+    // Move pending_review registrations to approved (don't overwrite already-approved)
+    await admin
+      .from("member_registrations")
+      .update({ slip_status: "approved" })
       .eq("id", pending.member_id)
-      .neq("slip_status", "approved");
+      .eq("slip_status", "pending_review");
 
     await admin
       .from("pending_checkins")
