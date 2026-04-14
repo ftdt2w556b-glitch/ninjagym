@@ -62,7 +62,13 @@ export default async function PaymentsPage({
     .limit(100);
 
   if (status) membersQuery = membersQuery.eq("slip_status", status);
-  else membersQuery = membersQuery.in("slip_status", ["pending_review", "cash_pending"]);
+  else {
+    membersQuery = membersQuery.in("slip_status", ["pending_review", "cash_pending"]);
+    // PromptPay pending_review is already shown as the orange check-in card (pending_checkins).
+    // Hide it here to avoid the duplicate white card confusing staff.
+    // It reappears correctly in the Approved / Rejected history views.
+    membersQuery = membersQuery.neq("payment_method", "promptpay");
+  }
   if (member) membersQuery = membersQuery.eq("id", member);
 
   // ── Events query ─────────────────────────────────────────────
@@ -117,6 +123,7 @@ export default async function PaymentsPage({
     admin.from("member_registrations").select("*", { count: "exact", head: true })
       .neq("membership_type", "birthday_event")
       .neq("payment_method", "self_register")
+      .neq("payment_method", "promptpay")
       .in("slip_status", ["pending_review", "cash_pending"]),
     admin.from("event_bookings").select("*", { count: "exact", head: true })
       .in("slip_status", ["pending_review", "cash_pending"]),
