@@ -21,22 +21,11 @@ export async function POST(request: NextRequest) {
     const amount = waterQty * WATER_PRICE;
     const admin = createAdminClient();
 
-    // Only record a separate cash_sale for cash payments.
-    // PromptPay/Stripe water is already baked into the registration total.
-    const isCash = !payment_method || payment_method === "cash";
-    if (isCash) {
-      const { error: saleErr } = await admin.from("cash_sales").insert({
-        sale_type: "shop",
-        reference_id: reference_id ?? null,
-        amount,
-        items: [{ item_id: "water", name: "Water", qty: waterQty, variant: "Regular", unit_price: WATER_PRICE }],
-        staff_name: "Registration add-on",
-        drawer_opened: false,
-        receipt_printed: false,
-        notes: member_name ? `Water add-on for ${member_name}` : "Water add-on from registration",
-      });
-      if (saleErr) console.error("Water sale insert error:", saleErr);
-    }
+    // Never create a separate cash_sale for water — the water amount is always
+    // included in the registration's amount_paid regardless of payment method.
+    // For cash: the POS cash_sale covers the full registration total (session + water).
+    // For PromptPay/Stripe: same — water is baked into the registration total.
+    // Creating a separate cash_sale here would double-count water in the drawer tally.
 
     // Always decrement shop inventory regardless of payment method
     const { data: current } = await admin
