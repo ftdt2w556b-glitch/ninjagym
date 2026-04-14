@@ -10,9 +10,9 @@ import PendingCheckIns from "@/components/admin/PendingCheckIns";
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; member?: string; source?: string; cleaned?: string }>;
+  searchParams: Promise<{ status?: string; member?: string; source?: string; cleaned?: string; q?: string }>;
 }) {
-  const { status, member, source = "members", cleaned } = await searchParams;
+  const { status, member, source = "members", cleaned, q } = await searchParams;
 
   async function cleanupTestRecords(_fd: FormData) {
     "use server";
@@ -61,8 +61,9 @@ export default async function PaymentsPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (status) membersQuery = membersQuery.eq("slip_status", status);
-  else {
+  if (status) {
+    membersQuery = membersQuery.eq("slip_status", status).limit(500);
+  } else {
     membersQuery = membersQuery.in("slip_status", ["pending_review", "cash_pending"]);
     // PromptPay pending_review is already shown as the orange check-in card (pending_checkins).
     // Hide it here to avoid the duplicate white card confusing staff.
@@ -70,6 +71,7 @@ export default async function PaymentsPage({
     membersQuery = membersQuery.neq("payment_method", "promptpay");
   }
   if (member) membersQuery = membersQuery.eq("id", member);
+  if (q) membersQuery = membersQuery.ilike("name", `%${q}%`);
 
   // ── Events query ─────────────────────────────────────────────
   let eventsQuery = admin
@@ -174,20 +176,42 @@ export default async function PaymentsPage({
       </div>
 
       {/* Status filter */}
-      <div className="flex gap-2 text-sm mb-6">
-        {statusOpts.map((opt) => (
-          <a
-            key={opt.value}
-            href={`/admin/payments?source=${source}${opt.value ? `&status=${opt.value}` : ""}`}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
-              (status ?? "") === opt.value
-                ? "bg-[#1a56db] text-white"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
-          >
-            {opt.label}
-          </a>
-        ))}
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <div className="flex gap-2 text-sm">
+          {statusOpts.map((opt) => (
+            <a
+              key={opt.value}
+              href={`/admin/payments?source=${source}${opt.value ? `&status=${opt.value}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                (status ?? "") === opt.value
+                  ? "bg-[#1a56db] text-white"
+                  : "text-gray-500 hover:bg-gray-100"
+              }`}
+            >
+              {opt.label}
+            </a>
+          ))}
+        </div>
+        {/* Name search — useful for finding old approved/rejected records */}
+        <form method="GET" className="flex items-center gap-1 ml-auto">
+          <input type="hidden" name="source" value={source} />
+          {status && <input type="hidden" name="status" value={status} />}
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Search by name…"
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-44 focus:outline-none focus:ring-1 focus:ring-[#1a56db]"
+          />
+          <button type="submit"
+            className="text-sm bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">
+            Search
+          </button>
+          {q && (
+            <a href={`/admin/payments?source=${source}${status ? `&status=${status}` : ""}`}
+              className="text-xs text-gray-400 hover:text-gray-600 px-1">✕</a>
+          )}
+        </form>
       </div>
 
       {/* ── Members list ── */}
