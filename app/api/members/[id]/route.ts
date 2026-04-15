@@ -104,13 +104,17 @@ export async function DELETE(
   const { id } = await params;
   const admin = createAdminClient();
 
-  // Delete child top-up records first (linked via parent_member_id)
+  // Delete child top-up records first (linked via parent_member_id).
+  // Each child may itself have FK references that must be cleared first.
   const { data: children } = await admin
     .from("member_registrations")
     .select("id")
     .eq("parent_member_id", id);
   for (const child of children ?? []) {
+    await admin.from("pending_checkins").delete().eq("member_id", child.id);
+    await admin.from("tax_invoices").delete().eq("member_registration_id", child.id);
     await admin.from("attendance_logs").delete().eq("member_id", child.id);
+    await admin.from("cash_sales").delete().eq("reference_id", child.id);
     await admin.from("member_registrations").delete().eq("id", child.id);
   }
 
