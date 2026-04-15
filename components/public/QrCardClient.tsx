@@ -259,6 +259,7 @@ export default function QrCardClient({
   loyaltyDiscount = 0,
   prices,
   descriptions,
+  pendingTopUp,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
   const [redeeming, setRedeeming]       = useState(false);
