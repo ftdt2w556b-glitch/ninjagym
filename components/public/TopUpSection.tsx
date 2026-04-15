@@ -71,7 +71,7 @@ export default function TopUpSection({
   const [waterQty, setWaterQty]           = useState(0);
 
   // Detect an in-flight PromptPay purchase awaiting staff approval (survives page refresh)
-  // Uses sessionStorage (set on submit) + pending_checkins verification (public RLS)
+  // Uses localStorage (persists across tabs/restarts) + DB verification on mount
   const [pendingPurchase, setPendingPurchase] = useState<{
     label: string; amount: number | null; method: string | null; regId?: number;
   } | null>(null);
@@ -83,7 +83,7 @@ export default function TopUpSection({
   useEffect(() => {
     let stored: { regId: number; label: string; amount: number; method: string } | null = null;
     try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
+      const raw = localStorage.getItem(SESSION_KEY);
       if (raw) stored = JSON.parse(raw);
     } catch { /* ignore */ }
     if (!stored) return;
@@ -101,7 +101,7 @@ export default function TopUpSection({
         .then(({ data: reg }) => {
           if (!reg) {
             // Already processed at POS or cancelled — clear storage
-            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_KEY);
             return;
           }
           setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
@@ -115,7 +115,7 @@ export default function TopUpSection({
             }, (payload) => {
               const updated = payload.new as { slip_status: string };
               if (updated.slip_status !== "cash_pending") {
-                sessionStorage.removeItem(SESSION_KEY);
+                localStorage.removeItem(SESSION_KEY);
                 setPendingPurchase(null);
               }
             })
@@ -133,7 +133,7 @@ export default function TopUpSection({
         .then(({ data: pending }) => {
           if (!pending) {
             // Already approved/rejected — clear storage and don't block form
-            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_KEY);
             return;
           }
           setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
@@ -147,7 +147,7 @@ export default function TopUpSection({
             }, (payload) => {
               const updated = payload.new as { status: string };
               if (updated.status !== "pending") {
-                sessionStorage.removeItem(SESSION_KEY);
+                localStorage.removeItem(SESSION_KEY);
                 setPendingPurchase(null);
               }
             })
@@ -237,8 +237,8 @@ export default function TopUpSection({
       }
 
       if (paymentMethod === "cash") {
-        // Store in sessionStorage so the pending state survives page refresh
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        // Store in localStorage so the pending state survives page refresh
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
           regId: data.id,
           label: selectedMt?.label ?? selectedType,
           amount: price,
@@ -249,8 +249,8 @@ export default function TopUpSection({
         setPendingId(data.id);
         setStripeStep(true);
       } else {
-        // PromptPay submitted with slip — store in sessionStorage so page refresh shows pending state
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        // PromptPay submitted with slip — store in localStorage so page refresh shows pending state
+        localStorage.setItem(SESSION_KEY, JSON.stringify({
           regId: data.id,
           label: selectedMt?.label ?? selectedType,
           amount: price,
@@ -270,7 +270,7 @@ export default function TopUpSection({
   async function cancelPending() {
     if (!pendingPurchase?.regId || !cardToken) {
       // No API call possible — just clear locally so parent can resubmit
-      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
       setPendingPurchase(null);
       return;
     }
@@ -284,7 +284,7 @@ export default function TopUpSection({
       });
       const data = await res.json();
       if (!res.ok) { setCancelError(data.error ?? "Could not cancel. Ask staff to reject it."); return; }
-      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
       setPendingPurchase(null);
     } finally {
       setCancelling(false);
