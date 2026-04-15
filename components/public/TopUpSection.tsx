@@ -157,7 +157,7 @@ export default function TopUpSection({
   }
 
   async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe", slipFile?: File | null) {
-    if (!kidsNames.trim()) {
+    if (!isBulk && !kidsNames.trim()) {
       setError("Please enter the kids names before continuing.");
       return;
     }
