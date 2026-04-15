@@ -57,16 +57,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Always stamp slip_reviewed_at — used to sort today's approvals to the top
+    // Only stamp slip_reviewed_at + flip to approved for real payment approvals.
+    // Session USE approvals (already-approved packages) must NOT update slip_reviewed_at —
+    // doing so re-surfaces the original purchase amount in today's sales totals.
     await admin
       .from("member_registrations")
-      .update({ slip_reviewed_at: now })
-      .eq("id", pending.member_id);
-
-    // Move pending_review registrations to approved (don't overwrite already-approved)
-    await admin
-      .from("member_registrations")
-      .update({ slip_status: "approved" })
+      .update({ slip_status: "approved", slip_reviewed_at: now })
       .eq("id", pending.member_id)
       .eq("slip_status", "pending_review");
 

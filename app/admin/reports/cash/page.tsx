@@ -137,7 +137,7 @@ export default async function RevenuePage({
   // Approved non-cash registrations (PromptPay only — cash excluded, counted via cash_sales)
   const { data: memberPayments } = await admin
     .from("member_registrations")
-    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image")
+    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image, pin")
     .eq("slip_status", "approved")
     .neq("payment_method", "cash")
     .gte("slip_reviewed_at", from)
@@ -168,6 +168,7 @@ export default async function RevenuePage({
     method: string;
     amount: number;
     slipImage?: string | null;
+    pin?: string | null;
   };
 
   const allTx: TxRow[] = [
@@ -190,6 +191,7 @@ export default async function RevenuePage({
       method: m.payment_method ?? "cash",
       amount: Number(m.amount_paid ?? 0),
       slipImage: m.slip_image as string | null,
+      pin: m.pin as string | null,
     })),
   ].sort((a, b) => b.time.localeCompare(a.time));
 
@@ -337,7 +339,14 @@ export default async function RevenuePage({
                     {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) : "—"}
                   </td>
                   <td className="px-4 py-3 text-gray-700 max-w-[260px]">
-                    <span className="line-clamp-1">{tx.description}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="line-clamp-1">{tx.description}</span>
+                      {tx.pin && (
+                        <span className="shrink-0 text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                          #{tx.pin}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${

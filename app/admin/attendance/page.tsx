@@ -97,6 +97,31 @@ export default async function AttendancePage({
 
   const { data: logs, count } = await query;
 
+  // Build member_id → PIN map for display
+  const memberIds = [...new Set((logs ?? []).map((l) => l.member_id).filter(Boolean))] as number[];
+  const pinMap: Record<number, string> = {};
+  if (memberIds.length > 0) {
+    const { data: regPins } = await admin
+      .from("member_registrations")
+      .select("id, pin, parent_member_id")
+      .in("id", memberIds);
+    const parentIds = [...new Set((regPins ?? []).filter((r) => r.parent_member_id).map((r) => r.parent_member_id as number))];
+    const parentPinLookup: Record<number, string> = {};
+    if (parentIds.length > 0) {
+      const { data: parents } = await admin
+        .from("member_registrations")
+        .select("id, pin")
+        .in("id", parentIds);
+      for (const p of parents ?? []) {
+        if (p.id && p.pin) parentPinLookup[p.id as number] = p.pin as string;
+      }
+    }
+    for (const r of regPins ?? []) {
+      const pin = r.parent_member_id ? parentPinLookup[r.parent_member_id as number] : (r.pin as string | null);
+      if (r.id && pin) pinMap[r.id as number] = pin;
+    }
+  }
+
   // Group by date for display
   const grouped = new Map<string, typeof logs>();
   for (const log of logs ?? []) {
@@ -185,14 +210,21 @@ export default async function AttendancePage({
                     {formatBangkokTime(log.check_in_at)}
                   </span>
 
-                  {/* Name + email */}
+                  {/* Name + PIN + email */}
                   <div className="flex-1 min-w-0">
-                    <Link
-                      href={`/admin/members?q=${encodeURIComponent(log.member_name ?? "")}`}
-                      className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
-                    >
-                      {log.member_name ?? "Unknown"}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/members?q=${encodeURIComponent(log.member_name ?? "")}`}
+                        className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
+                      >
+                        {log.member_name ?? "Unknown"}
+                      </Link>
+                      {log.member_id && pinMap[log.member_id] && (
+                        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                          #{pinMap[log.member_id]}
+                        </span>
+                      )}
+                    </div>
                     {log.member_email && (
                       <p className="text-xs text-gray-400 truncate">{log.member_email}</p>
                     )}
