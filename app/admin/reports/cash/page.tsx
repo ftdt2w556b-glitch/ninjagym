@@ -159,6 +159,33 @@ export default async function RevenuePage({
   const expenses: Expense[] = (expensesRaw ?? []) as Expense[];
   const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
 
+  // ── PIN lookup for cash sales (reference_id → member_registrations) ──
+  const cashRefIds = (cashSales ?? [])
+    .map((s) => s.reference_id as number | null)
+    .filter((id): id is number => id !== null);
+  const cashPinMap: Record<number, string> = {};
+  if (cashRefIds.length > 0) {
+    const { data: cashRegs } = await admin
+      .from("member_registrations")
+      .select("id, pin, parent_member_id")
+      .in("id", cashRefIds);
+    const parentIds = [...new Set((cashRegs ?? []).filter((r) => r.parent_member_id).map((r) => r.parent_member_id as number))];
+    const parentPins: Record<number, string> = {};
+    if (parentIds.length > 0) {
+      const { data: parents } = await admin
+        .from("member_registrations")
+        .select("id, pin")
+        .in("id", parentIds);
+      for (const p of parents ?? []) {
+        if (p.id && p.pin) parentPins[p.id as number] = p.pin as string;
+      }
+    }
+    for (const r of cashRegs ?? []) {
+      const pin = r.parent_member_id ? parentPins[r.parent_member_id as number] : (r.pin as string | null);
+      if (r.id && pin) cashPinMap[r.id as number] = pin;
+    }
+  }
+
   // ── Unified transaction list ──────────────────────────────────────────
   type TxRow = {
     id: number;
@@ -182,6 +209,7 @@ export default async function RevenuePage({
           : s.sale_type ?? "POS Sale"),
       method: "cash",
       amount: Number(s.amount),
+      pin: s.reference_id ? (cashPinMap[s.reference_id as number] ?? null) : null,
     })),
     ...(memberPayments ?? []).map((m) => ({
       id: m.id as number,
