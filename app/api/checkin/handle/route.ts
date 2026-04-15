@@ -76,12 +76,14 @@ export async function POST(req: NextRequest) {
       .eq("id", id);
 
   } else if (action === "reject") {
-    // Mark the linked registration as rejected too
+    // Only mark the registration rejected if it is still pending_review
+    // (i.e. this is a payment rejection, not a rejection of a session USE request
+    // on an already-approved package — we must never flip approved → rejected here)
     await admin
       .from("member_registrations")
       .update({ slip_status: "rejected" })
       .eq("id", pending.member_id)
-      .neq("slip_status", "rejected");
+      .eq("slip_status", "pending_review");
 
     await admin
       .from("pending_checkins")
