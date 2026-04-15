@@ -85,8 +85,10 @@ export async function POST(request: NextRequest) {
         }
         await admin.from("member_registrations").update(regUpdate).eq("id", referenceId);
 
-        // Auto check-in: parent is physically here paying cash for today's session
-        if (reg) {
+        // Auto check-in: parent is physically here paying cash for today's session.
+        // Bulk purchases are payment-only — sessions are used later via UseSessionButton.
+        const isBulkPurchase = finalType.endsWith("_bulk");
+        if (reg && !isBulkPurchase) {
           const kidsCount = reg.kids_count ?? 1;
           await admin.from("attendance_logs").insert({
             member_id:       referenceId,
