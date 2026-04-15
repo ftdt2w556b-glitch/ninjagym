@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const isUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
   if (!isUnlocked) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, action, staff_name } = await req.json();
+  const { id, action, staff_name, reason } = await req.json();
 
   const { data: pending } = await admin
     .from("pending_checkins")
@@ -79,9 +79,13 @@ export async function POST(req: NextRequest) {
     // Only mark the registration rejected if it is still pending_review
     // (i.e. this is a payment rejection, not a rejection of a session USE request
     // on an already-approved package — we must never flip approved → rejected here)
+    const rejectUpdate: Record<string, string> = { slip_status: "rejected" };
+    if (reason?.trim()) {
+      rejectUpdate.slip_notes = `Rejected by ${staff_name ?? "staff"}: ${reason.trim()}`;
+    }
     await admin
       .from("member_registrations")
-      .update({ slip_status: "rejected" })
+      .update(rejectUpdate)
       .eq("id", pending.member_id)
       .eq("slip_status", "pending_review");
 

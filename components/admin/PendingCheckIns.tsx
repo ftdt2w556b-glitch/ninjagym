@@ -29,6 +29,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export default function PendingCheckIns({ staffName }: Props) {
   const [items, setItems] = useState<PendingCheckin[]>([]);
   const [handling, setHandling] = useState<Record<number, boolean>>({});
+  const [rejectState, setRejectState] = useState<Record<number, { active: boolean; reason: string }>>({});
 
   const fetchPending = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
@@ -99,16 +100,17 @@ export default function PendingCheckIns({ staffName }: Props) {
     return () => { supabase.removeChannel(channel); };
   }, [fetchPending]);
 
-  async function handle(id: number, action: "approve" | "reject") {
+  async function handle(id: number, action: "approve" | "reject", reason?: string) {
     setHandling((h) => ({ ...h, [id]: true }));
     try {
       await fetch("/api/checkin/handle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, action, staff_name: staffName }),
+        body: JSON.stringify({ id, action, staff_name: staffName, reason }),
       });
       setItems((prev) => prev.filter((p) => p.id !== id));
-      await fetchPending(); // re-fetch to clear any ghost records
+      setRejectState((s) => { const n = { ...s }; delete n[id]; return n; });
+      await fetchPending();
     } finally {
       setHandling((h) => { const n = { ...h }; delete n[id]; return n; });
     }
@@ -214,22 +216,52 @@ export default function PendingCheckIns({ staffName }: Props) {
             </div>
 
             {/* Approve / Reject */}
-            <div className="flex gap-2">
-              <button
-                disabled={handling[item.id]}
-                onClick={() => handle(item.id, "approve")}
-                className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
-              >
-                {handling[item.id] ? "…" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
-              </button>
-              <button
-                disabled={handling[item.id]}
-                onClick={() => handle(item.id, "reject")}
-                className="bg-red-500 hover:bg-red-400 text-white font-bold px-5 py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
+            {rejectState[item.id]?.active ? (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-gray-900">Why are you rejecting this?</p>
+                <textarea
+                  value={rejectState[item.id].reason}
+                  onChange={(e) => setRejectState((s) => ({ ...s, [item.id]: { active: true, reason: e.target.value } }))}
+                  placeholder="e.g. Wrong number of kids, invalid slip, wrong amount…"
+                  rows={2}
+                  autoFocus
+                  className="w-full border border-red-300 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+                <div className="flex gap-2">
+                  <button
+                    disabled={handling[item.id] || !rejectState[item.id].reason.trim()}
+                    onClick={() => handle(item.id, "reject", rejectState[item.id].reason)}
+                    className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold py-3 rounded-xl text-sm disabled:opacity-50 transition-colors"
+                  >
+                    {handling[item.id] ? "…" : "Confirm Reject"}
+                  </button>
+                  <button
+                    disabled={handling[item.id]}
+                    onClick={() => setRejectState((s) => { const n = { ...s }; delete n[item.id]; return n; })}
+                    className="px-5 py-3 rounded-xl border border-gray-300 bg-white/70 text-gray-700 font-semibold text-sm hover:bg-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  disabled={handling[item.id]}
+                  onClick={() => handle(item.id, "approve")}
+                  className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
+                >
+                  {handling[item.id] ? "…" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
+                </button>
+                <button
+                  disabled={handling[item.id]}
+                  onClick={() => setRejectState((s) => ({ ...s, [item.id]: { active: true, reason: "" } }))}
+                  className="bg-red-500 hover:bg-red-400 text-white font-bold px-5 py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
