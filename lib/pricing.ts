@@ -25,7 +25,7 @@ export const BASE_PRICES: Record<string, number> = {
   price_climb_unguided:    200,
   price_session_group:     350,
   price_session_1to1:      500,
-  price_day_camp:          555,
+  price_day_camp:          600,
   price_combo_game_train:  550,
   price_all_day:           1000,
   price_monthly_flex:      6000,

@@ -172,7 +172,7 @@ export default function TopUpSection({
 
   const livePrice = prices ?? BASE_PRICES;
   const basePrice = isBulk
-    ? calcBulkPrice(livePrice[`price_${selectedMt!.bulkBase!}`] ?? BASE_PRICES[selectedMt!.bulkBase!] ?? 0, bulkQty, livePrice)
+    ? calcBulkPrice(livePrice[selectedMt!.bulkBase!] ?? 0, bulkQty)
     : getPriceForType(selectedType, kidsCount, livePrice);
   const discountedBase = Math.max(0, basePrice - loyaltyDiscount);
   const price = discountedBase + waterQty * WATER_PRICE;
