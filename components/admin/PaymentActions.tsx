@@ -43,6 +43,8 @@ export default function PaymentActions({
   const [confirmWrongProgram, setConfirmWrongProgram]     = useState(false);
   const [confirmDelete, setConfirmDelete]                 = useState(false);
   const [deleted, setDeleted]                             = useState(false);
+  const [confirmReject, setConfirmReject]                 = useState(false);
+  const [rejectReason, setRejectReason]                   = useState("");
 
   async function doAction(action: string, nextStatus: SlipStatus, notes?: string) {
     setBusy(action);
@@ -133,7 +135,7 @@ export default function PaymentActions({
               </a>
               {/* Reject is still allowed (wrong program, no-show, etc.) */}
               <button
-                onClick={() => doAction("reject", "rejected")}
+                onClick={() => { setConfirmReject(true); setRejectReason(""); }}
                 disabled={!!busy}
                 className="bg-red-100 text-red-600 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-red-200 disabled:opacity-50 transition-colors"
               >
@@ -163,7 +165,7 @@ export default function PaymentActions({
               ✓ Approve
             </button>
             <button
-              onClick={() => doAction("reject", "rejected")}
+              onClick={() => { setConfirmReject(true); setRejectReason(""); }}
               disabled={!!busy}
               className="bg-red-100 text-red-600 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-red-200 disabled:opacity-50 transition-colors"
             >
@@ -179,6 +181,36 @@ export default function PaymentActions({
               </button>
             )}
           </>
+        )}
+
+        {/* Reject reason confirmation */}
+        {confirmReject && (
+          <div className="w-full bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <p className="text-xs font-bold text-red-800 mb-2">Why are you rejecting this?</p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Wrong number of kids, invalid slip, no-show…"
+              rows={2}
+              autoFocus
+              className="w-full border border-red-300 rounded-lg px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-red-400 mb-2"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setConfirmReject(false); doAction("reject", "rejected", rejectReason.trim()); }}
+                disabled={!!busy || !rejectReason.trim()}
+                className="bg-red-500 text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
+              >
+                {busy ? "…" : "Confirm Reject"}
+              </button>
+              <button
+                onClick={() => setConfirmReject(false)}
+                className="bg-white text-gray-600 font-semibold text-xs px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Wrong Program confirmation */}

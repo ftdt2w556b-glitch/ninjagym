@@ -88,38 +88,73 @@ export default function TopUpSection({
     } catch { /* ignore */ }
     if (!stored) return;
 
-    // Verify it's still pending via pending_checkins (has public SELECT RLS)
     const supabase = createSupabaseBrowserClient();
-    supabase
-      .from("pending_checkins")
-      .select("id, status")
-      .eq("member_id", stored.regId)
-      .eq("status", "pending")
-      .maybeSingle()
-      .then(({ data: pending }) => {
-        if (!pending) {
-          // Already approved/rejected — clear storage and don't block form
-          sessionStorage.removeItem(SESSION_KEY);
-          return;
-        }
-        setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
 
-        // Auto-clear when staff approves/rejects (realtime)
-        const channel = supabase
-          .channel(`topup-pending-${pending.id}`)
-          .on("postgres_changes", {
-            event: "UPDATE", schema: "public",
-            table: "pending_checkins", filter: `id=eq.${pending.id}`,
-          }, (payload) => {
-            const updated = payload.new as { status: string };
-            if (updated.status !== "pending") {
-              sessionStorage.removeItem(SESSION_KEY);
-              setPendingPurchase(null);
-            }
-          })
-          .subscribe();
-        return () => { supabase.removeChannel(channel); };
-      });
+    if (stored.method === "cash") {
+      // Cash: verify still cash_pending in member_registrations
+      supabase
+        .from("member_registrations")
+        .select("id, slip_status")
+        .eq("id", stored.regId)
+        .eq("slip_status", "cash_pending")
+        .maybeSingle()
+        .then(({ data: reg }) => {
+          if (!reg) {
+            // Already processed at POS or cancelled — clear storage
+            sessionStorage.removeItem(SESSION_KEY);
+            return;
+          }
+          setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
+
+          // Auto-clear when POS approves (realtime on member_registrations)
+          const channel = supabase
+            .channel(`cash-pending-${stored!.regId}`)
+            .on("postgres_changes", {
+              event: "UPDATE", schema: "public",
+              table: "member_registrations", filter: `id=eq.${stored!.regId}`,
+            }, (payload) => {
+              const updated = payload.new as { slip_status: string };
+              if (updated.slip_status !== "cash_pending") {
+                sessionStorage.removeItem(SESSION_KEY);
+                setPendingPurchase(null);
+              }
+            })
+            .subscribe();
+          return () => { supabase.removeChannel(channel); };
+        });
+    } else {
+      // PromptPay: verify still pending via pending_checkins (has public SELECT RLS)
+      supabase
+        .from("pending_checkins")
+        .select("id, status")
+        .eq("member_id", stored.regId)
+        .eq("status", "pending")
+        .maybeSingle()
+        .then(({ data: pending }) => {
+          if (!pending) {
+            // Already approved/rejected — clear storage and don't block form
+            sessionStorage.removeItem(SESSION_KEY);
+            return;
+          }
+          setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
+
+          // Auto-clear when staff approves/rejects (realtime)
+          const channel = supabase
+            .channel(`topup-pending-${pending.id}`)
+            .on("postgres_changes", {
+              event: "UPDATE", schema: "public",
+              table: "pending_checkins", filter: `id=eq.${pending.id}`,
+            }, (payload) => {
+              const updated = payload.new as { status: string };
+              if (updated.status !== "pending") {
+                sessionStorage.removeItem(SESSION_KEY);
+                setPendingPurchase(null);
+              }
+            })
+            .subscribe();
+          return () => { supabase.removeChannel(channel); };
+        });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [memberId]);
 
@@ -202,6 +237,13 @@ export default function TopUpSection({
       }
 
       if (paymentMethod === "cash") {
+        // Store in sessionStorage so the pending state survives page refresh
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          regId: data.id,
+          label: selectedMt?.label ?? selectedType,
+          amount: price,
+          method: "cash",
+        }));
         setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive. Staff will check you in.`);
       } else if (paymentMethod === "stripe") {
         setPendingId(data.id);
@@ -250,16 +292,23 @@ export default function TopUpSection({
   }
 
   if (pendingPurchase && !success) {
+    const isCashPending = pendingPurchase.method === "cash";
     return (
       <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex flex-col gap-3">
         <div className="text-center">
-          <p className="text-2xl mb-1">⏳</p>
-          <p className="font-bold text-amber-800 text-lg">Payment slip submitted</p>
+          <p className="text-2xl mb-1">{isCashPending ? "💵" : "⏳"}</p>
+          <p className="font-bold text-amber-800 text-lg">
+            {isCashPending ? "Cash payment pending" : "Payment slip submitted"}
+          </p>
           <p className="text-amber-700 text-sm">{pendingPurchase.label}</p>
           {pendingPurchase.amount != null && (
             <p className="text-amber-600 text-sm">฿{pendingPurchase.amount.toLocaleString()}</p>
           )}
-          <p className="text-gray-500 text-xs mt-2">Staff will approve shortly.</p>
+          <p className="text-gray-500 text-xs mt-2">
+            {isCashPending
+              ? "Tell staff when you arrive — they will collect payment and check you in."
+              : "Staff will approve your slip shortly."}
+          </p>
         </div>
         {cancelError && <p className="text-red-500 text-xs text-center">{cancelError}</p>}
         <button
@@ -267,7 +316,7 @@ export default function TopUpSection({
           disabled={cancelling}
           className="w-full py-2.5 rounded-xl border-2 border-amber-400 text-amber-800 font-semibold text-sm hover:bg-amber-100 transition-colors disabled:opacity-50"
         >
-          {cancelling ? "Cancelling…" : "✕ Wrong program or slip? Cancel and resubmit"}
+          {cancelling ? "Cancelling…" : isCashPending ? "✕ Cancel this registration" : "✕ Wrong program or slip? Cancel and resubmit"}
         </button>
       </div>
     );
