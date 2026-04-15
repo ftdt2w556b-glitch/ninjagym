@@ -55,12 +55,30 @@ export default async function QrCardPage({
   }
 
   // Fetch ALL top-ups (approved) for history + active detection
-  const { data: topUps } = await admin
-    .from("member_registrations")
-    .select("id, membership_type, sessions_remaining, sessions_purchased, slip_status, created_at, expires_at, amount_paid")
-    .eq("parent_member_id", Number(id))
-    .eq("slip_status", "approved")
-    .order("created_at", { ascending: false });
+  // AND the most recent pending top-up so the parent can self-cancel from any device
+  const [{ data: topUps }, { data: pendingTopUpRows }] = await Promise.all([
+    admin
+      .from("member_registrations")
+      .select("id, membership_type, sessions_remaining, sessions_purchased, slip_status, created_at, expires_at, amount_paid")
+      .eq("parent_member_id", Number(id))
+      .eq("slip_status", "approved")
+      .order("created_at", { ascending: false }),
+    admin
+      .from("member_registrations")
+      .select("id, membership_type, amount_paid, payment_method, slip_status")
+      .eq("parent_member_id", Number(id))
+      .in("slip_status", ["pending_review", "cash_pending"])
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+
+  const pendingTopUpRaw = pendingTopUpRows?.[0] ?? null;
+  const pendingTopUp = pendingTopUpRaw ? {
+    id:               pendingTopUpRaw.id as number,
+    membership_label: MEMBERSHIP_TYPES.find((m) => m.id === pendingTopUpRaw.membership_type)?.label ?? String(pendingTopUpRaw.membership_type),
+    amount_paid:      (pendingTopUpRaw.amount_paid as number | null) ?? null,
+    payment_method:   (pendingTopUpRaw.payment_method as string | null) ?? null,
+  } : null;
 
   const allRelated = [
     {
@@ -189,6 +207,7 @@ export default async function QrCardPage({
       loyaltyDiscount={(member as { loyalty_discount?: number | null }).loyalty_discount ?? 0}
       prices={prices}
       descriptions={descriptions}
+      pendingTopUp={pendingTopUp}
     />
   );
 }

@@ -34,6 +34,7 @@ interface Props {
   prices?: Record<string, number>; // live prices from DB settings (falls back to BASE_PRICES)
   descriptions?: Record<string, string>; // live descriptions from DB settings (falls back to mt.note)
   cardToken?: string; // needed for parent-initiated cancel
+  dbPendingTopUp?: { id: number; membership_label: string; amount_paid: number | null; payment_method: string | null } | null;
 }
 
 export default function TopUpSection({
@@ -48,6 +49,7 @@ export default function TopUpSection({
   prices,
   descriptions,
   cardToken,
+  dbPendingTopUp,
 }: Props) {
   const { t } = useLanguage();
 
@@ -72,9 +74,15 @@ export default function TopUpSection({
 
   // Detect an in-flight PromptPay purchase awaiting staff approval (survives page refresh)
   // Uses localStorage (persists across tabs/restarts) + DB verification on mount
+  // Initialise from server-fetched DB pending so banner shows on any device, first visit
   const [pendingPurchase, setPendingPurchase] = useState<{
     label: string; amount: number | null; method: string | null; regId?: number;
-  } | null>(null);
+  } | null>(dbPendingTopUp ? {
+    label:  dbPendingTopUp.membership_label,
+    amount: dbPendingTopUp.amount_paid,
+    method: dbPendingTopUp.payment_method,
+    regId:  dbPendingTopUp.id,
+  } : null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 

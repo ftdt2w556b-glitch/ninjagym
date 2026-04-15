@@ -153,6 +153,7 @@ interface Props {
   loyaltyDiscount?: number;
   prices?: Record<string, number>;
   descriptions?: Record<string, string>;
+  pendingTopUp?: { id: number; membership_label: string; amount_paid: number | null; payment_method: string | null } | null;
 }
 
 // ── Sessions list with collapse for past purchases ────────────────────────────
@@ -709,6 +710,7 @@ export default function QrCardClient({
           activePackages={activePackages}
           loyaltyDiscount={loyaltyDiscount}
           cardToken={cardToken}
+          dbPendingTopUp={pendingTopUp ?? null}
         />
       )}
 
