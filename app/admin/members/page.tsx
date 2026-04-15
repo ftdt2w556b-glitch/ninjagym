@@ -207,6 +207,7 @@ export default async function MembersPage({
   // ── Check-ins tab data ───────────────────────────────────────
   let checkInLogs: { id: number; member_id: number | null; member_name: string | null; member_email: string | null; check_in_at: string; notes: string | null; kids_count: number; kids_names: string | null; membership_type: string | null; member_registrations: { kids_names: string | null; phone: string | null; email: string | null } | null }[] = [];
   let checkInCount = 0;
+  const checkInPinMap: Record<number, string> = {};
   const checkInPeriod = (["today", "day", "month", "year"].includes(period) ? period : "today") as CheckInPeriod;
   const todayStr = bangkokToday();
   const dayDate = checkInPeriod === "day" && dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayStr;
@@ -269,6 +270,30 @@ export default async function MembersPage({
         if (!log.kids_names && log.member_id && kidsMap.has(log.member_id)) {
           log.kids_names = kidsMap.get(log.member_id) ?? null;
         }
+      }
+    }
+
+    // ── PIN lookup for display next to member name ────────────────
+    const allMemberIds = [...new Set(checkInLogs.map((l) => l.member_id).filter(Boolean))] as number[];
+    if (allMemberIds.length > 0) {
+      const { data: regPins } = await admin
+        .from("member_registrations")
+        .select("id, pin, parent_member_id")
+        .in("id", allMemberIds);
+      const parentPinIds = [...new Set((regPins ?? []).filter((r) => r.parent_member_id).map((r) => r.parent_member_id as number))];
+      const parentPinLookup: Record<number, string> = {};
+      if (parentPinIds.length > 0) {
+        const { data: pinParents } = await admin
+          .from("member_registrations")
+          .select("id, pin")
+          .in("id", parentPinIds);
+        for (const p of pinParents ?? []) {
+          if (p.id && p.pin) parentPinLookup[p.id as number] = p.pin as string;
+        }
+      }
+      for (const r of regPins ?? []) {
+        const pin = r.parent_member_id ? parentPinLookup[r.parent_member_id as number] : (r.pin as string | null);
+        if (r.id && pin) checkInPinMap[r.id as number] = pin;
       }
     }
 
@@ -645,12 +670,19 @@ export default async function MembersPage({
                       <div className="flex-1 min-w-0">
                         {/* Name + action buttons on same line */}
                         <div className="flex items-center justify-between gap-2">
-                          <Link
-                            href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
-                            className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
-                          >
-                            {log.member_name ?? "Unknown"}
-                          </Link>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Link
+                              href={`/admin/members?tab=members&q=${encodeURIComponent(log.member_name ?? "")}`}
+                              className="font-semibold text-gray-800 hover:text-[#1a56db] transition-colors text-sm"
+                            >
+                              {log.member_name ?? "Unknown"}
+                            </Link>
+                            {log.member_id && checkInPinMap[log.member_id] && (
+                              <span className="text-xs font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded shrink-0">
+                                #{checkInPinMap[log.member_id]}
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {log.member_id && (
                               <Link
