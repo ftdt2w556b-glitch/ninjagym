@@ -25,29 +25,36 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
 
+  // Bulk session purchases (e.g. 10_bulk, 20_bulk) are payment-only approvals.
+  // The parent buys sessions now and uses them later via UseSessionButton.
+  // Approving should NOT create an attendance log or deduct sessions.
+  const isBulkPurchase = pending.membership_type?.endsWith("_bulk") ?? false;
+
   if (action === "approve") {
-    // Create the attendance log
-    await admin.from("attendance_logs").insert({
-      member_id: pending.member_id,
-      member_name: pending.member_name,
-      kids_count: pending.kids_count,
-      membership_type: pending.membership_type,
-      notes: `Check-in approved by ${staff_name ?? "staff"}`,
-      check_in_at: now,
-    });
+    if (!isBulkPurchase) {
+      // Create the attendance log
+      await admin.from("attendance_logs").insert({
+        member_id: pending.member_id,
+        member_name: pending.member_name,
+        kids_count: pending.kids_count,
+        membership_type: pending.membership_type,
+        notes: `Check-in approved by ${staff_name ?? "staff"}`,
+        check_in_at: now,
+      });
 
-    // Deduct sessions from the package
-    const { data: reg } = await admin
-      .from("member_registrations")
-      .select("sessions_remaining")
-      .eq("id", pending.member_id)
-      .single();
-
-    if (reg && reg.sessions_remaining !== null) {
-      await admin
+      // Deduct sessions from the package
+      const { data: reg } = await admin
         .from("member_registrations")
-        .update({ sessions_remaining: Math.max(0, reg.sessions_remaining - pending.kids_count) })
-        .eq("id", pending.member_id);
+        .select("sessions_remaining")
+        .eq("id", pending.member_id)
+        .single();
+
+      if (reg && reg.sessions_remaining !== null) {
+        await admin
+          .from("member_registrations")
+          .update({ sessions_remaining: Math.max(0, reg.sessions_remaining - pending.kids_count) })
+          .eq("id", pending.member_id);
+      }
     }
 
     // Always stamp slip_reviewed_at — used to sort today's approvals to the top

@@ -9,6 +9,7 @@ interface PendingCheckin {
   member_name: string;
   kids_count: number;
   kids_names: string | null;
+  membership_type: string | null;
   membership_label: string;
   requested_at: string;
   status: string;
@@ -33,7 +34,7 @@ export default function PendingCheckIns({ staffName }: Props) {
     const supabase = createSupabaseBrowserClient();
     const { data } = await supabase
       .from("pending_checkins")
-      .select("id, member_id, member_name, kids_count, kids_names, membership_label, requested_at, status, payment_method, amount_paid, slip_image")
+      .select("id, member_id, member_name, kids_count, kids_names, membership_type, membership_label, requested_at, status, payment_method, amount_paid, slip_image")
       .eq("status", "pending")
       .order("requested_at", { ascending: true });
 
@@ -123,6 +124,7 @@ export default function PendingCheckIns({ staffName }: Props) {
         const isPayment = !!item.payment_method;
         const isCash = item.payment_method === "cash";
         const isPromptPay = item.payment_method === "promptpay";
+        const isBulk = item.membership_type?.endsWith("_bulk") ?? false;
         const slipUrl = item.slip_image
           ? `${SUPABASE_URL}/storage/v1/object/public/slips/${item.slip_image}`
           : null;
@@ -138,30 +140,42 @@ export default function PendingCheckIns({ staffName }: Props) {
               <p className="text-xs text-amber-800">{timeLabel}</p>
             </div>
 
-            {/* Kids count — the most important thing, made unmissable */}
+            {/* Main info block */}
             <div className="bg-white/80 rounded-2xl py-3 px-4 mb-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Kids checking in today</p>
-                <p className="text-5xl font-black text-gray-900 leading-none">
-                  {item.kids_count}
-                  <span className="text-lg font-semibold text-gray-500 ml-2">
-                    kid{item.kids_count !== 1 ? "s" : ""}
-                  </span>
-                </p>
-                {item.kids_names && (
-                  <p className="text-sm font-semibold text-gray-700 mt-1">👦 {item.kids_names}</p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400 mb-1">Membership</p>
-                <p className="text-sm font-semibold text-gray-700">{item.membership_label || "Session"}</p>
-                {item.pin && (
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-400">PIN</p>
-                    <p className="text-lg font-black text-gray-800 tracking-widest">{item.pin}</p>
+              {isBulk ? (
+                /* Bulk purchase — payment approval only, no check-in */
+                <div className="w-full">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Session pack purchase</p>
+                  <p className="text-2xl font-black text-gray-900 leading-none">{item.membership_label}</p>
+                  <p className="text-sm text-gray-500 mt-1">Verify payment slip — sessions will be available after approval</p>
+                </div>
+              ) : (
+                /* Regular check-in — kids count is the key detail */
+                <>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Kids checking in today</p>
+                    <p className="text-5xl font-black text-gray-900 leading-none">
+                      {item.kids_count}
+                      <span className="text-lg font-semibold text-gray-500 ml-2">
+                        kid{item.kids_count !== 1 ? "s" : ""}
+                      </span>
+                    </p>
+                    {item.kids_names && (
+                      <p className="text-sm font-semibold text-gray-700 mt-1">👦 {item.kids_names}</p>
+                    )}
                   </div>
-                )}
-              </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-400 mb-1">Membership</p>
+                    <p className="text-sm font-semibold text-gray-700">{item.membership_label || "Session"}</p>
+                    {item.pin && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-400">PIN</p>
+                        <p className="text-lg font-black text-gray-800 tracking-widest">{item.pin}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Payment info */}
@@ -193,7 +207,9 @@ export default function PendingCheckIns({ staffName }: Props) {
             {/* Staff double-check reminder */}
             <div className="bg-amber-900/20 rounded-xl px-3 py-2 mb-3">
               <p className="text-xs font-semibold text-amber-900 leading-snug">
-                ⚠️ Double-check before approving: number of kids, payment slip date, program, and amount paid match.
+                {isBulk
+                  ? "⚠️ Verify payment slip: date, amount, and program match. No check-in — sessions unlock after approval."
+                  : "⚠️ Double-check before approving: number of kids, payment slip date, program, and amount paid match."}
               </p>
             </div>
 
@@ -204,7 +220,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                 onClick={() => handle(item.id, "approve")}
                 className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
               >
-                {handling[item.id] ? "…" : isPayment ? "✓ Paid & In" : "✓ Approve"}
+                {handling[item.id] ? "…" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
               </button>
               <button
                 disabled={handling[item.id]}
