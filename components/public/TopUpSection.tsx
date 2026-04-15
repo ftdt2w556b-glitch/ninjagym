@@ -245,28 +245,20 @@ export default function TopUpSection({
       }
 
       if (paymentMethod === "cash") {
-        // Store in localStorage so the pending state survives page refresh
-        localStorage.setItem(SESSION_KEY, JSON.stringify({
-          regId: data.id,
-          label: selectedMt?.label ?? selectedType,
-          amount: price,
-          method: "cash",
-        }));
-        setSuccess(`Registered for ${selectedMt?.label}! ✅ Pay cash when you arrive. Staff will check you in.`);
+        const pending = { regId: data.id, label: selectedMt?.label ?? selectedType, amount: price, method: "cash" };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(pending));
+        // Show the pending banner immediately — no need for a separate success message
+        setPendingPurchase({ label: pending.label, amount: pending.amount, method: pending.method, regId: pending.regId });
       } else if (paymentMethod === "stripe") {
         setPendingId(data.id);
         setStripeStep(true);
       } else {
-        // PromptPay submitted with slip — store in localStorage so page refresh shows pending state
-        localStorage.setItem(SESSION_KEY, JSON.stringify({
-          regId: data.id,
-          label: selectedMt?.label ?? selectedType,
-          amount: price,
-          method: paymentMethod,
-        }));
+        // PromptPay — store in localStorage and show pending banner immediately
+        const pending = { regId: data.id, label: selectedMt?.label ?? selectedType, amount: price, method: paymentMethod };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(pending));
         setShowPromptPay(false);
         setSlip(null);
-        setSuccess(`Payment slip submitted! ✅ Staff will approve your ${selectedMt?.label} shortly.`);
+        setPendingPurchase({ label: pending.label, amount: pending.amount, method: pending.method, regId: pending.regId });
       }
     } catch {
       setLoading(null);
@@ -299,7 +291,7 @@ export default function TopUpSection({
     }
   }
 
-  if (pendingPurchase && !success) {
+  if (pendingPurchase) {
     const isCashPending = pendingPurchase.method === "cash";
     return (
       <div className="mt-4 bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 flex flex-col gap-3">
@@ -518,12 +510,6 @@ export default function TopUpSection({
         {success ? (
           <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-center">
             <p className="text-green-700 font-semibold text-sm">{success}</p>
-            <button
-              onClick={() => setSuccess(null)}
-              className="text-gray-400 text-xs mt-2 underline"
-            >
-              Top up again
-            </button>
           </div>
         ) : (
           <>
