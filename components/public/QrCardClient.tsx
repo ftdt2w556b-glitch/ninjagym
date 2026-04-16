@@ -570,9 +570,12 @@ export default function QrCardClient({
 
       {/* ── Use Session — parent-initiated check-in ─────────────── */}
       {(() => {
-        const usablePkg = activePackages.find(
-          (p) => !p.time_based && p.sessions_remaining !== null && p.sessions_remaining > 0
-        );
+        // Use the package the parent selected in "Today's Program" if it's usable,
+        // otherwise fall back to the first usable package.
+        const usablePkg =
+          (selectedPkg && !selectedPkg.time_based && selectedPkg.sessions_remaining !== null && selectedPkg.sessions_remaining > 0)
+            ? selectedPkg
+            : activePackages.find((p) => !p.time_based && p.sessions_remaining !== null && p.sessions_remaining > 0);
         if (!usablePkg) return null;
         return (
           <UseSessionButton
