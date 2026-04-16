@@ -245,9 +245,12 @@ export default async function PosArchivePage({
                   ? [...new Set(items.map((i) => i.type).filter(Boolean))].join(", ")
                   : (s.sale_type ?? "POS Sale");
                 const desc = (s.notes as string | null) ?? typeLabel;
+                const notes1k   = Number((s as Record<string, unknown>).notes_1k ?? 0);
+                const tendered  = Number((s as Record<string, unknown>).amount_tendered ?? 0);
+                const suspicious = canManage && tendered >= 1000 && notes1k === 0;
 
                 return (
-                  <tr key={s.id as number} className="hover:bg-gray-50">
+                  <tr key={s.id as number} className={suspicious ? "bg-yellow-50 hover:bg-yellow-100" : "hover:bg-gray-50"}>
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id as number}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{timeStr}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">
@@ -270,11 +273,16 @@ export default async function PosArchivePage({
                     </td>
                     {canManage && (
                       <td className="px-4 py-3 text-center">
-                        <EditNotes1kButton
-                          action={editNotes1k}
-                          id={s.id as number}
-                          current={Number((s as Record<string, unknown>).notes_1k ?? 0)}
-                        />
+                        <div className="flex flex-col items-center gap-1">
+                          {suspicious && (
+                            <span className="text-xs font-semibold text-yellow-600">⚠️ check</span>
+                          )}
+                          <EditNotes1kButton
+                            action={editNotes1k}
+                            id={s.id as number}
+                            current={notes1k}
+                          />
+                        </div>
                       </td>
                     )}
                     {canManage && (
