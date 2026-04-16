@@ -4,6 +4,23 @@ import { revalidatePath } from "next/cache";
 import Link from "next/link";
 import { bangkokToday } from "@/lib/timezone";
 import VoidTransactionButton from "@/components/admin/VoidTransactionButton";
+import EditNotes1kButton from "@/components/admin/EditNotes1kButton";
+
+async function editNotes1k(formData: FormData) {
+  "use server";
+  const id      = formData.get("id") as string;
+  const notes1k = Number(formData.get("notes1k") ?? 0);
+  if (!id) return;
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!["admin", "manager"].includes(profile?.role ?? "")) return;
+  await admin.from("cash_sales").update({ notes_1k: notes1k }).eq("id", Number(id));
+  revalidatePath("/admin/pos/archive");
+}
 
 async function voidCashSale(formData: FormData) {
   "use server";
@@ -112,7 +129,7 @@ export default async function PosArchivePage({
   // Paged results
   const { data: sales } = await admin
     .from("cash_sales")
-    .select("id, processed_at, amount, change_given, sale_type, staff_name, notes, items")
+    .select("id, processed_at, amount, change_given, sale_type, staff_name, notes, items, notes_1k")
     .gte("processed_at", from)
     .lte("processed_at", to)
     .order("processed_at", { ascending: false })
@@ -209,6 +226,7 @@ export default async function PosArchivePage({
                 <th className="text-left px-4 py-3 font-semibold text-gray-600 text-xs">Description</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs">Amount</th>
                 <th className="text-right px-4 py-3 font-semibold text-gray-600 text-xs">Change</th>
+                {canManage && <th className="px-4 py-3 font-semibold text-gray-600 text-xs text-center">Box</th>}
                 {canManage && <th className="px-4 py-3" />}
               </tr>
             </thead>
@@ -251,6 +269,15 @@ export default async function PosArchivePage({
                       )}
                     </td>
                     {canManage && (
+                      <td className="px-4 py-3 text-center">
+                        <EditNotes1kButton
+                          action={editNotes1k}
+                          id={s.id as number}
+                          current={Number((s as Record<string, unknown>).notes_1k ?? 0)}
+                        />
+                      </td>
+                    )}
+                    {canManage && (
                       <td className="px-4 py-3 text-right">
                         <VoidTransactionButton
                           action={voidCashSale}
@@ -267,7 +294,7 @@ export default async function PosArchivePage({
               {(sales ?? []).length === 0 && (
                 <tr>
                   <td
-                    colSpan={canManage ? 7 : 6}
+                    colSpan={canManage ? 8 : 6}
                     className="px-4 py-10 text-center text-gray-400"
                   >
                     No POS sales recorded for this period.
