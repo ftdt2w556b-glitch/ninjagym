@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
 import ShareButton from "@/components/public/ShareButton";
@@ -262,9 +263,9 @@ export default function QrCardClient({
   pendingTopUp,
 }: Props) {
   const { t, lang, setLang } = useLanguage();
-  const [redeeming, setRedeeming]       = useState(false);
-  const [redeemDone, setRedeemDone]     = useState(false);
-  const [redeemClaimed, setRedeemClaimed] = useState(false); // true after Redeem tapped this session
+  type RedeemPhase = "idle" | "submitting" | "pending" | "approved" | "rejected";
+  const [redeemPhase, setRedeemPhase]   = useState<RedeemPhase>("idle");
+  const [redeemPendingId, setRedeemPendingId] = useState<number | null>(null);
   const [localRedeemed, setLocalRedeemed] = useState(freeSessionsRedeemed);
   const [localPrefs, setLocalPrefs]     = useState({
     checkin:      notifyPrefs?.checkin      ?? false,
@@ -272,6 +273,29 @@ export default function QrCardClient({
     milestone:    notifyPrefs?.milestone    ?? true,
   });
   const [savingPrefs, setSavingPrefs]   = useState(false);
+
+  // Realtime subscription for free loyalty session approval
+  useEffect(() => {
+    if (!redeemPendingId) return;
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel(`redeem-${redeemPendingId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pending_checkins", filter: `id=eq.${redeemPendingId}` },
+        (payload) => {
+          const s = (payload.new as { status: string }).status;
+          if (s === "approved") {
+            setLocalRedeemed((v) => v + 1);
+            setRedeemPhase("approved");
+          } else if (s === "rejected") {
+            setRedeemPhase("rejected");
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [redeemPendingId]);
 
   async function handleTogglePref(key: keyof typeof localPrefs) {
     const updated = { ...localPrefs, [key]: !localPrefs[key] };
@@ -314,27 +338,26 @@ export default function QrCardClient({
   const { pct: beltPct, next: nextBelt } = getBeltProgress(totalCheckIns);
 
   async function handleRedeem() {
-    if (redeeming || freeSessionsAvailable < 1) return;
-    if (!confirm("Redeem 1 free session? This will mark your loyalty reward as used.")) return;
-    setRedeeming(true);
+    if (redeemPhase !== "idle" || freeSessionsAvailable < 1) return;
+    if (!confirm("Redeem 1 free session? A staff member will confirm it for you.")) return;
+    setRedeemPhase("submitting");
     try {
       const res = await fetch(`/api/members/${member.id}/redeem`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: cardToken }),
+        body: JSON.stringify({ token: cardToken, kids_names: member.kids_names, totalCheckIns }),
       });
-      if (res.ok) {
-        setLocalRedeemed((v) => v + 1);
-        setRedeemClaimed(true);  // keep banner visible this session
-        setRedeemDone(true);
-        setTimeout(() => setRedeemDone(false), 3000);
+      const data = await res.json();
+      if (res.ok && data.id) {
+        setRedeemPendingId(data.id);
+        setRedeemPhase("pending");
       } else {
-        alert("Could not redeem — please show this screen to staff.");
+        alert(data.error ?? "Could not redeem — please show this screen to staff.");
+        setRedeemPhase("idle");
       }
     } catch {
       alert("Connection error — please try again.");
-    } finally {
-      setRedeeming(false);
+      setRedeemPhase("idle");
     }
   }
 
@@ -664,29 +687,53 @@ export default function QrCardClient({
                 : `${sessionsInCycle}/10 sessions toward next free session`}
             </p>
 
-            {/* Free session available banner — stays visible after claiming */}
-            {redeemClaimed ? (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3">
-                <p className="text-green-400 font-bold text-sm">✅ Free session claimed!</p>
-                <p className="text-green-400/70 text-xs mt-0.5">Show this screen to staff — they will let you in</p>
+            {/* Free session redeem — phase-aware states */}
+            {redeemPhase === "pending" && (
+              <div className="bg-amber-500/10 border border-amber-400/40 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl mb-1">⏳</p>
+                <p className="text-amber-300 font-bold text-sm">Waiting for staff to confirm</p>
+                <p className="text-amber-400/60 text-xs mt-0.5">Show this screen to a staff member</p>
               </div>
-            ) : freeSessionsAvailable > 0 ? (
+            )}
+
+            {redeemPhase === "approved" && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl mb-1">✅</p>
+                <p className="text-green-400 font-bold text-sm">Free session confirmed!</p>
+                <p className="text-green-400/70 text-xs mt-0.5">Have fun, {member.name.split(" ")[0]}!</p>
+              </div>
+            )}
+
+            {redeemPhase === "rejected" && (
+              <div className="bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3 text-center">
+                <p className="text-2xl mb-1">❌</p>
+                <p className="text-red-400 font-bold text-sm">Not approved — please speak with staff</p>
+                <button
+                  onClick={() => setRedeemPhase("idle")}
+                  className="text-xs text-gray-500 underline mt-2"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {(redeemPhase === "idle" || redeemPhase === "submitting") && freeSessionsAvailable > 0 && (
               <div className="bg-[#ffe033]/10 border border-[#ffe033]/30 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-[#ffe033] font-bold text-sm">
                     🎁 {freeSessionsAvailable} Free Session{freeSessionsAvailable !== 1 ? "s" : ""} Ready!
                   </p>
-                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Tap Redeem and show staff</p>
+                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Tap Redeem — staff will confirm</p>
                 </div>
                 <button
                   onClick={handleRedeem}
-                  disabled={redeeming}
+                  disabled={redeemPhase === "submitting"}
                   className="ml-3 bg-[#ffe033] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-300 disabled:opacity-50 transition-colors shrink-0"
                 >
-                  {redeeming ? "..." : "Redeem"}
+                  {redeemPhase === "submitting" ? "..." : "Redeem"}
                 </button>
               </div>
-            ) : null}
+            )}
 
             {freeSessionsAvailable === 0 && (
               <p className="text-center text-gray-600 text-xs">
