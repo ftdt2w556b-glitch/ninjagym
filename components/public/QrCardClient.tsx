@@ -318,17 +318,21 @@ export default function QrCardClient({
     if (!confirm("Redeem 1 free session? This will mark your loyalty reward as used.")) return;
     setRedeeming(true);
     try {
-      const res = await fetch(`/api/members/${member.id}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/members/${member.id}/redeem`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ free_sessions_redeemed: localRedeemed + 1 }),
+        body: JSON.stringify({ token: cardToken }),
       });
       if (res.ok) {
         setLocalRedeemed((v) => v + 1);
         setRedeemClaimed(true);  // keep banner visible this session
         setRedeemDone(true);
         setTimeout(() => setRedeemDone(false), 3000);
+      } else {
+        alert("Could not redeem — please show this screen to staff.");
       }
+    } catch {
+      alert("Connection error — please try again.");
     } finally {
       setRedeeming(false);
     }
