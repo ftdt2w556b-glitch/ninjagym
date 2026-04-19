@@ -123,6 +123,7 @@ export default async function QrCardPage({
   // Unguided Climb Zone (20 min) does NOT count toward free sessions
   function kidsFromLog(r: { kids_count?: number | null; notes?: string | null; membership_type?: string | null }) {
     if (r.membership_type === "climb_unguided") return 0;
+    if (r.membership_type === "free_session_loyalty") return 0;
     if (r.kids_count && r.kids_count > 1) return r.kids_count;
     const m = r.notes?.match(/\|\s*(\d+)\s*kids/i);
     return m ? parseInt(m[1], 10) : 1;
