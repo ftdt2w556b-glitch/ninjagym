@@ -36,6 +36,34 @@ export default function JoinPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [existingMember, setExistingMember] = useState<{ id: number; name: string; token?: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; phone?: string; kids_names?: string }>({});
+
+  function validateName(val: string): string | undefined {
+    const v = val.trim();
+    if (!v) return "Please enter your full name.";
+    if (!/^[\p{L}\s'\-.]+$/u.test(v)) return "Name should only contain letters — no numbers or symbols.";
+    const words = v.split(/\s+/);
+    if (words.length < 2) return "Please enter your first and last name (or last initial).";
+    if (words.some((w) => w.length < 2)) return "Each part of your name should be at least 2 characters.";
+  }
+
+  function validatePhone(val: string): string | undefined {
+    if (!val.trim()) return; // optional field
+    const digits = val.replace(/[\s\-+().]/g, "");
+    if (!/^\d+$/.test(digits)) return "Phone should contain only numbers.";
+    if (digits.length < 7 || digits.length > 15) return "Please enter a valid phone number.";
+  }
+
+  function validateKidsNames(val: string): string | undefined {
+    const v = val.trim();
+    if (!v) return "Required — so staff can find the right child.";
+    if (!/^[\p{L}\s,'\-.]+$/u.test(v)) return "Names should only contain letters, commas, or hyphens.";
+    if (v.length < 2) return "Please enter at least one kid's name.";
+  }
+
+  function setFieldError(field: keyof typeof fieldErrors, msg: string | undefined) {
+    setFieldErrors((e) => ({ ...e, [field]: msg }));
+  }
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
   const [showWaiver, setShowWaiver] = useState(false);
 
@@ -51,6 +79,13 @@ export default function JoinPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Run all validations before submitting
+    const nameErr      = validateName(form.name);
+    const phoneErr     = validatePhone(form.phone);
+    const kidsNamesErr = validateKidsNames(form.kids_names);
+    setFieldErrors({ name: nameErr, phone: phoneErr, kids_names: kidsNamesErr });
+    if (nameErr || phoneErr || kidsNamesErr) return;
+
     setSubmitting(true);
     setError("");
 
@@ -102,10 +137,12 @@ export default function JoinPage() {
             type="text"
             required
             value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            onChange={(e) => { setForm({ ...form, name: e.target.value }); setFieldError("name", undefined); }}
+            onBlur={(e) => setFieldError("name", validateName(e.target.value))}
+            className={`w-full border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${fieldErrors.name ? "border-red-300 bg-red-50" : "border-gray-200"}`}
             placeholder="First and Last Name (or last Initial)"
           />
+          {fieldErrors.name && <p className="text-xs text-red-500 mt-1">{fieldErrors.name}</p>}
         </div>
 
         {/* Phone */}
@@ -114,17 +151,19 @@ export default function JoinPage() {
           <input
             type="tel"
             value={form.phone}
-            onChange={(e) => { setForm({ ...form, phone: e.target.value }); setExistingMember(null); }}
+            onChange={(e) => { setForm({ ...form, phone: e.target.value }); setExistingMember(null); setFieldError("phone", undefined); }}
             onBlur={async (e) => {
               const phone = e.target.value.trim();
+              setFieldError("phone", validatePhone(phone));
               if (phone.length < 6) return;
               const res = await fetch(`/api/check-phone?phone=${encodeURIComponent(phone)}`);
               const data = await res.json();
               if (data.found) setExistingMember({ id: data.id, name: data.name, token: data.token });
             }}
-            className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+            className={`w-full border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${fieldErrors.phone ? "border-red-300 bg-red-50" : "border-gray-200"}`}
             placeholder="+66 80 000 0000"
           />
+          {fieldErrors.phone && <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>}
           {existingMember && (
             <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
               <p className="text-amber-800 font-bold text-sm">
@@ -163,14 +202,15 @@ export default function JoinPage() {
               type="text"
               required
               value={form.kids_names}
-              onChange={(e) => setForm({ ...form, kids_names: e.target.value })}
+              onChange={(e) => { setForm({ ...form, kids_names: e.target.value }); setFieldError("kids_names", undefined); }}
+              onBlur={(e) => setFieldError("kids_names", validateKidsNames(e.target.value))}
               className={`w-full border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${
-                !form.kids_names.trim() ? "border-red-300 bg-red-50" : "border-gray-200"
+                fieldErrors.kids_names ? "border-red-300 bg-red-50" : "border-gray-200"
               }`}
               placeholder="e.g. Tom, Lisa"
             />
-            {!form.kids_names.trim() && (
-              <p className="text-xs text-red-500 mt-1">Required — so staff can find the right child.</p>
+            {fieldErrors.kids_names && (
+              <p className="text-xs text-red-500 mt-1">{fieldErrors.kids_names}</p>
             )}
           </div>
         </div>
