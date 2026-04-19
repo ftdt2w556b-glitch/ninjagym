@@ -105,10 +105,17 @@ async function saveDrawerRemoved(formData: FormData) {
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/pos");
 
-  await admin.from("settings").upsert(
-    { key: "drawer_removed", value: String(val), label: "Cash Removed from Drawer Today" },
-    { onConflict: "key" }
-  );
+  const { bangkokToday: todayStr } = await import("@/lib/timezone");
+  await Promise.all([
+    admin.from("settings").upsert(
+      { key: "drawer_removed", value: String(val), label: "Cash Removed from Drawer Today" },
+      { onConflict: "key" }
+    ),
+    admin.from("settings").upsert(
+      { key: "drawer_removed_date", value: todayStr(), label: "Date of Last Cash Removal Record" },
+      { onConflict: "key" }
+    ),
+  ]);
   redirect("/admin/pos?removedsaved=1");
 }
 
@@ -134,8 +141,12 @@ export default async function AdminPosPage({
   const { data: floatSetting } = await admin.from("settings").select("value").eq("key", "drawer_float").maybeSingle();
   const currentFloat = floatSetting?.value ? parseInt(floatSetting.value, 10) : 500;
 
-  const { data: removedSetting } = await admin.from("settings").select("value").eq("key", "drawer_removed").maybeSingle();
-  const currentRemoved = removedSetting?.value ? parseInt(removedSetting.value, 10) : 0;
+  const [{ data: removedSetting }, { data: removedDateSetting }] = await Promise.all([
+    admin.from("settings").select("value").eq("key", "drawer_removed").maybeSingle(),
+    admin.from("settings").select("value").eq("key", "drawer_removed_date").maybeSingle(),
+  ]);
+  const removedIsToday = removedDateSetting?.value === bangkokToday();
+  const currentRemoved = (removedIsToday && removedSetting?.value) ? parseInt(removedSetting.value, 10) : 0;
 
   const { data: expectedSetting } = await admin.from("settings").select("value").eq("key", "drawer_expected").maybeSingle();
   const manualExpected = expectedSetting?.value ? parseInt(expectedSetting.value, 10) : null;
@@ -394,7 +405,7 @@ export default async function AdminPosPage({
         <div className="mt-5 pt-5 border-t border-gray-100">
           <h3 className="text-sm font-bold text-gray-700 mb-1">Cash Removed from Drawer</h3>
           <p className="text-xs text-gray-400 mb-3">
-            Record cash physically taken out of the drawer (safe drop, petty cash, etc). Resets automatically when you update the Starting Amount.
+            Record cash physically taken out of the drawer (safe drop, 1K notes to box, etc). Resets automatically each morning — only today&apos;s entry counts.
           </p>
           {params.removedsaved === "1" && (
             <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-3 font-semibold">

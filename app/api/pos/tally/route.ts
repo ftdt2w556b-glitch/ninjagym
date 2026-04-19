@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
-import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
+import { bangkokToday, bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 
 /**
  * GET /api/pos/tally
@@ -9,20 +9,27 @@ import { bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
 export async function GET() {
   try {
     const admin = createAdminClient();
-    const [{ data, error }, { data: removedSetting }] = await Promise.all([
+    const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }] = await Promise.all([
       admin
         .from("cash_sales")
         .select("id, amount")
         .gte("processed_at", bangkokStartOfDay())
         .lte("processed_at", bangkokEndOfDay()),
       admin.from("settings").select("value").eq("key", "drawer_removed").maybeSingle(),
+      admin.from("settings").select("value").eq("key", "drawer_removed_date").maybeSingle(),
     ]);
 
     if (error) throw error;
 
     const total = (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
     const count = (data ?? []).length;
-    const removed = removedSetting?.value ? parseInt(removedSetting.value, 10) : 0;
+
+    // Only use drawer_removed if it was recorded today (Bangkok time) — auto-resets each day
+    const today = bangkokToday();
+    const removedDate = removedDateSetting?.value ?? "";
+    const removed = (removedDate === today && removedSetting?.value)
+      ? parseInt(removedSetting.value, 10)
+      : 0;
 
     // notes_1k is a newer column — fetch separately to avoid breaking tally if column missing
     let boxTotal = 0;
