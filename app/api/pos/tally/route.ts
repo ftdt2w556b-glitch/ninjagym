@@ -9,7 +9,7 @@ import { bangkokToday, bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone
 export async function GET() {
   try {
     const admin = createAdminClient();
-    const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }] = await Promise.all([
+    const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }, { data: floatSetting }] = await Promise.all([
       admin
         .from("cash_sales")
         .select("id, amount")
@@ -17,6 +17,7 @@ export async function GET() {
         .lte("processed_at", bangkokEndOfDay()),
       admin.from("settings").select("value").eq("key", "drawer_removed").maybeSingle(),
       admin.from("settings").select("value").eq("key", "drawer_removed_date").maybeSingle(),
+      admin.from("settings").select("value").eq("key", "drawer_float").maybeSingle(),
     ]);
 
     if (error) throw error;
@@ -43,10 +44,11 @@ export async function GET() {
     }
 
     const drawerTotal = total - boxTotal;
+    const float = floatSetting?.value ? parseInt(floatSetting.value, 10) : 3000;
 
-    return NextResponse.json({ total, drawerTotal, boxTotal, count, removed });
+    return NextResponse.json({ total, drawerTotal, boxTotal, count, removed, float });
   } catch (err: unknown) {
     console.error("GET /api/pos/tally error:", err);
-    return NextResponse.json({ total: 0, drawerTotal: 0, boxTotal: 0, count: 0, removed: 0 });
+    return NextResponse.json({ total: 0, drawerTotal: 0, boxTotal: 0, count: 0, removed: 0, float: 3000 });
   }
 }

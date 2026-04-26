@@ -142,6 +142,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       });
       if (res.ok) {
         setSettingsPrices((prev) => ({ ...prev, drawer_float: val }));
+        setTally((prev) => prev ? { ...prev, float: val } : prev);
         setFloatEditing(false);
         setFloatInput("");
       }
@@ -151,7 +152,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   }
 
   // Today's cash tally
-  const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number; removed: number } | null>(null);
+  const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number; removed: number; float: number } | null>(null);
 
   async function fetchTally() {
     try {
@@ -879,7 +880,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
 
       {/* Today's tally banner */}
       {tally !== null && (() => {
-        const drawerFloat = settingsPrices["drawer_float"] ?? 0;
+        const drawerFloat = tally.float ?? settingsPrices["drawer_float"] ?? 0;
         const drawerExpected = drawerFloat + tally.total - tally.boxTotal - (tally.removed ?? 0);
         return (
           <>
