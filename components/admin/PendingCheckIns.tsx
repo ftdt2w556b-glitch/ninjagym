@@ -32,6 +32,7 @@ export default function PendingCheckIns({ staffName }: Props) {
   const [items, setItems] = useState<PendingCheckin[]>([]);
   const [handling, setHandling] = useState<Record<number, boolean>>({});
   const [rejectState, setRejectState] = useState<Record<number, { active: boolean; reason: string }>>({});
+  const [approveConfirm, setApproveConfirm] = useState<Record<number, boolean>>({});
 
   const fetchPending = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
@@ -43,42 +44,28 @@ export default function PendingCheckIns({ staffName }: Props) {
 
     const rows = (data ?? []) as PendingCheckin[];
 
-    // Enrich with PIN, sessions_remaining, and card link from member_registrations
+    // Enrich with PIN, sessions_remaining, and card link via server-side API (admin client bypasses RLS)
     if (rows.length > 0) {
       const memberIds = rows.map((r) => r.member_id);
-      const { data: members } = await supabase
-        .from("member_registrations")
-        .select("id, pin, parent_member_id, sessions_remaining")
-        .in("id", memberIds);
-
-      type MemberInfo = { pin?: string | null; parent_member_id?: number | null; sessions_remaining?: number | null };
-      const memberMap: Record<number, MemberInfo> = {};
-      for (const m of members ?? []) {
-        memberMap[m.id] = { pin: m.pin, parent_member_id: m.parent_member_id, sessions_remaining: m.sessions_remaining };
-      }
-
-      // Fetch parent rows to get PIN if not on the direct row
-      const parentIds = [...new Set(
-        Object.values(memberMap)
-          .filter((m) => !m.pin && m.parent_member_id)
-          .map((m) => m.parent_member_id as number)
-      )];
-      if (parentIds.length > 0) {
-        const { data: parents } = await supabase
-          .from("member_registrations")
-          .select("id, pin")
-          .in("id", parentIds);
-        for (const p of parents ?? []) memberMap[p.id] = { ...memberMap[p.id], pin: p.pin };
-      }
-
-      for (const r of rows) {
-        const direct = memberMap[r.member_id];
-        const parentId = direct?.parent_member_id ?? null;
-        const parent = parentId ? memberMap[parentId] : null;
-        r.pin = direct?.pin ?? parent?.pin ?? null;
-        r.sessions_remaining = direct?.sessions_remaining ?? null;
-        r.card_member_id = parentId ?? r.member_id;
-      }
+      try {
+        const res = await fetch("/api/checkin/enrich", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ memberIds }),
+        });
+        if (res.ok) {
+          type MemberInfo = { pin?: string | null; parent_member_id?: number | null; sessions_remaining?: number | null };
+          const memberMap: Record<number, MemberInfo> = await res.json();
+          for (const r of rows) {
+            const direct = memberMap[r.member_id];
+            const parentId = direct?.parent_member_id ?? null;
+            const parent = parentId ? memberMap[parentId] : null;
+            r.pin = direct?.pin ?? parent?.pin ?? null;
+            r.sessions_remaining = direct?.sessions_remaining ?? null;
+            r.card_member_id = parentId ?? r.member_id;
+          }
+        }
+      } catch { /* non-fatal — show without enrichment */ }
     }
 
     setItems(rows);
@@ -118,6 +105,7 @@ export default function PendingCheckIns({ staffName }: Props) {
       });
       setItems((prev) => prev.filter((p) => p.id !== id));
       setRejectState((s) => { const n = { ...s }; delete n[id]; return n; });
+      setApproveConfirm((s) => { const n = { ...s }; delete n[id]; return n; });
       await fetchPending();
     } finally {
       setHandling((h) => { const n = { ...h }; delete n[id]; return n; });
@@ -263,11 +251,31 @@ export default function PendingCheckIns({ staffName }: Props) {
                   </button>
                 </div>
               </div>
+            ) : approveConfirm[item.id] ? (
+              <div className="space-y-2">
+                <p className="text-sm font-bold text-gray-900">Confirm approval?</p>
+                <div className="flex gap-2">
+                  <button
+                    disabled={handling[item.id]}
+                    onClick={() => handle(item.id, "approve")}
+                    className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-sm disabled:opacity-50 transition-colors"
+                  >
+                    {handling[item.id] ? "…" : "✓ Yes, Approve"}
+                  </button>
+                  <button
+                    disabled={handling[item.id]}
+                    onClick={() => setApproveConfirm((s) => { const n = { ...s }; delete n[item.id]; return n; })}
+                    className="px-5 py-3 rounded-xl border border-gray-300 bg-white/70 text-gray-700 font-semibold text-sm hover:bg-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="flex gap-2">
                 <button
                   disabled={handling[item.id]}
-                  onClick={() => handle(item.id, "approve")}
+                  onClick={() => setApproveConfirm((s) => ({ ...s, [item.id]: true }))}
                   className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
                 >
                   {handling[item.id] ? "…" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
