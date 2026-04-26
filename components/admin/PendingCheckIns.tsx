@@ -18,6 +18,8 @@ interface PendingCheckin {
   slip_image: string | null;
   // enriched from member_registrations
   pin?: string | null;
+  sessions_remaining?: number | null;
+  card_member_id?: number; // parent ID if top-up, else member_id
 }
 
 interface Props {
@@ -41,18 +43,21 @@ export default function PendingCheckIns({ staffName }: Props) {
 
     const rows = (data ?? []) as PendingCheckin[];
 
-    // Enrich with PIN from member_registrations (follow parent_member_id for top-ups)
+    // Enrich with PIN, sessions_remaining, and card link from member_registrations
     if (rows.length > 0) {
       const memberIds = rows.map((r) => r.member_id);
       const { data: members } = await supabase
         .from("member_registrations")
-        .select("id, pin, parent_member_id")
+        .select("id, pin, parent_member_id, sessions_remaining")
         .in("id", memberIds);
 
-      type MemberInfo = { pin?: string | null; parent_member_id?: number | null };
+      type MemberInfo = { pin?: string | null; parent_member_id?: number | null; sessions_remaining?: number | null };
       const memberMap: Record<number, MemberInfo> = {};
-      for (const m of members ?? []) memberMap[m.id] = { pin: m.pin, parent_member_id: m.parent_member_id };
+      for (const m of members ?? []) {
+        memberMap[m.id] = { pin: m.pin, parent_member_id: m.parent_member_id, sessions_remaining: m.sessions_remaining };
+      }
 
+      // Fetch parent rows to get PIN if not on the direct row
       const parentIds = [...new Set(
         Object.values(memberMap)
           .filter((m) => !m.pin && m.parent_member_id)
@@ -63,13 +68,16 @@ export default function PendingCheckIns({ staffName }: Props) {
           .from("member_registrations")
           .select("id, pin")
           .in("id", parentIds);
-        for (const p of parents ?? []) memberMap[p.id] = { pin: p.pin };
+        for (const p of parents ?? []) memberMap[p.id] = { ...memberMap[p.id], pin: p.pin };
       }
 
       for (const r of rows) {
         const direct = memberMap[r.member_id];
-        const parent = direct?.parent_member_id ? memberMap[direct.parent_member_id] : null;
+        const parentId = direct?.parent_member_id ?? null;
+        const parent = parentId ? memberMap[parentId] : null;
         r.pin = direct?.pin ?? parent?.pin ?? null;
+        r.sessions_remaining = direct?.sessions_remaining ?? null;
+        r.card_member_id = parentId ?? r.member_id;
       }
     }
 
@@ -136,9 +144,16 @@ export default function PendingCheckIns({ staffName }: Props) {
             key={item.id}
             className="animate-pulse-once bg-amber-400 text-gray-900 rounded-2xl px-5 py-4 mb-2 shadow-lg"
           >
-            {/* Top row: name + time */}
+            {/* Top row: name + PIN + time */}
             <div className="flex items-center justify-between mb-3">
-              <p className="font-bold text-lg leading-tight">{item.member_name}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-lg leading-tight">{item.member_name}</p>
+                {item.pin && (
+                  <span className="bg-amber-900/20 text-amber-900 text-xs font-black px-2 py-0.5 rounded-lg tracking-widest">
+                    #{item.pin}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-amber-800">{timeLabel}</p>
             </div>
 
@@ -167,13 +182,19 @@ export default function PendingCheckIns({ staffName }: Props) {
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-400 mb-1">Membership</p>
+                    <a
+                      href={`/qr/card/${item.card_member_id ?? item.member_id}?from=admin`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline font-semibold mb-1 inline-block"
+                    >
+                      Membership ↗
+                    </a>
                     <p className="text-sm font-semibold text-gray-700">{item.membership_label || "Session"}</p>
-                    {item.pin && (
-                      <div className="mt-2">
-                        <p className="text-xs text-gray-400">PIN</p>
-                        <p className="text-lg font-black text-gray-800 tracking-widest">{item.pin}</p>
-                      </div>
+                    {item.sessions_remaining !== null && item.sessions_remaining !== undefined && item.membership_type !== "free_session_loyalty" && (
+                      <p className={`text-xs mt-0.5 font-semibold ${Math.max(0, item.sessions_remaining - item.kids_count) === 0 ? "text-red-500" : "text-gray-500"}`}>
+                        {Math.max(0, item.sessions_remaining - item.kids_count)} left after this
+                      </p>
                     )}
                   </div>
                 </>
@@ -211,7 +232,7 @@ export default function PendingCheckIns({ staffName }: Props) {
               <p className="text-xs font-semibold text-amber-900 leading-snug">
                 {isBulk
                   ? "⚠️ Verify payment slip: date, amount, and program match. No check-in — sessions unlock after approval."
-                  : "⚠️ Double-check before approving: number of kids, payment slip date, program, and amount paid match."}
+                  : "⚠️ Check number of kids (+names), pay date, and match program and amount paid."}
               </p>
             </div>
 
