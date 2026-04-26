@@ -152,7 +152,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   }
 
   // Today's cash tally
-  const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number; removed: number; float: number } | null>(null);
+  const [tally, setTally] = useState<{ total: number; drawerTotal: number; boxTotal: number; count: number; removed: number; float: number; expectedOverride: number | null } | null>(null);
 
   async function fetchTally() {
     try {
@@ -881,7 +881,8 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       {/* Today's tally banner */}
       {tally !== null && (() => {
         const drawerFloat = tally.float ?? settingsPrices["drawer_float"] ?? 0;
-        const drawerExpected = drawerFloat + tally.total - tally.boxTotal - (tally.removed ?? 0);
+        const calcExpected = drawerFloat + tally.total - tally.boxTotal - (tally.removed ?? 0);
+        const drawerExpected = tally.expectedOverride ?? calcExpected;
         return (
           <>
             <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-center gap-4 flex-wrap text-sm">
@@ -925,6 +926,9 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   <span className="text-gray-600">|</span>
                   <span className={`font-bold ${drawerExpected < 0 ? "text-red-400" : "text-white"}`}>
                     ฿{drawerExpected.toLocaleString()} expected in drawer
+                    {tally.expectedOverride !== null && (
+                      <span className="text-gray-500 font-normal text-xs ml-1">(manual)</span>
+                    )}
                   </span>
                 </>
               )}

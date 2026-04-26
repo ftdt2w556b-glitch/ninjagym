@@ -148,11 +148,9 @@ export default function PendingCheckIns({ staffName }: Props) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <p className="font-bold text-lg leading-tight">{item.member_name}</p>
-                {item.pin && (
-                  <span className="bg-amber-900/20 text-amber-900 text-xs font-black px-2 py-0.5 rounded-lg tracking-widest">
-                    #{item.pin}
-                  </span>
-                )}
+                <span className="bg-amber-900/20 text-amber-900 text-xs font-black px-2 py-0.5 rounded-lg tracking-widest">
+                  #{item.pin ?? item.member_id}
+                </span>
               </div>
               <p className="text-xs text-amber-800">{timeLabel}</p>
             </div>
@@ -186,7 +184,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                       href={`/qr/card/${item.card_member_id ?? item.member_id}?from=admin`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline font-semibold mb-1 inline-block"
+                      className="text-sm text-blue-600 hover:underline font-semibold mb-1 inline-block"
                     >
                       Membership ↗
                     </a>
