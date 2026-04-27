@@ -69,12 +69,21 @@ export async function PATCH(
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  // When manually approving, stamp the review timestamp
+  const admin = createAdminClient();
+
+  // Only stamp slip_reviewed_at on the FIRST approval (pending_review → approved).
+  // Never re-stamp — re-stamping shifts the record into today's sales report at ฿0.
   if (updates.slip_status === "approved") {
-    updates.slip_reviewed_at = new Date().toISOString();
+    const { data: current } = await admin
+      .from("member_registrations")
+      .select("slip_status, slip_reviewed_at")
+      .eq("id", id)
+      .single();
+    if (current?.slip_status === "pending_review" && !current?.slip_reviewed_at) {
+      updates.slip_reviewed_at = new Date().toISOString();
+    }
   }
 
-  const admin = createAdminClient();
   const { error } = await admin
     .from("member_registrations")
     .update(updates)
