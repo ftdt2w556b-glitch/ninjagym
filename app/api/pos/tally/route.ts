@@ -9,7 +9,7 @@ import { bangkokToday, bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone
 export async function GET() {
   try {
     const admin = createAdminClient();
-    const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }, { data: floatSetting }, { data: expectedSetting }] = await Promise.all([
+    const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }, { data: floatSetting }, { data: expectedSetting }, { data: expectedDateSetting }] = await Promise.all([
       admin
         .from("cash_sales")
         .select("id, amount")
@@ -19,6 +19,7 @@ export async function GET() {
       admin.from("settings").select("value").eq("key", "drawer_removed_date").maybeSingle(),
       admin.from("settings").select("value").eq("key", "drawer_float").maybeSingle(),
       admin.from("settings").select("value").eq("key", "drawer_expected").maybeSingle(),
+      admin.from("settings").select("value").eq("key", "drawer_expected_date").maybeSingle(),
     ]);
 
     if (error) throw error;
@@ -46,7 +47,9 @@ export async function GET() {
 
     const drawerTotal = total - boxTotal;
     const float = floatSetting?.value ? parseInt(floatSetting.value, 10) : 3000;
-    const expectedOverride = (expectedSetting?.value && expectedSetting.value !== "")
+    // Only use drawer_expected override if it was set today — auto-resets each day like drawer_removed
+    const expectedDate = expectedDateSetting?.value ?? "";
+    const expectedOverride = (expectedDate === today && expectedSetting?.value && expectedSetting.value !== "")
       ? parseInt(expectedSetting.value, 10)
       : null;
 

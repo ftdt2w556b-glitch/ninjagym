@@ -69,10 +69,17 @@ async function saveDrawerExpected(formData: FormData) {
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!profile || !["admin", "manager"].includes(profile.role)) redirect("/admin/pos");
 
-  await admin.from("settings").upsert(
-    { key: "drawer_expected", value: String(val), label: "Expected in Drawer (manual override)" },
-    { onConflict: "key" }
-  );
+  const { bangkokToday: todayStr } = await import("@/lib/timezone");
+  await Promise.all([
+    admin.from("settings").upsert(
+      { key: "drawer_expected", value: String(val), label: "Expected in Drawer (manual override)" },
+      { onConflict: "key" }
+    ),
+    admin.from("settings").upsert(
+      { key: "drawer_expected_date", value: todayStr(), label: "Date of Last Expected Override" },
+      { onConflict: "key" }
+    ),
+  ]);
   redirect("/admin/pos?expectedsaved=1");
 }
 
@@ -148,8 +155,12 @@ export default async function AdminPosPage({
   const removedIsToday = removedDateSetting?.value === bangkokToday();
   const currentRemoved = (removedIsToday && removedSetting?.value) ? parseInt(removedSetting.value, 10) : 0;
 
-  const { data: expectedSetting } = await admin.from("settings").select("value").eq("key", "drawer_expected").maybeSingle();
-  const manualExpected = expectedSetting?.value ? parseInt(expectedSetting.value, 10) : null;
+  const [{ data: expectedSetting }, { data: expectedDateSetting }] = await Promise.all([
+    admin.from("settings").select("value").eq("key", "drawer_expected").maybeSingle(),
+    admin.from("settings").select("value").eq("key", "drawer_expected_date").maybeSingle(),
+  ]);
+  const expectedIsToday = expectedDateSetting?.value === bangkokToday();
+  const manualExpected = (expectedIsToday && expectedSetting?.value) ? parseInt(expectedSetting.value, 10) : null;
 
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
