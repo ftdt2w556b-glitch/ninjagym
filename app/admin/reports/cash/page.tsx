@@ -43,7 +43,9 @@ async function voidTransaction(formData: FormData) {
   if (!["admin", "manager"].includes(profile?.role ?? "")) return;
 
   if (source === "member") {
-    await admin.from("member_registrations").update({ slip_status: "rejected" }).eq("id", Number(id));
+    // Clear slip_reviewed_at so the entry no longer appears in any date's report.
+    // Do NOT change slip_status — voiding a report entry should never reject the member's card.
+    await admin.from("member_registrations").update({ slip_reviewed_at: null }).eq("id", Number(id));
     const { data: linkedSales } = await admin.from("cash_sales").select("id").eq("reference_id", Number(id)).eq("sale_type", "membership");
     for (const s of linkedSales ?? []) {
       await admin.from("drawer_log").delete().eq("sale_id", s.id);
