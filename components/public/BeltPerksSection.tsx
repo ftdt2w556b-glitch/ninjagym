@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useLanguage } from "@/lib/i18n/useLanguage";
 
 export interface BeltPerk {
   beltLabel: string;
@@ -27,6 +28,7 @@ export default function BeltPerksSection({
   cardToken,
   unlockedPerks,
 }: Props) {
+  const { t } = useLanguage();
   const [open, setOpen]           = useState(false);
   const [phases, setPhases]       = useState<Record<string, Phase>>({});
   const [pendingIds, setPendingIds] = useState<Record<string, number | null>>({});
@@ -102,7 +104,7 @@ export default function BeltPerksSection({
       >
         <div className="flex items-center gap-2">
           <span className="text-base">🥋</span>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">My Perks</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{t.myPerks}</p>
           <span className="bg-[#1a56db] text-white text-xs font-bold px-2 py-0.5 rounded-full">
             {unlockedPerks.length}
           </span>
@@ -128,27 +130,27 @@ export default function BeltPerksSection({
                       onClick={() => handleRedeem(perkType, perkLabel)}
                       className="shrink-0 bg-[#1a56db] text-white font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
                     >
-                      Redeem
+                      {t.redeemBtn}
                     </button>
                   )}
                   {phase === "submitting" && (
                     <span className="shrink-0 text-xs text-gray-400">...</span>
                   )}
                   {phase === "pending" && (
-                    <span className="shrink-0 text-xs text-amber-600 font-semibold text-right">Waiting for staff</span>
+                    <span className="shrink-0 text-xs text-amber-600 font-semibold text-right">{t.perkWaiting}</span>
                   )}
                   {phase === "approved" && (
-                    <span className="shrink-0 text-xs text-green-600 font-bold">Approved!</span>
+                    <span className="shrink-0 text-xs text-green-600 font-bold">{t.perkApproved}</span>
                   )}
                   {phase === "rejected" && (
-                    <span className="shrink-0 text-xs text-red-500 font-semibold">Declined</span>
+                    <span className="shrink-0 text-xs text-red-500 font-semibold">{t.perkDeclined}</span>
                   )}
                 </div>
               );
             })}
           </div>
           <div className="px-5 py-3 bg-gray-50">
-            <p className="text-xs text-gray-400">Show your card to staff. They will confirm and honor your perk.</p>
+            <p className="text-xs text-gray-400">{t.perkNote}</p>
           </div>
         </div>
       )}

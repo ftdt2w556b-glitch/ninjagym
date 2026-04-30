@@ -394,9 +394,9 @@ export default function QrCardClient({
       {isApproved && isNewBelt && (
         <div className="bg-[#ffe033]/15 border border-[#ffe033]/40 rounded-2xl px-4 py-3 mb-4 text-center">
           <p className="text-3xl mb-1">{isNewBelt.emoji} 🎉</p>
-          <p className="text-[#ffe033] font-bold text-base">{isNewBelt.label} Unlocked!</p>
+          <p className="text-[#ffe033] font-bold text-base">{isNewBelt.label} {t.beltUnlocked}</p>
           {isNewBelt.perk && (
-            <p className="text-white/60 text-xs mt-0.5">New perk: {isNewBelt.perk}</p>
+            <p className="text-white/60 text-xs mt-0.5">{t.beltNewPerk} {isNewBelt.perk}</p>
           )}
         </div>
       )}
@@ -618,7 +618,7 @@ export default function QrCardClient({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ninja Rank</p>
-            <span className="text-xs text-gray-500">{uniqueCheckInDays} session{uniqueCheckInDays !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-gray-500">{uniqueCheckInDays} {t.beltSessionsLabel}</span>
           </div>
 
           {/* Belt badge + perk */}
@@ -627,9 +627,9 @@ export default function QrCardClient({
             <div className="flex-1">
               <p className="text-white font-bold text-lg leading-tight">{belt.label}</p>
               {belt.perk ? (
-                <p className="text-[#ffe033] text-xs font-semibold mt-0.5">Perk: {belt.perk}</p>
+                <p className="text-[#ffe033] text-xs font-semibold mt-0.5">{t.beltPerkPrefix} {belt.perk}</p>
               ) : (
-                <p className="text-gray-500 text-xs mt-0.5">5 sessions to earn your first perk</p>
+                <p className="text-gray-500 text-xs mt-0.5">{t.beltFirstPerkHint}</p>
               )}
             </div>
           </div>
@@ -644,14 +644,14 @@ export default function QrCardClient({
                 />
               </div>
               <p className="text-xs text-gray-500 text-center">
-                {nextBelt.min - uniqueCheckInDays} more session{nextBelt.min - uniqueCheckInDays !== 1 ? "s" : ""} to {nextBelt.label}
+                {nextBelt.min - uniqueCheckInDays} {t.beltMoreTo} {nextBelt.label}
               </p>
               {nextBelt.perk && (
-                <p className="text-xs text-gray-500 text-center mt-0.5">Next: {nextBelt.perk}</p>
+                <p className="text-xs text-gray-500 text-center mt-0.5">{t.beltNextPrefix} {nextBelt.perk}</p>
               )}
             </div>
           ) : (
-            <p className="text-[#ffe033] text-xs font-semibold mb-4 text-center">Black Belt achieved! 🥷</p>
+            <p className="text-[#ffe033] text-xs font-semibold mb-4 text-center">{t.beltMaxAchieved} 🥷</p>
           )}
 
           {/* Free session tracker — every 10 check-ins */}
