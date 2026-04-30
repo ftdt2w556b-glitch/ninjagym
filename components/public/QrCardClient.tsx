@@ -149,6 +149,7 @@ interface Props {
   pastPackages?: ActivePackage[];
   cardToken: string;
   totalCheckIns: number;
+  uniqueCheckInDays: number;
   freeSessionsRedeemed: number;
   notifyPrefs?: { checkin?: boolean; low_sessions?: boolean; milestone?: boolean } | null;
   loyaltyDiscount?: number;
@@ -255,6 +256,7 @@ export default function QrCardClient({
   pastPackages = [],
   cardToken,
   totalCheckIns,
+  uniqueCheckInDays,
   freeSessionsRedeemed,
   notifyPrefs,
   loyaltyDiscount = 0,
@@ -325,12 +327,12 @@ export default function QrCardClient({
   const isNewMilestone = MILESTONES.includes(totalCheckIns) && totalCheckIns > 0;
 
   // ── Loyalty calcs ─────────────────────────────────────────────────────────
-  // Free sessions based on check-ins — every 10 check-ins = 1 free Group Session.
-  // Belt rank also check-in based. No money in the equation.
+  // Belt rank: based on total check-ins (counts multiple kids per day accurately).
+  // Free sessions: based on unique Bangkok calendar days — max 1 pip per day per family.
   const FREE_SESSION_CHECKINS = 10;
-  const sessionsInCycle   = totalCheckIns % FREE_SESSION_CHECKINS;
-  const freeSessionsEarned    = Math.floor(totalCheckIns / FREE_SESSION_CHECKINS);
-  const pipsToShow     = sessionsInCycle === 0 && totalCheckIns > 0 && freeSessionsEarned > localRedeemed
+  const sessionsInCycle   = uniqueCheckInDays % FREE_SESSION_CHECKINS;
+  const freeSessionsEarned    = Math.floor(uniqueCheckInDays / FREE_SESSION_CHECKINS);
+  const pipsToShow     = sessionsInCycle === 0 && uniqueCheckInDays > 0 && freeSessionsEarned > localRedeemed
     ? 10
     : sessionsInCycle;
   const freeSessionsAvailable = Math.max(0, freeSessionsEarned - localRedeemed);

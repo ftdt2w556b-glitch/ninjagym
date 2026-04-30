@@ -110,10 +110,10 @@ export default async function QrCardPage({
       .in("member_id", allIds)
       .order("check_in_at", { ascending: false })
       .limit(60),
-    // Fetch kids_count for ALL check-ins (no limit) to correctly sum loyalty sessions
+    // Fetch kids_count + date for ALL check-ins (no limit) to correctly sum loyalty sessions
     admin
       .from("attendance_logs")
-      .select("kids_count, notes, membership_type")
+      .select("kids_count, notes, membership_type, check_in_at")
       .in("member_id", allIds),
   ]);
 
@@ -129,6 +129,18 @@ export default async function QrCardPage({
     return m ? parseInt(m[1], 10) : 1;
   }
   const totalCheckIns = (allCheckInKids ?? []).reduce((sum, r) => sum + kidsFromLog(r), 0);
+
+  // Free sessions: max 1 pip per day per family (unique Bangkok dates, not per-kid count)
+  const uniqueCheckInDays = new Set(
+    (allCheckInKids ?? [])
+      .filter((r) => r.membership_type !== "climb_unguided" && r.membership_type !== "free_session_loyalty")
+      .map((r) => {
+        if (!r.check_in_at) return null;
+        const d = new Date(new Date(r.check_in_at as string).getTime() + 7 * 3600 * 1000);
+        return d.toISOString().slice(0, 10);
+      })
+      .filter((d): d is string => d !== null)
+  ).size;
 
   // Registration IDs that have at least one check-in (for legacy null-sessions detection)
   const usedRegIds = new Set(checkIns.map((c) => c.member_id));
@@ -203,6 +215,7 @@ export default async function QrCardPage({
       pastPackages={pastPackages}
       cardToken={cardToken}
       totalCheckIns={totalCheckIns ?? 0}
+      uniqueCheckInDays={uniqueCheckInDays}
       freeSessionsRedeemed={member.free_sessions_redeemed ?? 0}
       notifyPrefs={member.notify_prefs ?? null}
       loyaltyDiscount={(member as { loyalty_discount?: number | null }).loyalty_discount ?? 0}

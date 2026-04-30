@@ -114,7 +114,7 @@ export default function AboutPage() {
               {
                 icon: "🎁",
                 title: "Free Sessions",
-                desc: "Every 10 check-ins earns a free session. No expiry. Just keep training.",
+                desc: "Every 10 visits earns a free session (max one per day per family). No expiry. Just keep training.",
               },
               {
                 icon: "🥋",
