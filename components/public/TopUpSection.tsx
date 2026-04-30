@@ -201,7 +201,7 @@ export default function TopUpSection({
 
   async function doRegister(paymentMethod: "cash" | "promptpay" | "stripe", slipFile?: File | null) {
     if (!isBulk && !kidsNames.trim()) {
-      setError("Please enter the kids names before continuing.");
+      setError(t.topUpKidsRequired);
       return;
     }
     setLoading(paymentMethod);
@@ -232,7 +232,7 @@ export default function TopUpSection({
       const res  = await fetch("/api/members", { method: "POST", body });
       const data = await res.json();
       setLoading(null);
-      if (!res.ok) { setError(data.error ?? "Something went wrong"); return; }
+      if (!res.ok) { setError(data.error ?? t.errSomethingWrong); return; }
 
       // Record water add-on sale (non-blocking)
       if (waterQty > 0) {
@@ -262,7 +262,7 @@ export default function TopUpSection({
       }
     } catch {
       setLoading(null);
-      setError("Something went wrong. Please try again.");
+      setError(t.errSomethingWrong);
     }
   }
 
@@ -283,7 +283,7 @@ export default function TopUpSection({
         body: JSON.stringify({ reg_id: pendingPurchase.regId, parent_member_id: memberId, token: cardToken }),
       });
       const data = await res.json();
-      if (!res.ok) { setCancelError(data.error ?? "Could not cancel. Ask staff to reject it."); return; }
+      if (!res.ok) { setCancelError(data.error ?? t.topUpCancelError); return; }
       localStorage.removeItem(SESSION_KEY);
       setPendingPurchase(null);
     } finally {
@@ -298,16 +298,14 @@ export default function TopUpSection({
         <div className="text-center">
           <p className="text-2xl mb-1">{isCashPending ? "💵" : "⏳"}</p>
           <p className="font-bold text-amber-800 text-lg">
-            {isCashPending ? "Cash payment pending" : "Payment slip submitted"}
+            {isCashPending ? t.topUpCashPending : t.topUpSlipSubmitted}
           </p>
           <p className="text-amber-700 text-sm">{pendingPurchase.label}</p>
           {pendingPurchase.amount != null && (
             <p className="text-amber-600 text-sm">฿{pendingPurchase.amount.toLocaleString()}</p>
           )}
           <p className="text-gray-500 text-xs mt-2">
-            {isCashPending
-              ? "Tell staff when you arrive — they will collect payment and check you in."
-              : "Staff will approve your slip shortly."}
+            {isCashPending ? t.topUpCashPendingNote : t.topUpSlipPendingNote}
           </p>
         </div>
         {cancelError && <p className="text-red-500 text-xs text-center">{cancelError}</p>}
@@ -316,7 +314,7 @@ export default function TopUpSection({
           disabled={cancelling}
           className="w-full py-2.5 rounded-xl border-2 border-amber-400 text-amber-800 font-semibold text-sm hover:bg-amber-100 transition-colors disabled:opacity-50"
         >
-          {cancelling ? "Cancelling…" : isCashPending ? "✕ Cancel this registration" : "✕ Wrong program or slip? Cancel and resubmit"}
+          {cancelling ? t.topUpCancelling : isCashPending ? t.topUpCancelCash : t.topUpCancelSlip}
         </button>
       </div>
     );
@@ -392,7 +390,7 @@ export default function TopUpSection({
           {/* Slip upload */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">
-              Upload Payment Slip <span className="text-gray-400 font-normal">(screenshot of transfer confirmation)</span>
+              {t.topUpSlipLabel} <span className="text-gray-400 font-normal">({t.topUpSlipHint})</span>
             </label>
             <input
               type="file"
@@ -401,7 +399,7 @@ export default function TopUpSection({
               className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:bg-[#1a56db] file:text-white file:font-semibold"
             />
             {slip && (
-              <p className="text-xs text-green-600 mt-1">Selected: {slip.name}</p>
+              <p className="text-xs text-green-600 mt-1">✓ {slip.name}</p>
             )}
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -410,9 +408,9 @@ export default function TopUpSection({
             disabled={!!loading || !slip}
             className="w-full bg-[#1a56db] text-white font-bold text-base rounded-xl py-3.5 hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading === "promptpay" ? "Submitting…" : "Submit Payment Slip →"}
+            {loading === "promptpay" ? t.topUpSubmitting : t.topUpSubmitSlip}
           </button>
-          <p className="text-xs text-gray-400 text-center">Staff will approve your session after verifying the transfer.</p>
+          <p className="text-xs text-gray-400 text-center">{t.topUpSlipApprovalNote}</p>
         </div>
       </div>
     );

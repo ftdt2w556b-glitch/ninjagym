@@ -339,7 +339,7 @@ export default function QrCardClient({
 
   async function handleRedeem() {
     if (redeemPhase !== "idle" || freeSessionsAvailable < 1) return;
-    if (!confirm("Redeem 1 free session? A staff member will confirm it for you.")) return;
+    if (!confirm(t.redeemConfirm)) return;
     setRedeemPhase("submitting");
     try {
       const res = await fetch(`/api/members/${member.id}/redeem`, {
@@ -352,11 +352,11 @@ export default function QrCardClient({
         setRedeemPendingId(data.id);
         setRedeemPhase("pending");
       } else {
-        alert(data.error ?? "Could not redeem — please show this screen to staff.");
+        alert(data.error ?? t.redeemError);
         setRedeemPhase("idle");
       }
     } catch {
-      alert("Connection error — please try again.");
+      alert(t.redeemConnectionError);
       setRedeemPhase("idle");
     }
   }
@@ -691,28 +691,28 @@ export default function QrCardClient({
             {redeemPhase === "pending" && (
               <div className="bg-amber-500/10 border border-amber-400/40 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl mb-1">⏳</p>
-                <p className="text-amber-300 font-bold text-sm">Waiting for staff to confirm</p>
-                <p className="text-amber-400/60 text-xs mt-0.5">Show this screen to a staff member</p>
+                <p className="text-amber-300 font-bold text-sm">{t.redeemPending}</p>
+                <p className="text-amber-400/60 text-xs mt-0.5">{t.redeemPendingNote}</p>
               </div>
             )}
 
             {redeemPhase === "approved" && (
               <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl mb-1">✅</p>
-                <p className="text-green-400 font-bold text-sm">Free session confirmed!</p>
-                <p className="text-green-400/70 text-xs mt-0.5">Have fun, {member.name.split(" ")[0]}!</p>
+                <p className="text-green-400 font-bold text-sm">{t.redeemApproved}</p>
+                <p className="text-green-400/70 text-xs mt-0.5">{t.redeemHaveFun}, {firstName}!</p>
               </div>
             )}
 
             {redeemPhase === "rejected" && (
               <div className="bg-red-500/10 border border-red-400/30 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl mb-1">❌</p>
-                <p className="text-red-400 font-bold text-sm">Not approved — please speak with staff</p>
+                <p className="text-red-400 font-bold text-sm">{t.redeemRejected}</p>
                 <button
                   onClick={() => setRedeemPhase("idle")}
                   className="text-xs text-gray-500 underline mt-2"
                 >
-                  Try again
+                  {t.redeemTryAgain}
                 </button>
               </div>
             )}
@@ -721,16 +721,16 @@ export default function QrCardClient({
               <div className="bg-[#ffe033]/10 border border-[#ffe033]/30 rounded-xl px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-[#ffe033] font-bold text-sm">
-                    🎁 {freeSessionsAvailable} Free Session{freeSessionsAvailable !== 1 ? "s" : ""} Ready!
+                    🎁 {freeSessionsAvailable} {t.redeemBtn}{freeSessionsAvailable !== 1 ? "" : ""} Ready!
                   </p>
-                  <p className="text-[#ffe033]/60 text-xs mt-0.5">Tap Redeem — staff will confirm</p>
+                  <p className="text-[#ffe033]/60 text-xs mt-0.5">{t.redeemReadyNote}</p>
                 </div>
                 <button
                   onClick={handleRedeem}
                   disabled={redeemPhase === "submitting"}
                   className="ml-3 bg-[#ffe033] text-gray-900 font-bold text-xs px-3 py-1.5 rounded-lg hover:bg-yellow-300 disabled:opacity-50 transition-colors shrink-0"
                 >
-                  {redeemPhase === "submitting" ? "..." : "Redeem"}
+                  {redeemPhase === "submitting" ? "..." : t.redeemBtn}
                 </button>
               </div>
             )}
