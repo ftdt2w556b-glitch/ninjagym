@@ -257,6 +257,7 @@ const en = {
   redeemReadyNote: "Tap Redeem — staff will confirm",
   redeemError: "Could not redeem — please show this screen to staff.",
   redeemConnectionError: "Connection error — please try again.",
+  freeSessionProgress: "sessions (max one per day per family)",
 };
 
 export const translations: Record<Lang, typeof en> = {
@@ -476,6 +477,7 @@ export const translations: Record<Lang, typeof en> = {
     redeemReadyNote: "Нажмите Использовать — персонал подтвердит",
     redeemError: "Не удалось использовать — покажите этот экран персоналу.",
     redeemConnectionError: "Ошибка соединения — попробуйте снова.",
+    freeSessionProgress: "сессий (максимум одна в день на семью)",
   },
   th: {
     joinTitle: "สมัครสมาชิก NinjaGym",
@@ -692,6 +694,7 @@ export const translations: Record<Lang, typeof en> = {
     redeemReadyNote: "กดใช้สิทธิ์ — เจ้าหน้าที่จะยืนยัน",
     redeemError: "ไม่สามารถใช้สิทธิ์ได้ — แสดงหน้าจอนี้ให้เจ้าหน้าที่ดู",
     redeemConnectionError: "เกิดข้อผิดพลาดในการเชื่อมต่อ — กรุณาลองใหม่",
+    freeSessionProgress: "เซสชัน (สูงสุดหนึ่งครั้งต่อวันต่อครอบครัว)",
   },
   fr: {
     joinTitle: "Rejoindre NinjaGym",
@@ -908,6 +911,7 @@ export const translations: Record<Lang, typeof en> = {
     redeemReadyNote: "Appuyez sur Utiliser — le personnel confirmera",
     redeemError: "Impossible d'utiliser — montrez cet écran au personnel.",
     redeemConnectionError: "Erreur de connexion — veuillez réessayer.",
+    freeSessionProgress: "séances (max une par jour par famille)",
   },
   he: {
     joinTitle: "הצטרף ל-NinjaGym",
@@ -1124,6 +1128,7 @@ export const translations: Record<Lang, typeof en> = {
     redeemReadyNote: "לחץ מימוש — הצוות יאשר",
     redeemError: "לא ניתן לממש — הראה מסך זה לצוות.",
     redeemConnectionError: "שגיאת חיבור — אנא נסה שוב.",
+    freeSessionProgress: "מפגשים (מקסימום אחד ליום למשפחה)",
   },
 };
 

@@ -684,7 +684,7 @@ export default function QrCardClient({
             <p className="text-xs text-gray-400 text-center mb-3">
               {sessionsInCycle === 0 && freeSessionsAvailable > 0
                 ? "🎉 Free session ready! Keep training!"
-                : `${sessionsInCycle}/10 sessions toward next free session`}
+                : `${sessionsInCycle}/10 ${t.freeSessionProgress}`}
             </p>
 
             {/* Free session redeem — phase-aware states */}
