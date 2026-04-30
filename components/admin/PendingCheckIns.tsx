@@ -119,10 +119,11 @@ export default function PendingCheckIns({ staffName }: Props) {
       {items.map((item) => {
         const minutesAgo = Math.floor((Date.now() - new Date(item.requested_at).getTime()) / 60000);
         const timeLabel = minutesAgo < 1 ? "just now" : `${minutesAgo}m ago`;
-        const isPayment = !!item.payment_method;
-        const isCash = item.payment_method === "cash";
+        const isPayment  = !!item.payment_method;
+        const isCash     = item.payment_method === "cash";
         const isPromptPay = item.payment_method === "promptpay";
-        const isBulk = item.membership_type?.endsWith("_bulk") ?? false;
+        const isBulk     = item.membership_type?.endsWith("_bulk") ?? false;
+        const isPerk     = item.membership_type?.startsWith("belt_perk_") ?? false;
         const slipUrl = item.slip_image
           ? `${SUPABASE_URL}/storage/v1/object/public/slips/${item.slip_image}`
           : null;
@@ -145,7 +146,21 @@ export default function PendingCheckIns({ staffName }: Props) {
 
             {/* Main info block */}
             <div className="bg-white/80 rounded-2xl py-3 px-4 mb-3 flex items-center justify-between">
-              {isBulk ? (
+              {isPerk ? (
+                /* Belt perk redemption */
+                <div className="w-full">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Belt Perk Redemption</p>
+                  <p className="text-2xl font-black text-gray-900 leading-none">{item.membership_label}</p>
+                  <a
+                    href={`/qr/card/${item.card_member_id ?? item.member_id}?from=admin`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline font-semibold mt-1 inline-block"
+                  >
+                    View member card to verify belt rank
+                  </a>
+                </div>
+              ) : isBulk ? (
                 /* Bulk purchase — payment approval only, no check-in */
                 <div className="w-full">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Session pack purchase</p>
@@ -177,7 +192,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                       Membership ↗
                     </a>
                     <p className="text-sm font-semibold text-gray-700">{item.membership_label || "Session"}</p>
-                    {item.sessions_remaining !== null && item.sessions_remaining !== undefined && item.membership_type !== "free_session_loyalty" && (
+                    {item.sessions_remaining !== null && item.sessions_remaining !== undefined && item.membership_type !== "free_session_loyalty" && !isPerk && (
                       <p className={`text-xs mt-0.5 font-semibold ${Math.max(0, item.sessions_remaining - item.kids_count) === 0 ? "text-red-500" : "text-gray-500"}`}>
                         {Math.max(0, item.sessions_remaining - item.kids_count)} left after this
                       </p>
@@ -216,8 +231,10 @@ export default function PendingCheckIns({ staffName }: Props) {
             {/* Staff double-check reminder */}
             <div className="bg-amber-900/20 rounded-xl px-3 py-2 mb-3">
               <p className="text-xs font-semibold text-amber-900 leading-snug">
-                {isBulk
-                  ? "⚠️ Verify payment slip: date, amount, and program match. No check-in — sessions unlock after approval."
+                {isPerk
+                  ? "🥋 Belt perk reward. Open their member card to confirm the correct belt rank, then honor the perk."
+                  : isBulk
+                  ? "⚠️ Verify payment slip: date, amount, and program match. No check-in, sessions unlock after approval."
                   : "⚠️ Check number of kids (+names), pay date, and match program and amount paid."}
               </p>
             </div>
@@ -278,7 +295,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                   onClick={() => setApproveConfirm((s) => ({ ...s, [item.id]: true }))}
                   className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
                 >
-                  {handling[item.id] ? "…" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
+                  {handling[item.id] ? "…" : isPerk ? "✓ Honor Perk" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
                 </button>
                 <button
                   disabled={handling[item.id]}

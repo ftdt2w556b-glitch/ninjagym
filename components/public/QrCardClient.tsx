@@ -8,6 +8,7 @@ import ShareButton from "@/components/public/ShareButton";
 import TopUpSection from "@/components/public/TopUpSection";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import UseSessionButton from "@/components/public/UseSessionButton";
+import BeltPerksSection from "@/components/public/BeltPerksSection";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
 interface CheckIn {
@@ -87,16 +88,16 @@ function buildCalendar(checkIns: { check_in_at: string }[]): CalDay[][] {
 }
 
 // ── Belt rank system (every 5 unique sessions, max 1 per day per family) ──────
-interface Belt { label: string; emoji: string; min: number; perk: string | null }
+interface Belt { label: string; emoji: string; min: number; perk: string | null; perkType: string | null }
 
 const BELTS: Belt[] = [
-  { label: "White Belt",  emoji: "🤍", min: 0,  perk: null },
-  { label: "Yellow Belt", emoji: "💛", min: 5,  perk: "Bring a friend to any session you buy free" },
-  { label: "Orange Belt", emoji: "🧡", min: 10, perk: "Free 1 hour game session" },
-  { label: "Green Belt",  emoji: "💚", min: 15, perk: "Free 1 on 1 session" },
-  { label: "Blue Belt",   emoji: "💙", min: 20, perk: "Free Combo session" },
-  { label: "Red Belt",    emoji: "❤️", min: 25, perk: "Free friends party Combo (max 4)" },
-  { label: "Black Belt",  emoji: "🖤", min: 30, perk: "Free 1 hour birthday party" },
+  { label: "White Belt",  emoji: "🤍", min: 0,  perk: null,                                           perkType: null                },
+  { label: "Yellow Belt", emoji: "💛", min: 5,  perk: "Bring a friend to any session you buy free",   perkType: "belt_perk_friend"   },
+  { label: "Orange Belt", emoji: "🧡", min: 10, perk: "Free 1 hour game session",                     perkType: "belt_perk_game"     },
+  { label: "Green Belt",  emoji: "💚", min: 15, perk: "Free 1 on 1 session",                          perkType: "belt_perk_1on1"     },
+  { label: "Blue Belt",   emoji: "💙", min: 20, perk: "Free Combo session",                           perkType: "belt_perk_combo"    },
+  { label: "Red Belt",    emoji: "❤️", min: 25, perk: "Free friends party Combo (max 4)",             perkType: "belt_perk_party"    },
+  { label: "Black Belt",  emoji: "🖤", min: 30, perk: "Free 1 hour birthday party",                   perkType: "belt_perk_birthday" },
 ];
 
 function getBelt(days: number): Belt {
@@ -323,6 +324,9 @@ export default function QrCardClient({
   const freeSessionsAvailable  = Math.max(0, freeSessionsEarned - localRedeemed);
   const belt                   = getBelt(uniqueCheckInDays);
   const { pct: beltPct, next: nextBelt } = getBeltProgress(uniqueCheckInDays);
+  const unlockedPerks = BELTS
+    .filter((b) => b.min > 0 && uniqueCheckInDays >= b.min && b.perk && b.perkType)
+    .map((b) => ({ beltLabel: b.label, beltEmoji: b.emoji, perkLabel: b.perk!, perkType: b.perkType! }));
 
   async function handleRedeem() {
     if (redeemPhase !== "idle" || freeSessionsAvailable < 1) return;
@@ -753,6 +757,17 @@ export default function QrCardClient({
           loyaltyDiscount={loyaltyDiscount}
           cardToken={cardToken}
           dbPendingTopUp={pendingTopUp ?? null}
+        />
+      )}
+
+      {/* Belt perks — collapsed by default, sits below booking so card stays scannable at the top */}
+      {isApproved && unlockedPerks.length > 0 && (
+        <BeltPerksSection
+          memberId={member.id}
+          memberName={member.name}
+          kidsNames={member.kids_names}
+          cardToken={cardToken}
+          unlockedPerks={unlockedPerks}
         />
       )}
 

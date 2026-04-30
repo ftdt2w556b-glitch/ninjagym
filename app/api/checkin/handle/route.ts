@@ -34,6 +34,10 @@ export async function POST(req: NextRequest) {
   // Must NOT deduct sessions_remaining or touch slip_status/slip_reviewed_at.
   const isFreeSessionLoyalty = pending.membership_type === "free_session_loyalty";
 
+  // Belt perk redemption — no attendance log, no session deduction, no slip_status change.
+  // Staff just confirms the perk at the centre; the pending_checkin is the only record.
+  const isPerkRedemption = pending.membership_type?.startsWith("belt_perk_") ?? false;
+
   if (action === "approve") {
     if (isFreeSessionLoyalty) {
       // Log the check-in
@@ -58,6 +62,9 @@ export async function POST(req: NextRequest) {
         .from("member_registrations")
         .update({ free_sessions_redeemed: currentRedeemed + 1 })
         .eq("id", pending.member_id);
+
+    } else if (isPerkRedemption) {
+      // Nothing to do — staff honour is the record; just fall through to mark approved below.
 
     } else if (!isBulkPurchase) {
       // Create the attendance log
@@ -85,7 +92,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!isFreeSessionLoyalty) {
+    if (!isFreeSessionLoyalty && !isPerkRedemption) {
       // Only stamp slip_reviewed_at + flip to approved for real payment approvals.
       // Session USE approvals (already-approved packages) must NOT update slip_reviewed_at —
       // doing so re-surfaces the original purchase amount in today's sales totals.
@@ -102,7 +109,7 @@ export async function POST(req: NextRequest) {
       .eq("id", id);
 
   } else if (action === "reject") {
-    if (!isFreeSessionLoyalty) {
+    if (!isFreeSessionLoyalty && !isPerkRedemption) {
       // Only mark the registration rejected if it is still pending_review
       // (i.e. this is a payment rejection, not a rejection of a session USE request
       // on an already-approved package — we must never flip approved → rejected here)
