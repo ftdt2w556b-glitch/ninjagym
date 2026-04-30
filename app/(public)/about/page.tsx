@@ -110,26 +110,47 @@ export default function AboutPage() {
           <h2 className="font-bold text-lg mb-1">🥷 Member Benefits</h2>
           <p className="text-sm text-white/60 mb-4">Automatically tracked on your member card.</p>
           <div className="flex flex-col gap-3">
-            {[
-              {
-                icon: "🎁",
-                title: "Free Sessions",
-                desc: "Every 10 visits earns a free session (max one per day per family). No expiry. Just keep training.",
-              },
-              {
-                icon: "🥋",
-                title: "Ninja Belt Ranks",
-                desc: "Progress from White Belt to Black Belt as your session count grows.",
-              },
-            ].map(({ icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3 bg-white/5 rounded-xl px-4 py-3">
-                <span className="text-2xl shrink-0 mt-0.5">{icon}</span>
+
+            {/* Free Sessions */}
+            <div className="flex items-start gap-3 bg-white/5 rounded-xl px-4 py-3">
+              <span className="text-2xl shrink-0 mt-0.5">🎁</span>
+              <div>
+                <p className="font-bold text-[#ffe033] text-sm">Free Sessions</p>
+                <p className="text-sm text-white/70 leading-relaxed">Every 10 visits earns a free session (max one per day per family). No expiry. Just keep training.</p>
+              </div>
+            </div>
+
+            {/* Ninja Belt Ranks */}
+            <div className="bg-white/5 rounded-xl px-4 py-3">
+              <div className="flex items-start gap-3 mb-3">
+                <span className="text-2xl shrink-0 mt-0.5">🥋</span>
                 <div>
-                  <p className="font-bold text-[#ffe033] text-sm">{title}</p>
-                  <p className="text-sm text-white/70 leading-relaxed">{desc}</p>
+                  <p className="font-bold text-[#ffe033] text-sm">Ninja Belt Ranks</p>
+                  <p className="text-sm text-white/70">Every 5 sessions earns a new rank. Each rank unlocks a perk on your member card.</p>
                 </div>
               </div>
-            ))}
+              <div className="flex flex-col gap-1.5 pl-1">
+                {[
+                  { emoji: "🤍", belt: "White Belt",  sessions: null, perk: "Starting rank" },
+                  { emoji: "💛", belt: "Yellow Belt", sessions: 5,    perk: "Bring a friend free" },
+                  { emoji: "🧡", belt: "Orange Belt", sessions: 10,   perk: "Free 1 hour game session" },
+                  { emoji: "💚", belt: "Green Belt",  sessions: 15,   perk: "Free 1 on 1 session" },
+                  { emoji: "💙", belt: "Blue Belt",   sessions: 20,   perk: "Free Combo session" },
+                  { emoji: "❤️", belt: "Red Belt",    sessions: 25,   perk: "Free friends party Combo (max 4)" },
+                  { emoji: "🖤", belt: "Black Belt",  sessions: 30,   perk: "Free 1 hour birthday party" },
+                ].map(({ emoji, belt, sessions, perk }) => (
+                  <div key={belt} className="flex items-center gap-2 text-sm">
+                    <span className="text-base w-6 text-center shrink-0">{emoji}</span>
+                    <span className="text-white/50 shrink-0 w-24 text-xs">{belt}</span>
+                    {sessions !== null && (
+                      <span className="text-white/30 text-xs shrink-0">{sessions} sessions</span>
+                    )}
+                    <span className="text-white/70 text-xs ml-auto text-right">{perk}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </div>
         </div>
 
