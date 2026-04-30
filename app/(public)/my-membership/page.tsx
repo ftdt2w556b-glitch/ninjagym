@@ -83,6 +83,15 @@ export default function MyMembershipPage() {
 
   // ── Name+phone lookup ───────────────────────────────────────────
 
+  // Maps API error codes (from /api/find-member) to translation keys
+  const ERROR_CODE_MAP: Record<string, keyof typeof t> = {
+    NAME_PHONE_REQUIRED: "errEnterNamePhone",
+    PHONE_TOO_SHORT:     "errPhoneTooShort",
+    NO_MEMBERSHIP:       "errNoMembership",
+    PHONE_MISMATCH:      "errPhoneMismatch",
+    PIN_NOT_FOUND:       "myMembershipPinNotFound",
+  };
+
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -94,10 +103,14 @@ export default function MyMembershipPage() {
         body: JSON.stringify({ name, phone }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Not found."); }
-      else { router.push(`/qr/card/${data.id}?token=${data.token}`); }
+      if (!res.ok) {
+        const key = data.code ? ERROR_CODE_MAP[data.code] : undefined;
+        setError(key ? t[key] : (data.error ?? t.errSomethingWrong));
+      } else {
+        router.push(`/qr/card/${data.id}?token=${data.token}`);
+      }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.errSomethingWrong);
     } finally {
       setLoading(false);
     }
@@ -142,7 +155,7 @@ export default function MyMembershipPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                   </svg>
-                  <span className="text-sm">Looking up...</span>
+                  <span className="text-sm">{t.pinLookingUp}</span>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3 w-full max-w-xs">

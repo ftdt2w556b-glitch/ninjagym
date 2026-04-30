@@ -40,25 +40,25 @@ export default function JoinPage() {
 
   function validateName(val: string): string | undefined {
     const v = val.trim();
-    if (!v) return "Please enter your full name.";
-    if (!/^[\p{L}\s'\-.]+$/u.test(v)) return "Name should only contain letters — no numbers or symbols.";
+    if (!v) return t.errNameRequired;
+    if (!/^[\p{L}\s'\-.]+$/u.test(v)) return t.errNameLettersOnly;
     const words = v.split(/\s+/);
-    if (words.length < 2) return "Please enter your first and last name (or last initial).";
-    if (words.some((w) => w.length < 2)) return "Each part of your name should be at least 2 characters.";
+    if (words.length < 2) return t.errNameFullName;
+    if (words.some((w) => w.length < 2)) return t.errNamePartTooShort;
   }
 
   function validatePhone(val: string): string | undefined {
     if (!val.trim()) return; // optional field
     const digits = val.replace(/[\s\-+().]/g, "");
-    if (!/^\d+$/.test(digits)) return "Phone should contain only numbers.";
-    if (digits.length < 7 || digits.length > 15) return "Please enter a valid phone number.";
+    if (!/^\d+$/.test(digits)) return t.errPhoneNumbersOnly;
+    if (digits.length < 7 || digits.length > 15) return t.errPhoneInvalid;
   }
 
   function validateKidsNames(val: string): string | undefined {
     const v = val.trim();
-    if (!v) return "Required — so staff can find the right child.";
-    if (!/^[\p{L}\s,'\-.]+$/u.test(v)) return "Names should only contain letters, commas, or hyphens.";
-    if (v.length < 2) return "Please enter at least one kid's name.";
+    if (!v) return t.errKidsRequired;
+    if (!/^[\p{L}\s,'\-.]+$/u.test(v)) return t.errKidsLettersOnly;
+    if (v.length < 2) return t.errKidsNameTooShort;
   }
 
   function setFieldError(field: keyof typeof fieldErrors, msg: string | undefined) {
@@ -105,11 +105,11 @@ export default function JoinPage() {
       const res = await fetch("/api/members", { method: "POST", body });
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.error || "Submission failed");
+      if (!res.ok) throw new Error(data.error || t.errSomethingWrong);
 
       router.push(`/qr/card/${data.id}?token=${data.token}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t.errSomethingWrong);
       setSubmitting(false);
     }
   }
@@ -119,14 +119,14 @@ export default function JoinPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Link href="/" className="text-white/70 hover:text-white text-sm">← Back</Link>
+          <Link href="/" className="text-white/70 hover:text-white text-sm">{t.back}</Link>
           <Image src="/images/logo_small.png" alt="NinjaGym" width={36} height={36} />
         </div>
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
       <h1 className="font-fredoka text-3xl text-white drop-shadow mb-1">{t.joinTitle}</h1>
-      <p className="text-white/80 text-sm mb-5">Get your member card in seconds. Choose your program on the next screen.</p>
+      <p className="text-white/80 text-sm mb-5">{t.joinSubtitle}</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
@@ -167,16 +167,16 @@ export default function JoinPage() {
           {existingMember && (
             <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
               <p className="text-amber-800 font-bold text-sm">
-                📱 We found an existing account for {existingMember.name}!
+                📱 {t.joinFoundAccount} ({existingMember.name})
               </p>
               <p className="text-amber-700 text-xs mt-1">
-                No need to register again — go straight to your member card.
+                {t.joinFoundAccountNote}
               </p>
               <a
                 href={`/qr/card/${existingMember.id}`}
                 className="inline-block mt-2 bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
               >
-                Go to My Card →
+                {t.joinGoToCard}
               </a>
             </div>
           )}
@@ -217,8 +217,8 @@ export default function JoinPage() {
 
         {/* What happens next */}
         <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-sm text-blue-800">
-          <p className="font-bold mb-1">🥷 What happens next?</p>
-          <p>You&apos;ll get your member card with a PIN number. Next, you pick your first program, number of kids attending and payment type.</p>
+          <p className="font-bold mb-1">🥷 {t.joinWhatNext}</p>
+          <p>{t.joinWhatNextDesc}</p>
         </div>
 
         {error && (
@@ -253,7 +253,7 @@ export default function JoinPage() {
           disabled={submitting || !agreedToPolicy || !form.kids_names.trim()}
           className="bg-[#22c55e] text-white font-bold text-lg rounded-2xl py-4 shadow-lg hover:bg-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "Creating your card..." : "Get My Member Card →"}
+          {submitting ? t.joinCreatingCard : t.joinGetCard}
         </button>
       </form>
 

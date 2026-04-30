@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (pinMember) return NextResponse.json({ id: pinMember.id, token: signMemberId(pinMember.id) });
     return NextResponse.json(
-      { error: "PIN not found. Try searching by name and phone instead." },
+      { error: "PIN not found. Try searching by name and phone instead.", code: "PIN_NOT_FOUND" },
       { status: 404 }
     );
   }
@@ -36,14 +36,14 @@ export async function POST(request: NextRequest) {
 
   if (!cleanName || !cleanPhone) {
     return NextResponse.json(
-      { error: "Please enter both your name and phone number." },
+      { error: "Please enter both your name and phone number.", code: "NAME_PHONE_REQUIRED" },
       { status: 400 }
     );
   }
 
   if (cleanPhone.length < 6) {
     return NextResponse.json(
-      { error: "Phone number is too short. Please enter your full number." },
+      { error: "Phone number is too short. Please enter your full number.", code: "PHONE_TOO_SHORT" },
       { status: 400 }
     );
   }
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   if (!candidates || candidates.length === 0) {
     return NextResponse.json(
-      { error: "No approved membership found. Check your name and phone number." },
+      { error: "No approved membership found. Check your name and phone number.", code: "NO_MEMBERSHIP" },
       { status: 404 }
     );
   }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
   if (!match) {
     return NextResponse.json(
-      { error: "Name found but phone number doesn't match. Please check both fields." },
+      { error: "Name found but phone number doesn't match. Please check both fields.", code: "PHONE_MISMATCH" },
       { status: 404 }
     );
   }
