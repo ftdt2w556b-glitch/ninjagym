@@ -86,42 +86,31 @@ function buildCalendar(checkIns: { check_in_at: string }[]): CalDay[][] {
   return Array.from({ length: 6 }, (_, i) => days.slice(i * 7, i * 7 + 7));
 }
 
-// ── Milestone helpers ─────────────────────────────────────────────────────────
-const MILESTONES = [10, 25, 50, 100, 200, 500];
-function getTopMilestone(n: number) {
-  return [...MILESTONES].reverse().find((m) => n >= m) ?? null;
-}
-function getNextMilestone(n: number) {
-  return MILESTONES.find((m) => m > n) ?? null;
-}
+// ── Belt rank system (every 5 unique sessions, max 1 per day per family) ──────
+interface Belt { label: string; emoji: string; min: number; perk: string | null }
 
-// ── Belt rank system ─────────────────────────────────────────────────────────
-// Belt rank advances by check-in count. Free sessions earned by THB spent (every 3,500 THB).
-const BELTS = [
-  { label: "White Belt",  emoji: "🤍", min: 0,   max: 4   },
-  { label: "Yellow Belt", emoji: "💛", min: 5,   max: 9   },
-  { label: "Orange Belt", emoji: "🧡", min: 10,  max: 19  },
-  { label: "Green Belt",  emoji: "💚", min: 20,  max: 34  },
-  { label: "Blue Belt",   emoji: "💙", min: 35,  max: 49  },
-  { label: "Purple Belt", emoji: "💜", min: 50,  max: 74  },
-  { label: "Brown Belt",  emoji: "🤎", min: 75,  max: 99  },
-  { label: "Black Belt",  emoji: "🖤", min: 100, max: Infinity },
-] as const;
+const BELTS: Belt[] = [
+  { label: "White Belt",  emoji: "🤍", min: 0,  perk: null },
+  { label: "Yellow Belt", emoji: "💛", min: 5,  perk: "Bring a friend to any session you buy free" },
+  { label: "Orange Belt", emoji: "🧡", min: 10, perk: "Free 1 hour game session" },
+  { label: "Green Belt",  emoji: "💚", min: 15, perk: "Free 1 on 1 session" },
+  { label: "Blue Belt",   emoji: "💙", min: 20, perk: "Free Combo session" },
+  { label: "Red Belt",    emoji: "❤️", min: 25, perk: "Free friends party Combo (max 4)" },
+  { label: "Black Belt",  emoji: "🖤", min: 30, perk: "Free 1 hour birthday party" },
+];
 
-function getBelt(totalCheckIns: number): typeof BELTS[number] {
-  let found: typeof BELTS[number] = BELTS[0];
-  for (const b of BELTS) { if (totalCheckIns >= b.min) found = b; }
+function getBelt(days: number): Belt {
+  let found = BELTS[0];
+  for (const b of BELTS) { if (days >= b.min) found = b; }
   return found;
 }
 
-function getBeltProgress(totalCheckIns: number): { pct: number; next: typeof BELTS[number] | null } {
-  const belt = getBelt(totalCheckIns);
-  if (belt.max === Infinity) return { pct: 100, next: null };
-  const range = (belt.max as number) - belt.min + 1;
-  const within = totalCheckIns - belt.min;
-  const pct = Math.min(100, Math.round((within / range) * 100));
-  const idx = BELTS.findIndex((b) => b.min === belt.min);
-  const next = (BELTS[idx + 1] ?? null) as typeof BELTS[number] | null;
+function getBeltProgress(days: number): { pct: number; next: Belt | null } {
+  const belt = getBelt(days);
+  const idx  = BELTS.findIndex((b) => b.min === belt.min);
+  const next = idx < BELTS.length - 1 ? BELTS[idx + 1] : null;
+  if (!next) return { pct: 100, next: null };
+  const pct  = Math.min(100, Math.round(((days - belt.min) / 5) * 100));
   return { pct, next };
 }
 
@@ -319,25 +308,21 @@ export default function QrCardClient({
   const isPending  = !isApproved && !isRejected;
   const firstName  = member.name.split(" ")[0];
 
-  // ── Streak / calendar / milestone calcs ──────────────────────────────────
-  const streak         = computeStreak(checkIns);
-  const calWeeks       = buildCalendar(checkIns);
-  const topMilestone   = getTopMilestone(totalCheckIns);
-  const nextMilestone  = getNextMilestone(totalCheckIns);
-  const isNewMilestone = MILESTONES.includes(totalCheckIns) && totalCheckIns > 0;
+  // ── Streak / calendar / belt calcs ───────────────────────────────────────
+  const streak    = computeStreak(checkIns);
+  const calWeeks  = buildCalendar(checkIns);
+  const isNewBelt = BELTS.find((b) => b.min === uniqueCheckInDays && uniqueCheckInDays > 0) ?? null;
 
-  // ── Loyalty calcs ─────────────────────────────────────────────────────────
-  // Belt rank: based on total check-ins (counts multiple kids per day accurately).
-  // Free sessions: based on unique Bangkok calendar days — max 1 pip per day per family.
-  const FREE_SESSION_CHECKINS = 10;
-  const sessionsInCycle   = uniqueCheckInDays % FREE_SESSION_CHECKINS;
-  const freeSessionsEarned    = Math.floor(uniqueCheckInDays / FREE_SESSION_CHECKINS);
-  const pipsToShow     = sessionsInCycle === 0 && uniqueCheckInDays > 0 && freeSessionsEarned > localRedeemed
+  // ── Loyalty calcs (all based on unique Bangkok days, max 1 per day per family) ──
+  const FREE_SESSION_CHECKINS  = 10;
+  const sessionsInCycle        = uniqueCheckInDays % FREE_SESSION_CHECKINS;
+  const freeSessionsEarned     = Math.floor(uniqueCheckInDays / FREE_SESSION_CHECKINS);
+  const pipsToShow             = sessionsInCycle === 0 && uniqueCheckInDays > 0 && freeSessionsEarned > localRedeemed
     ? 10
     : sessionsInCycle;
-  const freeSessionsAvailable = Math.max(0, freeSessionsEarned - localRedeemed);
-  const belt        = getBelt(totalCheckIns);
-  const { pct: beltPct, next: nextBelt } = getBeltProgress(totalCheckIns);
+  const freeSessionsAvailable  = Math.max(0, freeSessionsEarned - localRedeemed);
+  const belt                   = getBelt(uniqueCheckInDays);
+  const { pct: beltPct, next: nextBelt } = getBeltProgress(uniqueCheckInDays);
 
   async function handleRedeem() {
     if (redeemPhase !== "idle" || freeSessionsAvailable < 1) return;
@@ -401,16 +386,14 @@ export default function QrCardClient({
         </h1>
       </div>
 
-      {/* Milestone celebration banner */}
-      {isApproved && isNewMilestone && (
+      {/* Belt unlock celebration banner */}
+      {isApproved && isNewBelt && (
         <div className="bg-[#ffe033]/15 border border-[#ffe033]/40 rounded-2xl px-4 py-3 mb-4 text-center">
-          <p className="text-3xl mb-1">🎉</p>
-          <p className="text-[#ffe033] font-bold text-base">
-            {totalCheckIns} Session Milestone!
-          </p>
-          <p className="text-white/60 text-xs mt-0.5">
-            You&apos;ve trained {totalCheckIns} times at NinjaGym. Legendary!
-          </p>
+          <p className="text-3xl mb-1">{isNewBelt.emoji} 🎉</p>
+          <p className="text-[#ffe033] font-bold text-base">{isNewBelt.label} Unlocked!</p>
+          {isNewBelt.perk && (
+            <p className="text-white/60 text-xs mt-0.5">New perk: {isNewBelt.perk}</p>
+          )}
         </div>
       )}
 
@@ -589,7 +572,7 @@ export default function QrCardClient({
         {/* Footer */}
         <div className="bg-gray-50 px-5 py-3 text-center border-t border-gray-100">
           {loyaltyDiscount > 0 && (
-            <p className="text-xs font-bold text-yellow-600 mb-1">⭐ Loyalty member — ฿{loyaltyDiscount} off each program</p>
+            <p className="text-xs font-bold text-yellow-600 mb-1">⭐ Loyalty member: ฿{loyaltyDiscount} off each program</p>
           )}
           <p className="text-xs text-gray-400">Rick Tew&apos;s NinjaGym</p>
           <span className="sr-only">Koh Samui, Thailand</span>
@@ -631,38 +614,40 @@ export default function QrCardClient({
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Ninja Rank</p>
-            <span className="text-xs text-gray-500">{totalCheckIns} total check-ins</span>
+            <span className="text-xs text-gray-500">{uniqueCheckInDays} session{uniqueCheckInDays !== 1 ? "s" : ""}</span>
           </div>
 
-          {/* Belt badge */}
-          <div className="flex items-center gap-3 mb-4">
+          {/* Belt badge + perk */}
+          <div className="flex items-center gap-3 mb-3">
             <span className="text-3xl">{belt.emoji}</span>
             <div className="flex-1">
               <p className="text-white font-bold text-lg leading-tight">{belt.label}</p>
-              {nextBelt ? (
-                <p className="text-gray-400 text-xs">
-                  {nextBelt.min - totalCheckIns} more check-in{nextBelt.min - totalCheckIns !== 1 ? "s" : ""} to {nextBelt.label}
-                </p>
+              {belt.perk ? (
+                <p className="text-[#ffe033] text-xs font-semibold mt-0.5">Perk: {belt.perk}</p>
               ) : (
-                <p className="text-[#ffe033] text-xs font-semibold">Master rank achieved! 🥷</p>
+                <p className="text-gray-500 text-xs mt-0.5">5 sessions to earn your first perk</p>
               )}
             </div>
           </div>
 
-          {/* XP progress bar */}
-          {nextBelt && (
+          {/* Progress to next belt */}
+          {nextBelt ? (
             <div className="mb-4">
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>{belt.label}</span>
-                <span>{nextBelt.label}</span>
-              </div>
-              <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-2.5 bg-gray-700 rounded-full overflow-hidden mb-2">
                 <div
                   className="h-full bg-gradient-to-r from-[#ffe033] to-[#ffb347] rounded-full transition-all duration-700"
                   style={{ width: `${beltPct}%` }}
                 />
               </div>
+              <p className="text-xs text-gray-500 text-center">
+                {nextBelt.min - uniqueCheckInDays} more session{nextBelt.min - uniqueCheckInDays !== 1 ? "s" : ""} to {nextBelt.label}
+              </p>
+              {nextBelt.perk && (
+                <p className="text-xs text-gray-500 text-center mt-0.5">Next: {nextBelt.perk}</p>
+              )}
             </div>
+          ) : (
+            <p className="text-[#ffe033] text-xs font-semibold mb-4 text-center">Black Belt achieved! 🥷</p>
           )}
 
           {/* Free session tracker — every 10 check-ins */}

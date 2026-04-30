@@ -200,7 +200,7 @@ export default function UseSessionButton({
             onClick={submit}
             className="flex-1 py-3 rounded-xl bg-green-500 text-white font-bold text-lg hover:bg-green-600 transition-colors"
           >
-            YES — Check In
+            YES, Check In
           </button>
         </div>
       </div>

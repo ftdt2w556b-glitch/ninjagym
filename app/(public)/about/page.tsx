@@ -18,7 +18,7 @@ export default function AboutPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { stat: "Ages 3–10", label: "Learn by doing" },
+          { stat: "Ages 3 to 10", label: "Learn by doing" },
           { stat: "55 Min",    label: "Guided Course" },
           { stat: "10:00am",   label: "Opens Daily" },
         ].map((s) => (

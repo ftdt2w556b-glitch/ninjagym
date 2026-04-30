@@ -242,7 +242,7 @@ export default function EventSpacePage() {
             <input type="text" required value={form.hours}
               onChange={(e) => setForm({ ...form, hours: e.target.value })}
               className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-              placeholder="e.g. 10:00am – 12:00pm" />
+              placeholder="e.g. 10:00am to 12:00pm" />
             <p className="text-xs text-gray-400 mt-1">2-hour session. Must end by 2:00pm.</p>
           </div>
 
