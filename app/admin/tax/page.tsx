@@ -112,13 +112,25 @@ async function addWhtAction(formData: FormData) {
   const paymentDate    = formData.get("payment_date") as string;
   const paymentAmount  = parseFloat(formData.get("payment_amount") as string);
   const whtRate        = parseFloat(formData.get("wht_rate") as string);
-  const certNumber     = (formData.get("certificate_number") as string) || null;
-  const notes          = (formData.get("notes") as string) || null;
+  // Auto-generate certificate number if left blank
+  const rawCertNumber = (formData.get("certificate_number") as string) || null;
+  const notes         = (formData.get("notes") as string) || null;
 
   const whtAmount  = Math.round(paymentAmount * whtRate / 100 * 100) / 100;
   const netPayment = Math.round((paymentAmount - whtAmount) * 100) / 100;
 
   const [year, month] = paymentDate.split("-").map(Number);
+
+  // Auto-generate certificate number if not supplied
+  let certNumber = rawCertNumber;
+  if (!certNumber) {
+    const { data: autoNum } = await admin.rpc("next_wht_cert_number", {
+      p_company_id: company.id,
+      p_year:       year,
+      p_month:      month,
+    });
+    certNumber = (autoNum as string | null) ?? null;
+  }
   const periodStart = `${paymentDate.substring(0, 7)}-01`;
   const lastDay     = new Date(year, month, 0).getDate();
   const periodEnd   = `${paymentDate.substring(0, 7)}-${lastDay}`;
@@ -241,6 +253,8 @@ export default async function TaxPage({
   let taxInvoices: any[]  | null = null;
   let expenses:    any[]  | null = null;
   let whtRecords:  any[]  | null = null;
+  let taxPeriod:   any           = null;
+  let citRows:     any[]  | null = null;
 
   if (tab === "vat" || tab === "export") {
     const [vatRes, invRes] = await Promise.all([
@@ -284,6 +298,26 @@ export default async function TaxPage({
       .lte("payment_date", periodEnd)
       .order("payment_date", { ascending: false });
     whtRecords = data ?? [];
+  }
+
+  if (tab === "export") {
+    // Filing status for this period
+    const { data: pData } = await admin
+      .from("tax_periods")
+      .select("id, pp30_status, pp30_filed_at, pnd3_status, pnd53_status")
+      .eq("company_id", company.id)
+      .eq("year", year)
+      .eq("month", monthNum)
+      .maybeSingle();
+    taxPeriod = pData;
+
+    // CIT annual summary for the selected year
+    const { data: cData } = await admin.rpc("get_cit_summary", {
+      p_company_id: company.id,
+      p_year:       year,
+      p_half:       "annual",
+    });
+    citRows = (cData ?? []) as any[];
   }
 
   // ── Derived totals ──────────────────────────────────────────────────────────
@@ -453,6 +487,20 @@ export default async function TaxPage({
       ══════════════════════════════════════════════════════════════════════ */}
       {tab === "expenses" && (
         <div>
+          {/* Two-system notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 mb-6 flex gap-3">
+            <span className="text-amber-500 text-lg shrink-0">⚠️</span>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">These are tax-grade expense invoices only</p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                Quick operational expenses logged on the{" "}
+                <a href="/admin/reports/cash" className="underline font-semibold">Cash Report</a>{" "}
+                are separate and not included here. For any supplier invoice you want to claim input VAT on,
+                enter it using the form below (supplier name + tax ID required).
+              </p>
+            </div>
+          </div>
+
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-2xl shadow p-5">
@@ -852,10 +900,46 @@ export default async function TaxPage({
       ══════════════════════════════════════════════════════════════════════ */}
       {tab === "export" && (
         <div className="space-y-6">
-          <p className="text-sm text-gray-500">
-            Downloads for <strong>{monthLabel}</strong>.
-            PP.30 CSV is for your records / tax. PND .txt files import directly into RD Prep software.
-          </p>
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <p className="text-sm text-gray-500">
+              Downloads for <strong>{monthLabel}</strong>.
+              PP.30 CSV is for your records. PND .txt files import into RD Prep. Downloading marks the period filed.
+            </p>
+            {/* Period filing status badges */}
+            <div className="flex gap-2 flex-wrap">
+              {(
+                [
+                  { label: "PP.30", status: taxPeriod?.pp30_status, filed_at: taxPeriod?.pp30_filed_at },
+                  { label: "PND 3", status: taxPeriod?.pnd3_status, filed_at: null },
+                  { label: "PND 53", status: taxPeriod?.pnd53_status, filed_at: null },
+                ] as { label: string; status: string | null | undefined; filed_at: string | null | undefined }[]
+              ).map(({ label, status, filed_at }) => (
+                <div key={label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
+                  status === "filed"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-500"
+                }`}>
+                  {status === "filed" ? "✓" : "○"} {label}
+                  {status === "filed" && filed_at && (
+                    <span className="font-normal opacity-70 ml-1">
+                      {new Date(filed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* March 2026 form notice */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-5 py-4 flex gap-3">
+            <span className="text-yellow-500 text-lg shrink-0">⚠️</span>
+            <p className="text-sm text-yellow-800">
+              <strong>March 2026 form update:</strong> The Revenue Department updated the PP.30 (ภ.พ.30) form in
+              March 2026. This export covers standard 7% domestic VAT and claimable input VAT. If you have
+              zero-rated exports, exempt sales, or receive services from foreign digital operators (ม.82/13),
+              verify those sections against the current RD form before your first submission.
+            </p>
+          </div>
 
           {/* PP.30 */}
           <div className="bg-white rounded-2xl shadow p-6">
@@ -922,7 +1006,7 @@ export default async function TaxPage({
               <div>
                 <h2 className="font-bold text-gray-900">PND 3 — Individual WHT Return</h2>
                 <p className="text-sm text-gray-500 mt-1 max-w-md">
-                  ภ.ง.ด.3 · Tab-delimited .txt file. Open RD Prep → Import .txt → verify → generate .rdx → submit at e-filing.rd.go.th
+                  ภ.ง.ด.3 · Tab-delimited .txt file. Open RD Prep &rarr; Import .txt &rarr; verify &rarr; generate .rdx &rarr; submit at e-filing.rd.go.th
                 </p>
               </div>
               <a
@@ -952,13 +1036,78 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* CIT note */}
-          <div className="bg-blue-50 rounded-2xl px-6 py-5 border border-blue-100">
-            <h3 className="font-bold text-blue-800 mb-1">CIT 51 & CIT 50 — Corporate Income Tax</h3>
-            <p className="text-sm text-blue-700">
-              The database is ready to generate CIT summaries. Once you have entered expenses for the full period,
-              go to <strong>Export</strong> and the CIT data will appear automatically using the <code>get_cit_summary()</code> function.
-              These are typically filed semi-annually (CIT 51, August) and annually (CIT 50, May).
+          {/* CIT 51 / CIT 50 — Corporate Income Tax */}
+          <div className="bg-white rounded-2xl shadow p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="font-bold text-gray-900">CIT — Corporate Income Tax</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  CIT 51 (semi-annual prepayment, due 31 Aug) &nbsp;|&nbsp; CIT 50 (annual return, due within 150 days of FY end)
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Showing full-year {year} estimate. Use H1/H2 links below for semi-annual figures.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <a
+                  href={`/api/tax/cit?year=${year}&half=annual&format=csv`}
+                  className="bg-gray-800 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-700 transition-colors whitespace-nowrap text-center"
+                >
+                  Annual CSV
+                </a>
+                <div className="flex gap-2">
+                  <a
+                    href={`/api/tax/cit?year=${year}&half=h1&format=csv`}
+                    className="flex-1 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors text-center"
+                  >
+                    H1 CSV
+                  </a>
+                  <a
+                    href={`/api/tax/cit?year=${year}&half=h2&format=csv`}
+                    className="flex-1 bg-gray-100 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-gray-200 transition-colors text-center"
+                  >
+                    H2 CSV
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {citRows && citRows.length > 0 && (
+              <div className="rounded-xl border border-gray-100 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left px-4 py-2.5 font-semibold text-gray-600">Item</th>
+                      <th className="text-right px-4 py-2.5 font-semibold text-gray-600">Amount (THB)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {citRows.map((row: any, i: number) => (
+                      <tr
+                        key={i}
+                        className={
+                          row.label === "Estimated Net Profit"
+                            ? "bg-blue-50 font-semibold"
+                            : row.label === "Estimated CIT (20%)"
+                            ? "bg-red-50 font-bold"
+                            : ""
+                        }
+                      >
+                        <td className="px-4 py-3 text-gray-700">{row.label}</td>
+                        <td className="px-4 py-3 text-right tabular-nums font-semibold text-gray-900">
+                          ฿{fmt(Number(row.amount))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 mt-4">
+              CIT estimate uses the standard 20% rate. SME rate is 15% on net profit up to ฿3,000,000 and
+              20% above that. Verify with your accountant before filing. These figures do not account for
+              depreciation schedules, deductible allowances, or prior-year loss carry-forwards.
             </p>
           </div>
         </div>

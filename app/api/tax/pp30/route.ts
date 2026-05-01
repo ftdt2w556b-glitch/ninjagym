@@ -68,6 +68,23 @@ export async function GET(req: NextRequest) {
 
   const filename = `PP30-${year}-${mm}.csv`;
 
+  // Mark this period as filed in tax_periods (best-effort, non-blocking).
+  // The download is treated as evidence the return has been prepared.
+  const { data: period } = await admin
+    .from("tax_periods")
+    .select("id")
+    .eq("company_id", company.id)
+    .eq("year", year)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (period?.id) {
+    await admin.from("tax_periods").update({
+      pp30_status:   "filed",
+      pp30_filed_at: new Date().toISOString(),
+    }).eq("id", period.id);
+  }
+
   return new NextResponse(csvLines, {
     headers: {
       "Content-Type":        "text/csv; charset=utf-8",

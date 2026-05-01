@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (!isUnlocked) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
-    const { action, staffId, staffType, staffName, amount, amountTendered, changeGiven, saleType, referenceId, items, notes, reason, notes1k, correctedMembershipType, correctedSessions } = body;
+    const { action, staffId, staffType, staffName, amount, amountTendered, changeGiven, saleType, referenceId, items, notes, reason, notes1k, correctedMembershipType, correctedSessions, customerName, customerTaxId } = body;
 
     if (!staffId) {
       return NextResponse.json({ error: "staffId required" }, { status: 400 });
@@ -35,7 +35,9 @@ export async function POST(request: NextRequest) {
         staff_name: staffName ?? null,
         drawer_opened: true,
         receipt_printed: false,
-        notes: notes ?? null,
+        notes:            notes          ?? null,
+        customer_name:    customerName   ?? null,
+        customer_tax_id:  customerTaxId  ?? null,
       };
       if (typeof notes1k === "number") salePayload.notes_1k = notes1k;
       if (amountTendered != null) salePayload.amount_tendered = Number(amountTendered);

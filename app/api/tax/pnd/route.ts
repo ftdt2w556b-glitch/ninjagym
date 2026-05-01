@@ -39,6 +39,20 @@ export async function GET(req: NextRequest) {
   const mm       = String(month).padStart(2, "0");
   const filename = `${pndType.toUpperCase()}-${year}-${mm}.txt`;
 
+  // Mark the relevant PND status as filed for this period.
+  const { data: period } = await admin
+    .from("tax_periods")
+    .select("id")
+    .eq("company_id", company.id)
+    .eq("year", year)
+    .eq("month", month)
+    .maybeSingle();
+
+  if (period?.id) {
+    const statusField = pndType === "pnd3" ? "pnd3_status" : "pnd53_status";
+    await admin.from("tax_periods").update({ [statusField]: "filed" }).eq("id", period.id);
+  }
+
   return new NextResponse(data as string, {
     headers: {
       "Content-Type":        "text/plain; charset=utf-8",

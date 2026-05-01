@@ -60,6 +60,8 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const [shopItemId, setShopItemId] = useState("tshirt_kids");
   const [shopOption, setShopOption] = useState("S");
   const [notes, setNotes] = useState("");
+  const [customerName, setCustomerName]   = useState("");
+  const [customerTaxId, setCustomerTaxId] = useState("");
   const [referenceId, setReferenceId] = useState<number | null>(null);
 
   // Pending cash correction (admin/manager can fix wrong type before collecting)
@@ -377,7 +379,9 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         saleType,
         referenceId: referenceId ?? null,
         items: cart.map((l) => ({ name: l.label, qty: l.qty, price: l.unit, item_id: l.item_id, variant: l.variant })),
-        notes: notes || null,
+        notes:         notes || null,
+        customerName:  customerName  || null,
+        customerTaxId: customerTaxId || null,
         notes1k,
         // Send corrected membership details so the registration gets patched correctly
         ...(referenceId && showCorrect ? {
@@ -449,6 +453,8 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
     setResult({ success: true, saleId, printerOk, change: changeAmt, time });
     setCart([]);
     setNotes("");
+    setCustomerName("");
+    setCustomerTaxId("");
     setCashInput("");
     setNotes1k(0);
     setCountdown(20); // auto-logout after 20 seconds
@@ -1147,6 +1153,19 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             <label className="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
             <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Member name, special note"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+          </div>
+
+          {/* B2B Customer — for tax invoices issued to a company */}
+          <div className="bg-white rounded-2xl shadow p-4">
+            <label className="block text-sm font-semibold text-gray-700 mb-0.5">B2B Customer (optional)</label>
+            <p className="text-xs text-gray-400 mb-3">Only needed when issuing a formal tax invoice to a company. Leave blank for walk-in / individual customers.</p>
+            <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Company name"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+            <input type="text" value={customerTaxId} onChange={(e) => setCustomerTaxId(e.target.value)}
+              placeholder="Tax ID (13 digits)"
+              maxLength={13}
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
           </div>
         </div>
