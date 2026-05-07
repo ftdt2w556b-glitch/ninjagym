@@ -112,8 +112,10 @@ export default function TimersTab() {
   const [mins, setMins]   = useState("");
   const [adding, setAdding] = useState(false);
 
-  // Track which timer keys have already chimed (in-memory only — chime once per session)
-  const chimedRef = useRef<Set<string>>(new Set());
+  // Track the highest "overdue minute" we've already chimed for each timer key.
+  // -1 means never chimed. 0 = chimed at expiry, 1 = chimed at 1-min overdue, etc.
+  // This drives the every-minute repeat chime for negative timers until they're dismissed.
+  const chimedOverdueRef = useRef<Map<string, number>>(new Map());
   // Track dismissed auto-timer keys (persisted in localStorage; cleared next day)
   const [dismissedAuto, setDismissedAuto] = useState<Set<string>>(new Set());
 
@@ -213,14 +215,28 @@ export default function TimersTab() {
     return list.sort((a, b) => a.endsAtMs - b.endsAtMs);
   }, [data, dismissedAuto]);
 
-  // Chime when a timer crosses zero (after this component has loaded — don't chime
-  // for things that already expired before the page was opened).
+  // Chime when a timer crosses zero, then re-chime every minute it stays overdue
+  // until the user dismisses it. We don't spam the chime for timers that were
+  // already overdue at page load — we just align with the next minute mark.
   const loadedAtRef = useRef<number>(Date.now());
   useEffect(() => {
     const now = Date.now();
     for (const t of timers) {
-      if (t.endsAtMs <= now && t.endsAtMs >= loadedAtRef.current && !chimedRef.current.has(t.key)) {
-        chimedRef.current.add(t.key);
+      const remaining = t.endsAtMs - now;
+      if (remaining > 0) continue;
+      const overdueMin = Math.floor(-remaining / 60_000); // 0 at expiry, 1 after 1 min, ...
+      const last = chimedOverdueRef.current.get(t.key);
+      if (last === undefined) {
+        // First time we're seeing this timer. If it expired before the page loaded,
+        // suppress the catch-up chime by recording the current overdue minute.
+        if (t.endsAtMs < loadedAtRef.current) {
+          chimedOverdueRef.current.set(t.key, overdueMin);
+        } else {
+          chimedOverdueRef.current.set(t.key, overdueMin);
+          playChime();
+        }
+      } else if (overdueMin > last) {
+        chimedOverdueRef.current.set(t.key, overdueMin);
         playChime();
       }
     }
@@ -277,7 +293,7 @@ export default function TimersTab() {
     <div>
       <h1 className="text-xl font-bold text-gray-900 mb-1">Timers</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Live session countdowns. Auto-starts when staff approves a check-in.
+        Auto-starts when staff approves a check-in. Close only after departure.
       </p>
 
       {/* Custom timer form */}
@@ -290,7 +306,7 @@ export default function TimersTab() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Birthday Pin Cake"
+            placeholder="e.g. Musashi, Hanzo and Kawasaki"
             maxLength={60}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
           />
