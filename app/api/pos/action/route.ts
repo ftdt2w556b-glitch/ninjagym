@@ -66,9 +66,20 @@ export async function POST(request: NextRequest) {
         // Fetch registration details for check-in
         const { data: reg } = await admin
           .from("member_registrations")
-          .select("name, kids_count, membership_type, sessions_remaining")
+          .select("name, kids_count, kids_names, parent_member_id, membership_type, sessions_remaining")
           .eq("id", referenceId)
           .single();
+
+        // Top-ups don't store kids_names — pull from the parent registration.
+        let regKidsNames: string | null = (reg?.kids_names as string | null) ?? null;
+        if (!regKidsNames && reg?.parent_member_id) {
+          const { data: parent } = await admin
+            .from("member_registrations")
+            .select("kids_names")
+            .eq("id", reg.parent_member_id)
+            .maybeSingle();
+          regKidsNames = (parent?.kids_names as string | null) ?? null;
+        }
 
         const regUpdate: Record<string, unknown> = {
           slip_status: "approved",
@@ -96,6 +107,7 @@ export async function POST(request: NextRequest) {
             member_id:       referenceId,
             member_name:     reg.name,
             kids_count:      kidsCount,
+            kids_names:      regKidsNames,
             membership_type: finalType,
             notes:           `Check-in by ${staffName ?? "staff"} | ${kidsCount} kid${kidsCount !== 1 ? "s" : ""}`,
             check_in_at:     new Date().toISOString(),
