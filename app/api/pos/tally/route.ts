@@ -1,12 +1,26 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { bangkokToday, bangkokStartOfDay, bangkokEndOfDay } from "@/lib/timezone";
+import { cookies } from "next/headers";
+
+async function isPosUnlocked() {
+  const cookieStore = await cookies();
+  const posAuth = cookieStore.get("pos_auth")?.value;
+  if (!posAuth) return false;
+  const admin = createAdminClient();
+  const { data } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+  const expected = data?.value ?? process.env.POS_PASSWORD ?? null;
+  return expected ? posAuth === expected : posAuth === "unlocked";
+}
 
 /**
  * GET /api/pos/tally
  * Returns today's POS cash breakdown: total, drawer (sub-1K), box (1K notes).
  */
 export async function GET() {
+  if (!(await isPosUnlocked())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const admin = createAdminClient();
     const [{ data, error }, { data: removedSetting }, { data: removedDateSetting }, { data: floatSetting }, { data: expectedSetting }, { data: expectedDateSetting }] = await Promise.all([

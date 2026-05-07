@@ -42,11 +42,36 @@ export async function POST(
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // Caller must pass totalCheckIns so we can verify they actually have a session to redeem.
-  // We trust the value from client-side — it's derived from attendance_logs which are staff-controlled.
-  const { totalCheckIns } = body as { totalCheckIns?: number };
+  // Server-side eligibility check — count attendance_logs ourselves so the
+  // client can't claim more sessions than they've earned. Mirrors the rule in
+  // app/(public)/qr/card/[id]/page.tsx and components/public/QrCardClient.tsx:
+  // 1 pip per unique Bangkok day, excluding climb_unguided and free_session_loyalty.
+  const { data: topUps } = await admin
+    .from("member_registrations")
+    .select("id")
+    .eq("parent_member_id", memberId)
+    .eq("slip_status", "approved");
+
+  const allIds = [memberId, ...((topUps ?? []).map((r) => r.id as number))];
+
+  const { data: logs } = await admin
+    .from("attendance_logs")
+    .select("membership_type, check_in_at")
+    .in("member_id", allIds);
+
+  const uniqueDays = new Set(
+    (logs ?? [])
+      .filter((r) => r.membership_type !== "climb_unguided" && r.membership_type !== "free_session_loyalty")
+      .map((r) => {
+        if (!r.check_in_at) return null;
+        const d = new Date(new Date(r.check_in_at as string).getTime() + 7 * 3600 * 1000);
+        return d.toISOString().slice(0, 10);
+      })
+      .filter((d): d is string => d !== null)
+  );
+
   const FREE_SESSION_CHECKINS = 10;
-  const freeSessionsEarned = Math.floor((totalCheckIns ?? 0) / FREE_SESSION_CHECKINS);
+  const freeSessionsEarned = Math.floor(uniqueDays.size / FREE_SESSION_CHECKINS);
   const redeemed = (member.free_sessions_redeemed as number) ?? 0;
 
   if (freeSessionsEarned <= redeemed) {

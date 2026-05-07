@@ -9,6 +9,11 @@ const BASE_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
   MEMBERSHIP_TYPES.map((m) => [`desc_${m.id}`, m.note ?? ""])
 );
 
+// Public GET only returns price/description keys. Other settings (e.g. pos_password,
+// drawer_float, drawer_removed) must NEVER be returned here — they are admin-only
+// and read directly via the service-role client from server components.
+const isPublicKey = (key: string) => key.startsWith("price_") || key.startsWith("desc_");
+
 export async function GET() {
   try {
     const admin = createAdminClient();
@@ -21,13 +26,13 @@ export async function GET() {
       return NextResponse.json({ ...BASE_PRICES, ...BASE_DESCRIPTIONS });
     }
 
-    // Start with all static defaults, overlay DB values
     const result: Record<string, string | number> = {
       ...BASE_PRICES,
       ...BASE_DESCRIPTIONS,
     };
     for (const row of data) {
-      result[row.key] = row.value; // keep as string — page parses
+      if (!isPublicKey(row.key)) continue;
+      result[row.key] = row.value;
     }
 
     return NextResponse.json(result);

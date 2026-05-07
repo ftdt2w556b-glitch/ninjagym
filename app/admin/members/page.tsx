@@ -6,6 +6,7 @@ import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
 import EditCheckInButton from "@/components/admin/EditCheckInButton";
 import PeriodPicker from "@/components/admin/PeriodPicker";
+import TimersTab from "@/components/admin/TimersTab";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -146,6 +147,7 @@ export default async function MembersPage({
   const tabs = [
     { id: "members",  label: "Members" },
     { id: "checkins", label: "Check-ins" },
+    { id: "timers",   label: "Timers" },
   ];
 
   type MemberRow = {
@@ -756,6 +758,9 @@ export default async function MembersPage({
           )}
         </div>
       )}
+
+      {/* ── Timers Tab ── */}
+      {tab === "timers" && <TimersTab />}
     </div>
   );
 }

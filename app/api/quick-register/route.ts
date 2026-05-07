@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 // Session-based types get sessions_remaining = 1 on creation
 const SESSION_TYPES = new Set([
@@ -7,14 +8,45 @@ const SESSION_TYPES = new Set([
   "day_camp", "combo_game_train", "all_day",
 ]);
 
+const STAFF_ROLES = ["admin", "manager", "staff", "owner"];
+
+async function isAuthorized() {
+  // Accept either: a logged-in staff/admin user, or a valid pos_auth cookie.
+  const cookieStore = await cookies();
+  const posAuth = cookieStore.get("pos_auth")?.value;
+  const admin = createAdminClient();
+
+  if (posAuth) {
+    const { data } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+    const expected = data?.value ?? process.env.POS_PASSWORD ?? null;
+    const ok = expected ? posAuth === expected : posAuth === "unlocked";
+    if (ok) return true;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  return !!profile && STAFF_ROLES.includes(profile.role);
+}
+
 /**
  * POST /api/quick-register
  *
  * Walk-in quick registration from the scanner page.
  * Cash → member approved immediately, cash_sale logged, drawer logged, auto checked-in.
  * PromptPay → member pending, no check-in (needs approval first).
+ *
+ * Auth: requires either pos_auth (kiosk) or a logged-in staff session.
  */
 export async function POST(request: NextRequest) {
+  if (!(await isAuthorized())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const {

@@ -1,9 +1,29 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+
+const TAX_ROLES = ["admin", "owner", "tax"];
+
+async function requireTaxAccess() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile || !TAX_ROLES.includes(profile.role)) return null;
+  return user;
+}
 
 // GET /api/tax/pp30?year=2026&month=4
 // Returns a CSV summary of the PP.30 monthly VAT report.
 export async function GET(req: NextRequest) {
+  if (!(await requireTaxAccess())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const year  = parseInt(searchParams.get("year")  ?? "0", 10);
   const month = parseInt(searchParams.get("month") ?? "0", 10);

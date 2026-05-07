@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+
+async function isPosUnlocked() {
+  const cookieStore = await cookies();
+  const posAuth = cookieStore.get("pos_auth")?.value;
+  if (!posAuth) return false;
+  const admin = createAdminClient();
+  const { data } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
+  const expected = data?.value ?? process.env.POS_PASSWORD ?? null;
+  return expected ? posAuth === expected : posAuth === "unlocked";
+}
 
 /**
  * POST /api/pos/member-lookup
@@ -7,6 +18,9 @@ import { createAdminClient } from "@/lib/supabase/server";
  * Returns the primary (parent) member record only.
  */
 export async function POST(request: NextRequest) {
+  if (!(await isPosUnlocked())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const { phone } = await request.json();
   const clean = (phone ?? "").trim().replace(/[\s\-().+]/g, "");
 

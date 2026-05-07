@@ -1,5 +1,21 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+
+const TAX_ROLES = ["admin", "owner", "tax"];
+
+async function requireTaxAccess() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile || !TAX_ROLES.includes(profile.role)) return null;
+  return user;
+}
 
 // GET /api/tax/cit?year=2026&half=annual|h1|h2
 // Returns CIT summary data (revenue, expenses, net profit, estimated CIT).
@@ -10,6 +26,10 @@ import { NextRequest, NextResponse } from "next/server";
 //   h2     = Jul-Dec
 //   annual = Full year (CIT 50 annual return, due May following year)
 export async function GET(req: NextRequest) {
+  if (!(await requireTaxAccess())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const year   = parseInt(searchParams.get("year") ?? "0", 10);
   const half   = searchParams.get("half") ?? "annual";

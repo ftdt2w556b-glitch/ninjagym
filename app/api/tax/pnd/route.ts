@@ -1,9 +1,29 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+
+const TAX_ROLES = ["admin", "owner", "tax"];
+
+async function requireTaxAccess() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile || !TAX_ROLES.includes(profile.role)) return null;
+  return user;
+}
 
 // GET /api/tax/pnd?type=pnd3&year=2026&month=4
 // Returns a tab-delimited .txt file for import into Thailand RD Prep software.
 export async function GET(req: NextRequest) {
+  if (!(await requireTaxAccess())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const pndType = searchParams.get("type") ?? "pnd3"; // "pnd3" or "pnd53"
   const year    = parseInt(searchParams.get("year")  ?? "0", 10);

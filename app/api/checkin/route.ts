@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+
+const STAFF_ROLES = ["admin", "manager", "staff", "owner"];
+
+async function requireStaff() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  return !!profile && STAFF_ROLES.includes(profile.role);
+}
 
 /**
  * POST /api/checkin
@@ -10,8 +25,14 @@ import { createAdminClient } from "@/lib/supabase/server";
  * 3. Decrements sessions_remaining (if session-based membership)
  * 4. Awards 1 loyalty point per check-in (if email on file)
  * Returns: { success, attendance_id, sessions_remaining, warned }
+ *
+ * Auth: requires a logged-in staff/admin user (called from admin CheckInButton).
+ * Parent-driven check-in goes through /api/checkin/request → /api/checkin/handle instead.
  */
 export async function POST(request: NextRequest) {
+  if (!(await requireStaff())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const member_id = Number(body.member_id);
