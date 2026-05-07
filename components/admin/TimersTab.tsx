@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import { getProgramDuration } from "@/lib/program-duration";
 
+// Server-side dismissal is the source of truth (attendance_logs.timer_dismissed_at
+// for auto, custom_timers.dismissed for custom). We keep a tiny in-memory hide-set
+// so the dismissed card disappears instantly while the next poll refreshes.
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 type AutoTimer = {
@@ -99,7 +103,6 @@ function playChime() {
 // ─── Component ────────────────────────────────────────────────────────────
 
 const POLL_MS = 30_000;
-const DISMISSED_KEY = "ng_timers_dismissed_v1";
 
 export default function TimersTab() {
   const [data, setData]   = useState<ApiResponse | null>(null);
@@ -116,31 +119,9 @@ export default function TimersTab() {
   // -1 means never chimed. 0 = chimed at expiry, 1 = chimed at 1-min overdue, etc.
   // This drives the every-minute repeat chime for negative timers until they're dismissed.
   const chimedOverdueRef = useRef<Map<string, number>>(new Map());
-  // Track dismissed auto-timer keys (persisted in localStorage; cleared next day)
-  const [dismissedAuto, setDismissedAuto] = useState<Set<string>>(new Set());
-
-  // Load dismissed-set from localStorage (only keep today's entries — Bangkok day)
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DISMISSED_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { day: string; ids: string[] };
-      const today = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-      if (parsed.day === today) setDismissedAuto(new Set(parsed.ids));
-      else localStorage.removeItem(DISMISSED_KEY);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const persistDismissed = useCallback((next: Set<string>) => {
-    const today = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-    try {
-      localStorage.setItem(DISMISSED_KEY, JSON.stringify({ day: today, ids: [...next] }));
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Optimistic hide-set so a dismissed card disappears instantly until the next poll
+  // confirms it server-side.
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
 
   // Fetch timers (poll every 30s, plus immediate refresh on mount)
   const fetchTimers = useCallback(async () => {
@@ -176,7 +157,7 @@ export default function TimersTab() {
 
     for (const t of data.autoTimers) {
       const key = `auto:${t.id}`;
-      if (dismissedAuto.has(key)) continue;
+      if (hiddenKeys.has(key)) continue;
       const dur = getProgramDuration(t.membershipType, data.daycampEndTime);
       if (!dur) continue;
       const startMs = new Date(t.startedAt).getTime();
@@ -202,8 +183,10 @@ export default function TimersTab() {
     }
 
     for (const c of data.customTimers) {
+      const key = `custom:${c.id}`;
+      if (hiddenKeys.has(key)) continue;
       list.push({
-        key: `custom:${c.id}`,
+        key,
         kind: "custom",
         rawId: c.id,
         title: c.name,
@@ -213,7 +196,7 @@ export default function TimersTab() {
     }
 
     return list.sort((a, b) => a.endsAtMs - b.endsAtMs);
-  }, [data, dismissedAuto]);
+  }, [data, hiddenKeys]);
 
   // Chime when a timer crosses zero, then re-chime every minute it stays overdue
   // until the user dismisses it. We don't spam the chime for timers that were
@@ -270,19 +253,23 @@ export default function TimersTab() {
   }
 
   async function dismiss(t: RenderTimer) {
-    if (t.kind === "custom") {
+    // Hide instantly for snappy UX; the next poll will reconfirm from the server.
+    setHiddenKeys((prev) => {
+      const next = new Set(prev);
+      next.add(t.key);
+      return next;
+    });
+    try {
       await fetch("/api/timers", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: t.rawId }),
+        body: JSON.stringify({ kind: t.kind, id: t.rawId }),
       });
-      await fetchTimers();
-    } else {
-      const next = new Set(dismissedAuto);
-      next.add(t.key);
-      setDismissedAuto(next);
-      persistDismissed(next);
+    } catch {
+      // If the server call fails, refetch so the timer reappears rather than
+      // staying hidden only on this device.
     }
+    await fetchTimers();
   }
 
   // ── Render ───────────────────────────────────────────────────────────────

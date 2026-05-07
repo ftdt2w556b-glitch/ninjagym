@@ -43,6 +43,7 @@ export async function GET() {
       .select("id, member_id, member_name, kids_count, kids_names, membership_type, check_in_at")
       .gte("check_in_at", bangkokStartOfDay())
       .lte("check_in_at", bangkokEndOfDay())
+      .is("timer_dismissed_at", null)
       .order("check_in_at", { ascending: true }),
     admin
       .from("custom_timers")
@@ -124,11 +125,12 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * PATCH /api/timers — dismiss a custom timer.
- * Body: { id: number }
+ * PATCH /api/timers — dismiss a timer for everyone.
+ * Body: { kind: "auto" | "custom", id: number }
  *
- * Auto-timers (attendance_logs) aren't dismissed here — staff dismiss them
- * client-side and the row falls off naturally at end of day.
+ * For "custom" we flip custom_timers.dismissed.
+ * For "auto" we stamp attendance_logs.timer_dismissed_at so the row drops off
+ * the live Timers tab for all staff (without affecting attendance reporting).
  */
 export async function PATCH(request: NextRequest) {
   if (!(await requireStaff())) {
@@ -137,13 +139,20 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const id = Number(body.id);
+  const kind = body.kind === "auto" ? "auto" : "custom";
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
   const admin = createAdminClient();
-  const { error } = await admin
-    .from("custom_timers")
-    .update({ dismissed: true })
-    .eq("id", id);
+  const { error } =
+    kind === "auto"
+      ? await admin
+          .from("attendance_logs")
+          .update({ timer_dismissed_at: new Date().toISOString() })
+          .eq("id", id)
+      : await admin
+          .from("custom_timers")
+          .update({ dismissed: true })
+          .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
