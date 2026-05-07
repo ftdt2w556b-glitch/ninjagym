@@ -186,19 +186,15 @@ export default function TimersTab() {
       }
       const programLabel =
         MEMBERSHIP_TYPES.find((m) => m.id === t.membershipType)?.label ?? t.membershipType;
-      const subtitleParts: string[] = [];
-      if (t.kidsNames) {
-        subtitleParts.push(t.kidsCount > 1 ? `${t.kidsNames} (${t.kidsCount})` : t.kidsNames);
-      } else if (t.kidsCount > 1) {
-        subtitleParts.push(`${t.kidsCount} kids`);
-      }
-      subtitleParts.push(programLabel);
+      const title = t.kidsNames
+        ? (t.kidsCount > 1 ? `${t.kidsNames} (${t.kidsCount})` : t.kidsNames)
+        : t.memberName;
       list.push({
         key,
         kind: "auto",
         rawId: t.id,
-        title: t.memberName,
-        subtitle: subtitleParts.join(" · "),
+        title,
+        subtitle: programLabel,
         endsAtMs,
       });
     }
