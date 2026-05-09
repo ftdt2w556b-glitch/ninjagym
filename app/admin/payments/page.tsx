@@ -98,10 +98,25 @@ export default async function PaymentsPage({
   if (status) shopQuery = shopQuery.eq("slip_status", status);
   else shopQuery = shopQuery.in("slip_status", ["pending_review", "cash_pending"]);
 
-  const [{ data: members }, { data: events }, { data: shopOrders }] = await Promise.all([
+  // ── Approved belt perks ─────────────────────────────────────
+  // Perks live in pending_checkins (status=approved, type LIKE 'belt_perk_%').
+  // They have no slip / amount, so we surface them as their own subsection on
+  // the Approved Members tab so staff have a visible record of redemptions.
+  const showPerks = source === "members" && status === "approved";
+  let perksQuery = admin
+    .from("pending_checkins")
+    .select("id, member_id, member_name, kids_count, kids_names, membership_type, membership_label, handled_at, handled_by, requested_at")
+    .eq("status", "approved")
+    .like("membership_type", "belt_perk_%")
+    .order("handled_at", { ascending: false, nullsFirst: false })
+    .limit(200);
+  if (q) perksQuery = perksQuery.ilike("member_name", `%${q}%`);
+
+  const [{ data: members }, { data: events }, { data: shopOrders }, { data: perks }] = await Promise.all([
     source === "members" ? membersQuery : Promise.resolve({ data: [] }),
     source === "events"  ? eventsQuery  : Promise.resolve({ data: [] }),
     source === "shop"    ? shopQuery    : Promise.resolve({ data: [] }),
+    showPerks            ? perksQuery   : Promise.resolve({ data: [] }),
   ]);
 
   // Build fallback kids_names map: for members missing kids_names, look up by phone
@@ -222,6 +237,46 @@ export default async function PaymentsPage({
       {/* ── Members list ── */}
       {source === "members" && (
         <div className="flex flex-col gap-4">
+          {/* Approved belt perks (only on Approved tab) */}
+          {showPerks && (perks?.length ?? 0) > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">🥋</span>
+                <h2 className="font-bold text-amber-900 text-sm">Belt Perks Approved</h2>
+                <span className="text-xs text-amber-700 bg-amber-100 rounded-full px-2 py-0.5 font-semibold">
+                  {perks?.length ?? 0}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {perks?.map((p) => {
+                  const handledAt = p.handled_at ? new Date(p.handled_at as string) : null;
+                  const handledStr = handledAt
+                    ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })
+                    : "—";
+                  return (
+                    <div key={p.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-amber-100">
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 text-sm">{p.member_name}</p>
+                        <p className="text-xs text-amber-800 font-semibold mt-0.5">
+                          {(p.membership_label as string | null) ?? (p.membership_type as string)}
+                        </p>
+                        {p.kids_names && (
+                          <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {p.kids_names as string}</p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-gray-500">{handledStr}</p>
+                        {p.handled_by && (
+                          <p className="text-xs text-gray-400">by {p.handled_by as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {["admin", "owner"].includes(userRole) && (
             <form action={cleanupTestRecords} className="self-end">
               <button
