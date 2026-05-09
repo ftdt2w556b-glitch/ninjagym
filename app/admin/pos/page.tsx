@@ -165,7 +165,7 @@ export default async function AdminPosPage({
   // Recent POS activity — last 20 cash sales
   const { data: recentSales } = await admin
     .from("cash_sales")
-    .select("id, processed_at, amount, amount_tendered, change_given, sale_type, staff_name, notes, items")
+    .select("id, processed_at, amount, amount_tendered, change_given, sale_type, staff_name, notes, items, notes_1k")
     .order("processed_at", { ascending: false })
     .limit(20);
 
@@ -520,8 +520,10 @@ export default async function AdminPosPage({
                 const dt = new Date(s.processed_at as string);
                 const dateStr = dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok", day: "2-digit", month: "short" });
                 const timeStr = dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true });
+                const notes1k  = Number((s as Record<string, unknown>).notes_1k ?? 0);
+                const inBox    = notes1k > 0;
                 return (
-                  <tr key={s.id} className="hover:bg-gray-50">
+                  <tr key={s.id} className={inBox ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-50"}>
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{dateStr} {timeStr}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">{s.staff_name ?? "—"}</td>
@@ -563,6 +565,11 @@ export default async function AdminPosPage({
                         <span className="text-orange-600 font-semibold">฿{Number((s as Record<string, unknown>).change_given).toLocaleString()} change</span>
                       ) : (
                         <span className="text-gray-300">—</span>
+                      )}
+                      {inBox && (
+                        <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-200 rounded-full px-2 py-0.5">
+                          📦 {notes1k}× ฿1k in box
+                        </p>
                       )}
                     </td>
                   </tr>
