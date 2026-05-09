@@ -65,7 +65,20 @@ export async function POST(req: NextRequest) {
         .eq("id", pending.member_id);
 
     } else if (isPerkRedemption) {
-      // Nothing to do — staff honour is the record; just fall through to mark approved below.
+      // Log the perk redemption as a check-in so it appears in the Check-ins tab
+      // and counts toward the day's record. We deliberately leave membership_type
+      // NULL so (a) no auto-timer is generated and (b) the Check-ins UI doesn't
+      // try to render the raw "belt_perk_*" id. The perk label lives in `notes`.
+      const perkLabel = pending.membership_label ?? pending.membership_type ?? "Belt perk";
+      await admin.from("attendance_logs").insert({
+        member_id:       pending.member_id,
+        member_name:     pending.member_name,
+        kids_count:      pending.kids_count,
+        kids_names:      pending.kids_names ?? null,
+        membership_type: null,
+        notes:           `🥋 PERK: ${perkLabel} — approved by ${staff_name ?? "staff"}`,
+        check_in_at:     now,
+      });
 
     } else if (!isBulkPurchase) {
       // Create the attendance log
