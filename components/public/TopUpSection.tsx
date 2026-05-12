@@ -2,7 +2,6 @@
 
 import { useState, useEffect, lazy, Suspense } from "react";
 import Image from "next/image";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 import {
@@ -94,77 +93,64 @@ export default function TopUpSection({
       const raw = localStorage.getItem(SESSION_KEY);
       if (raw) stored = JSON.parse(raw);
     } catch { /* ignore */ }
-    if (!stored) return;
+    if (!stored || !cardToken) return;
 
-    const supabase = createSupabaseBrowserClient();
+    let cancelled = false;
+    let timer: number | null = null;
 
-    if (stored.method === "cash") {
-      // Cash: verify still cash_pending in member_registrations
-      supabase
-        .from("member_registrations")
-        .select("id, slip_status")
-        .eq("id", stored.regId)
-        .eq("slip_status", "cash_pending")
-        .maybeSingle()
-        .then(({ data: reg }) => {
-          if (!reg) {
-            // Already processed at POS or cancelled — clear storage
-            localStorage.removeItem(SESSION_KEY);
-            return;
-          }
+    // One token-gated polling endpoint covers both flows:
+    //  - cash: watch member_registrations.slip_status flip away from cash_pending
+    //  - promptpay: watch pending_checkins.status flip away from pending
+    // Replaces realtime subscriptions that either leaked PII (pending_checkins)
+    // or never fired at all (member_registrations isn't in the publication).
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        const res = await fetch(`/api/members/${stored!.regId}/topup-status?token=${encodeURIComponent(cardToken!)}`);
+        if (!res.ok) return;
+        const { slip_status, pending_status } = (await res.json()) as {
+          slip_status: string | null;
+          pending_status: string | null;
+        };
+        const cashDone        = stored!.method === "cash" && slip_status !== "cash_pending";
+        const promptpayDone   = stored!.method !== "cash" && pending_status !== null && pending_status !== "pending";
+        const promptpayMissing = stored!.method !== "cash" && pending_status === null;
+
+        if (cashDone || promptpayDone || promptpayMissing) {
+          localStorage.removeItem(SESSION_KEY);
+          setPendingPurchase(null);
+          if (timer !== null) clearInterval(timer);
+        }
+      } catch { /* next tick will retry */ }
+    };
+
+    // Initial fetch decides whether to surface the pending UI at all.
+    (async () => {
+      try {
+        const res = await fetch(`/api/members/${stored!.regId}/topup-status?token=${encodeURIComponent(cardToken!)}`);
+        if (!res.ok) return;
+        const { slip_status, pending_status } = (await res.json()) as {
+          slip_status: string | null;
+          pending_status: string | null;
+        };
+        const stillCash       = stored!.method === "cash" && slip_status === "cash_pending";
+        const stillPromptpay  = stored!.method !== "cash" && pending_status === "pending";
+        if (stillCash || stillPromptpay) {
           setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
+          timer = window.setInterval(tick, 3000);
+        } else {
+          // Already processed since the parent left the page — clear and stop.
+          localStorage.removeItem(SESSION_KEY);
+        }
+      } catch { /* fall through; will retry on next mount */ }
+    })();
 
-          // Auto-clear when POS approves (realtime on member_registrations)
-          const channel = supabase
-            .channel(`cash-pending-${stored!.regId}`)
-            .on("postgres_changes", {
-              event: "UPDATE", schema: "public",
-              table: "member_registrations", filter: `id=eq.${stored!.regId}`,
-            }, (payload) => {
-              const updated = payload.new as { slip_status: string };
-              if (updated.slip_status !== "cash_pending") {
-                localStorage.removeItem(SESSION_KEY);
-                setPendingPurchase(null);
-              }
-            })
-            .subscribe();
-          return () => { supabase.removeChannel(channel); };
-        });
-    } else {
-      // PromptPay: verify still pending via pending_checkins (has public SELECT RLS)
-      supabase
-        .from("pending_checkins")
-        .select("id, status")
-        .eq("member_id", stored.regId)
-        .eq("status", "pending")
-        .maybeSingle()
-        .then(({ data: pending }) => {
-          if (!pending) {
-            // Already approved/rejected — clear storage and don't block form
-            localStorage.removeItem(SESSION_KEY);
-            return;
-          }
-          setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
-
-          // Auto-clear when staff approves/rejects (realtime)
-          const channel = supabase
-            .channel(`topup-pending-${pending.id}`)
-            .on("postgres_changes", {
-              event: "UPDATE", schema: "public",
-              table: "pending_checkins", filter: `id=eq.${pending.id}`,
-            }, (payload) => {
-              const updated = payload.new as { status: string };
-              if (updated.status !== "pending") {
-                localStorage.removeItem(SESSION_KEY);
-                setPendingPurchase(null);
-              }
-            })
-            .subscribe();
-          return () => { supabase.removeChannel(channel); };
-        });
-    }
+    return () => {
+      cancelled = true;
+      if (timer !== null) clearInterval(timer);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberId]);
+  }, [memberId, cardToken]);
 
   const selectedMt = MEMBERSHIP_TYPES.find((m) => m.id === selectedType);
   const isBulk     = !!selectedMt?.bulk;

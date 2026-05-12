@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
 export interface BeltPerk {
@@ -33,41 +32,36 @@ export default function BeltPerksSection({
   const [phases, setPhases]       = useState<Record<string, Phase>>({});
   const [pendingIds, setPendingIds] = useState<Record<string, number | null>>({});
 
-  // Realtime subscription — one channel per pending perk
+  // Poll for perk approval/rejection — one timer per pending perk.
+  // Replaces a realtime channel that exposed every pending_checkins row to
+  // anon subscribers. See /api/checkin/pending-status for the gated endpoint.
   useEffect(() => {
-    const supabase  = createSupabaseBrowserClient();
-    const channels: ReturnType<typeof supabase.channel>[] = [];
+    const timers: number[] = [];
+
+    const checkOne = async (perkType: string, pendingId: number) => {
+      try {
+        const res = await fetch(`/api/checkin/pending-status?id=${pendingId}&token=${encodeURIComponent(cardToken)}`);
+        if (!res.ok) return;
+        const { status } = (await res.json()) as { status: string };
+        if (status === "approved" || status === "rejected") {
+          setPhases((p) => ({ ...p, [perkType]: status }));
+          setTimeout(() => {
+            setPhases((p)     => ({ ...p, [perkType]: "idle" }));
+            setPendingIds((p) => ({ ...p, [perkType]: null }));
+          }, 4000);
+        }
+      } catch { /* next tick will retry */ }
+    };
 
     for (const [perkType, pendingId] of Object.entries(pendingIds)) {
       if (!pendingId) continue;
-      const channel = supabase
-        .channel(`belt-perk-${pendingId}`)
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "pending_checkins", filter: `id=eq.${pendingId}` },
-          (payload) => {
-            const s = (payload.new as { status: string }).status;
-            if (s === "approved") {
-              setPhases((p) => ({ ...p, [perkType]: "approved" }));
-              setTimeout(() => {
-                setPhases((p)    => ({ ...p, [perkType]: "idle" }));
-                setPendingIds((p) => ({ ...p, [perkType]: null }));
-              }, 4000);
-            } else if (s === "rejected") {
-              setPhases((p) => ({ ...p, [perkType]: "rejected" }));
-              setTimeout(() => {
-                setPhases((p)    => ({ ...p, [perkType]: "idle" }));
-                setPendingIds((p) => ({ ...p, [perkType]: null }));
-              }, 4000);
-            }
-          }
-        )
-        .subscribe();
-      channels.push(channel);
+      // Fire one immediately, then poll every 3s.
+      checkOne(perkType, pendingId);
+      timers.push(window.setInterval(() => checkOne(perkType, pendingId), 3000));
     }
 
-    return () => { channels.forEach((c) => { supabase.removeChannel(c); }); };
-  }, [pendingIds]);
+    return () => { timers.forEach((t) => clearInterval(t)); };
+  }, [pendingIds, cardToken]);
 
   async function handleRedeem(perkType: string, perkLabel: string) {
     const phase = phases[perkType] ?? "idle";

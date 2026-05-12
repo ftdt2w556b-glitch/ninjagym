@@ -59,24 +59,26 @@ export default function UseSessionButton({
       });
   }, [memberId]);
 
-  // Subscribe to realtime once we have a pendingId
+  // Poll for status changes (replaces a realtime channel that leaked every
+  // pending_checkins row to anon subscribers — see /api/checkin/pending-status).
   useEffect(() => {
     if (!pendingId) return;
-    const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`pending-${pendingId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pending_checkins", filter: `id=eq.${pendingId}` },
-        (payload) => {
-          const s = (payload.new as { status: string }).status;
-          if (s === "approved") setPhase("approved");
-          else if (s === "rejected") setPhase("rejected");
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        const res = await fetch(`/api/checkin/pending-status?id=${pendingId}&token=${encodeURIComponent(cardToken)}`);
+        if (res.ok) {
+          const { status } = (await res.json()) as { status: string };
+          if (status === "approved") setPhase("approved");
+          else if (status === "rejected") setPhase("rejected");
         }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [pendingId]);
+      } catch { /* network blip — next tick will retry */ }
+    };
+    const handle = setInterval(tick, 3000);
+    tick(); // also fire one immediately on mount
+    return () => { cancelled = true; clearInterval(handle); };
+  }, [pendingId, cardToken]);
 
   async function submit() {
     setPhase("submitting");

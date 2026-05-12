@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
 import ShareButton from "@/components/public/ShareButton";
@@ -272,28 +271,29 @@ export default function QrCardClient({
   });
   const [savingPrefs, setSavingPrefs]   = useState(false);
 
-  // Realtime subscription for free loyalty session approval
+  // Poll for free loyalty session approval. Token-gated endpoint replaces a
+  // realtime subscription that broadcast every pending_checkins row.
   useEffect(() => {
     if (!redeemPendingId) return;
-    const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel(`redeem-${redeemPendingId}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "pending_checkins", filter: `id=eq.${redeemPendingId}` },
-        (payload) => {
-          const s = (payload.new as { status: string }).status;
-          if (s === "approved") {
-            setLocalRedeemed((v) => v + 1);
-            setRedeemPhase("approved");
-          } else if (s === "rejected") {
-            setRedeemPhase("rejected");
-          }
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        const res = await fetch(`/api/checkin/pending-status?id=${redeemPendingId}&token=${encodeURIComponent(cardToken)}`);
+        if (!res.ok) return;
+        const { status } = (await res.json()) as { status: string };
+        if (status === "approved") {
+          setLocalRedeemed((v) => v + 1);
+          setRedeemPhase("approved");
+        } else if (status === "rejected") {
+          setRedeemPhase("rejected");
         }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [redeemPendingId]);
+      } catch { /* next tick will retry */ }
+    };
+    const handle = setInterval(tick, 3000);
+    tick();
+    return () => { cancelled = true; clearInterval(handle); };
+  }, [redeemPendingId, cardToken]);
 
   async function handleTogglePref(key: keyof typeof localPrefs) {
     const updated = { ...localPrefs, [key]: !localPrefs[key] };
