@@ -13,7 +13,7 @@ export const MEMBERSHIP_TYPES: MembershipType[] = [
   { id: "monthly_flex",     label: "Monthly Flex: any day or time", perKid: false, timeBased: true, note: "1 session per day access for 30 days from approval. Just drop and go. No booking needed. Great for regulars." },
   // ── Bulk session packs (sliding discount) ──────────────────
   { id: "group_bulk",   label: "Group Sessions (bulk)",    perKid: false, bulk: true, bulkBase: "price_session_group",    note: "Buy 2 to 20 sessions upfront. 1% off per session. Buy 10, save 10%. Max 20% off." },
-  { id: "daycamp_bulk", label: "Day Camp Sessions (bulk)", perKid: false, bulk: true, bulkBase: "price_day_camp",         note: "Buy 2–20 day camp sessions upfront. 1% off per session purchased. Max 20% off." },
+  { id: "daycamp_bulk", label: "Day Camp Sessions (bulk)", perKid: false, bulk: true, bulkBase: "price_day_camp",         note: "Buy 2–20 day camp sessions upfront. 1% off per session purchased. Max 20% off. Half Training and Half Gaming. Drop before 2pm. Must be able to go to the restroom on their own." },
   { id: "1to1_bulk",    label: "1-to-1 Sessions (bulk)",   perKid: false, bulk: true, bulkBase: "price_session_1to1",     note: "Buy 2–20 private sessions upfront. 1% off per session purchased. Max 20% off." },
   { id: "allday_bulk",  label: "All Day Passes (bulk)",    perKid: false, bulk: true, bulkBase: "price_all_day",          note: "Buy 2–20 all-day passes upfront. 1% off per session purchased. Max 20% off." },
   { id: "combo_bulk",   label: "Combo Sessions (bulk)",    perKid: false, bulk: true, bulkBase: "price_combo_game_train", note: "Buy 2–20 combo sessions upfront. 1% off per session purchased. Max 20% off." },
