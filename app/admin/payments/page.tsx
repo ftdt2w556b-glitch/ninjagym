@@ -112,10 +112,10 @@ export default async function PaymentsPage({
     .limit(200);
   if (q) perksQuery = perksQuery.ilike("member_name", `%${q}%`);
 
-  // Today's approved session-use check-ins (parent tapped "Use a Session" and
-  // staff approved). These don't create member_registrations rows so the regular
-  // Approved list misses them. Surfaced here so "everything approved today" is
-  // visible on one page. Belt perks go in their own section above this one.
+  // Today's approved check-ins — sourced from attendance_logs so the count
+  // matches the Check-ins tab. Includes BOTH parent-initiated approvals AND
+  // direct admin check-ins entered at the member-lookup scanner (the latter
+  // skip pending_checkins entirely). Belt perks live in their own section.
   const showCheckIns = source === "members" && status === "approved";
   const startOfBkkToday = (() => {
     const bkk = new Date(Date.now() + 7 * 3600 * 1000);
@@ -123,12 +123,10 @@ export default async function PaymentsPage({
     return new Date(bkk.getTime() - 7 * 3600 * 1000).toISOString();
   })();
   let checkInsQuery = admin
-    .from("pending_checkins")
-    .select("id, member_id, member_name, kids_count, kids_names, membership_type, membership_label, handled_at, handled_by, requested_at, payment_method")
-    .eq("status", "approved")
-    .not("membership_type", "like", "belt_perk_%")
-    .gte("handled_at", startOfBkkToday)
-    .order("handled_at", { ascending: false, nullsFirst: false })
+    .from("attendance_logs")
+    .select("id, member_id, member_name, kids_count, kids_names, membership_type, notes, check_in_at")
+    .gte("check_in_at", startOfBkkToday)
+    .order("check_in_at", { ascending: false })
     .limit(200);
   if (q) checkInsQuery = checkInsQuery.ilike("member_name", `%${q}%`);
 
@@ -319,7 +317,8 @@ export default async function PaymentsPage({
             </div>
           )}
 
-          {/* Today's approved session-use check-ins (only on Approved tab) */}
+          {/* Today's approved check-ins (only on Approved tab) — sourced from
+              attendance_logs so the count matches the Check-ins tab. */}
           {showCheckIns && (approvedCheckIns?.length ?? 0) > 0 && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -331,30 +330,32 @@ export default async function PaymentsPage({
               </div>
               <div className="flex flex-col gap-2">
                 {approvedCheckIns?.map((c) => {
-                  const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
-                  const handledStr = handledAt
-                    ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
+                  const checkInAt = c.check_in_at ? new Date(c.check_in_at as string) : null;
+                  const timeStr = checkInAt
+                    ? checkInAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
                     : "—";
-                  const isPayment = !!c.payment_method;
+                  const typeLabel = MEMBERSHIP_TYPES.find((m) => m.id === c.membership_type)?.label ?? (c.membership_type as string | null) ?? "Session";
+                  // notes look like "Check-in by Naing | 2 kids" or "Check-in approved by NinjaGym" — extract the staff name
+                  const byMatch = typeof c.notes === "string"
+                    ? c.notes.match(/by\s+([A-Za-z][A-Za-z\s.]*?)(?:\s*\||\s*$)/)
+                    : null;
+                  const byName = byMatch ? byMatch[1].trim() : null;
                   return (
                     <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
                       <div className="min-w-0">
                         <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
                         <p className="text-xs text-emerald-800 font-semibold mt-0.5">
-                          {(c.membership_label as string | null) ?? (c.membership_type as string)}
+                          {typeLabel}
                           {c.kids_count ? ` · ${c.kids_count} kid${c.kids_count !== 1 ? "s" : ""}` : ""}
                         </p>
                         {c.kids_names && (
                           <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {c.kids_names as string}</p>
                         )}
-                        {isPayment && (
-                          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">PromptPay payment + check-in</p>
-                        )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs text-gray-500">{handledStr}</p>
-                        {c.handled_by && (
-                          <p className="text-xs text-gray-400">by {c.handled_by as string}</p>
+                        <p className="text-xs text-gray-500">{timeStr}</p>
+                        {byName && (
+                          <p className="text-xs text-gray-400">by {byName}</p>
                         )}
                       </div>
                     </div>
