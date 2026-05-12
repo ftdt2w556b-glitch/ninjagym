@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendEventConfirmation } from "@/lib/email";
+import { hashSlipFile } from "@/lib/slip-hash";
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,8 +46,10 @@ export async function POST(request: NextRequest) {
     // Upload slip if provided
     let slip_image: string | null = null;
     let slip_uploaded_at: string | null = null;
+    let slip_hash: string | null = null;
 
     if (slipFile && slipFile.size > 0) {
+      slip_hash = await hashSlipFile(slipFile);
       const ext = slipFile.name.split(".").pop() ?? "jpg";
       const fileName = `event_${Date.now()}.${ext}`;
       const arrayBuffer = await slipFile.arrayBuffer();
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest) {
         payment_method,
         amount_paid,
         slip_image,
+        slip_hash,
         slip_status,
         slip_uploaded_at,
         notes: notes || null,

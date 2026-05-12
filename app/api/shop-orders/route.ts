@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendShopConfirmation } from "@/lib/email";
+import { hashSlipFile } from "@/lib/slip-hash";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,8 +24,10 @@ export async function POST(request: NextRequest) {
 
     let slip_image: string | null = null;
     let slip_uploaded_at: string | null = null;
+    let slip_hash: string | null = null;
 
     if (slipFile && slipFile.size > 0) {
+      slip_hash = await hashSlipFile(slipFile);
       const ext = slipFile.name.split(".").pop() ?? "jpg";
       const fileName = `shop_${Date.now()}.${ext}`;
       const arrayBuffer = await slipFile.arrayBuffer();
@@ -52,6 +55,7 @@ export async function POST(request: NextRequest) {
         total_amount,
         payment_method,
         slip_image,
+        slip_hash,
         slip_status,
         slip_uploaded_at,
       })

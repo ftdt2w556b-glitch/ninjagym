@@ -55,7 +55,7 @@ export default async function PaymentsPage({
   // ── Members query (exclude birthday_event — managed via Events tab) ──
   let membersQuery = admin
     .from("member_registrations")
-    .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_status, slip_notes, slip_uploaded_at, created_at")
+    .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_hash, slip_status, slip_notes, slip_uploaded_at, created_at")
     .neq("membership_type", "birthday_event")
     .neq("payment_method", "self_register");  // auto-approved at join — no payment to review
 
@@ -81,7 +81,7 @@ export default async function PaymentsPage({
   // ── Events query ─────────────────────────────────────────────
   let eventsQuery = admin
     .from("event_bookings")
-    .select("id, name, phone, email, event_date, time_slot, hours, num_hours, num_kids, birthday_child_name, birthday_child_age, payment_method, amount_paid, slip_image, slip_status, slip_uploaded_at, notes, created_at")
+    .select("id, name, phone, email, event_date, time_slot, hours, num_hours, num_kids, birthday_child_name, birthday_child_age, payment_method, amount_paid, slip_image, slip_hash, slip_status, slip_uploaded_at, notes, created_at")
     .order("event_date", { ascending: true })
     .limit(100);
 
@@ -118,6 +118,27 @@ export default async function PaymentsPage({
     source === "shop"    ? shopQuery    : Promise.resolve({ data: [] }),
     showPerks            ? perksQuery   : Promise.resolve({ data: [] }),
   ]);
+
+  // ── Duplicate-slip detection ─────────────────────────────────────
+  // Count every slip_hash across all three tables. Anything seen more than once
+  // gets an amber "duplicate" badge on the staff review card so staff don't
+  // rubber-stamp a re-used payment slip. Hashing is exact-byte; near-duplicates
+  // (different screenshot of the same payment) won't be caught here.
+  const duplicateHashes = new Set<string>();
+  {
+    const [m, e, s] = await Promise.all([
+      admin.from("member_registrations").select("slip_hash").not("slip_hash", "is", null),
+      admin.from("event_bookings").select("slip_hash").not("slip_hash", "is", null),
+      admin.from("shop_orders").select("slip_hash").not("slip_hash", "is", null),
+    ]);
+    const counts = new Map<string, number>();
+    for (const r of [...(m.data ?? []), ...(e.data ?? []), ...(s.data ?? [])]) {
+      const h = (r.slip_hash as string | null) ?? null;
+      if (!h) continue;
+      counts.set(h, (counts.get(h) ?? 0) + 1);
+    }
+    for (const [h, n] of counts) if (n > 1) duplicateHashes.add(h);
+  }
 
   // Build fallback kids_names map: for members missing kids_names, look up by phone
   // across all registrations so staff always see the kid's name without bouncing around
@@ -293,6 +314,8 @@ export default async function PaymentsPage({
               ? `${SUPABASE_URL}/storage/v1/object/public/slips/${m.slip_image}`
               : null;
             const fallbackName = !m.kids_names && m.phone ? fallbackKidsNames[m.phone] : null;
+            const slipHash    = (m as { slip_hash?: string | null }).slip_hash ?? null;
+            const isDupeSlip  = slipHash ? duplicateHashes.has(slipHash) : false;
 
             return (
               <div key={m.id} className="bg-white rounded-2xl shadow p-5">
@@ -325,6 +348,11 @@ export default async function PaymentsPage({
                 {slipUrl && (
                   <div className="mb-4">
                     <p className="text-xs text-gray-500 mb-2">Payment Slip:</p>
+                    {isDupeSlip && (
+                      <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
+                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                      </div>
+                    )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">
                       <img
                         src={slipUrl}
@@ -380,6 +408,8 @@ export default async function PaymentsPage({
             const slipUrl = b.slip_image
               ? `${SUPABASE_URL}/storage/v1/object/public/slips/${b.slip_image}`
               : null;
+            const slipHash   = (b as { slip_hash?: string | null }).slip_hash ?? null;
+            const isDupeSlip = slipHash ? duplicateHashes.has(slipHash) : false;
 
             return (
               <div key={b.id} className="bg-white rounded-2xl shadow p-5">
@@ -421,6 +451,11 @@ export default async function PaymentsPage({
                 {slipUrl && (
                   <div className="mb-4">
                     <p className="text-xs text-gray-500 mb-2">Payment Slip:</p>
+                    {isDupeSlip && (
+                      <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
+                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                      </div>
+                    )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">
                       <img
                         src={slipUrl}
@@ -468,6 +503,8 @@ export default async function PaymentsPage({
             const slipUrl = o.slip_image
               ? `${SUPABASE_URL}/storage/v1/object/public/slips/${o.slip_image}`
               : null;
+            const slipHash   = (o as { slip_hash?: string | null }).slip_hash ?? null;
+            const isDupeSlip = slipHash ? duplicateHashes.has(slipHash) : false;
 
             return (
               <div key={o.id} className="bg-white rounded-2xl shadow p-5">
@@ -513,6 +550,11 @@ export default async function PaymentsPage({
 
                 {slipUrl && (
                   <div className="mb-4">
+                    {isDupeSlip && (
+                      <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
+                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                      </div>
+                    )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">
                       <img
                         src={slipUrl}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { hashSlipFile } from "@/lib/slip-hash";
 
 /** POST /api/members/[id]/slip — staff uploads a slip for an existing registration */
 export async function POST(
@@ -24,6 +25,7 @@ export async function POST(
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
+  const slip_hash = await hashSlipFile(slipFile);
   const ext = slipFile.name.split(".").pop() ?? "jpg";
   const fileName = `slip_${id}_${Date.now()}.${ext}`;
   const buffer = Buffer.from(await slipFile.arrayBuffer());
@@ -38,6 +40,7 @@ export async function POST(
 
   await admin.from("member_registrations").update({
     slip_image: fileName,
+    slip_hash,
     slip_uploaded_at: new Date().toISOString(),
     slip_status: "pending_review",
   }).eq("id", Number(id));
