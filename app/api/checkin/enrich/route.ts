@@ -30,10 +30,13 @@ export async function POST(request: Request) {
     memberMap[m.id] = { pin: m.pin, parent_member_id: m.parent_member_id, sessions_remaining: m.sessions_remaining };
   }
 
-  // Fetch parent rows for PIN traversal (top-up registrations have no PIN themselves)
+  // Always fetch parent rows when present, regardless of whether the direct
+  // row has a PIN. The Pending banner prefers the FAMILY PIN over the package
+  // PIN so staff recognise the parent's card. (Previously this only fetched
+  // parents for PIN-less top-ups, which left the family PIN hidden.)
   const parentIds = [...new Set(
     Object.values(memberMap)
-      .filter((m) => !m.pin && m.parent_member_id)
+      .filter((m) => m.parent_member_id)
       .map((m) => m.parent_member_id as number)
   )];
   if (parentIds.length > 0) {
