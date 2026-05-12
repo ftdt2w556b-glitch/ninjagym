@@ -95,7 +95,18 @@ export default function PendingCheckIns({ staffName }: Props) {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Safety net: mobile/tablet browsers suspend background websockets, so the
+    // realtime channel can silently die and leave stale approved cards on screen.
+    // Re-fetch every 15s and on tab-becomes-visible so the UI self-corrects.
+    const safetyPoll = setInterval(fetchPending, 15_000);
+    const onVisible = () => { if (document.visibilityState === "visible") fetchPending(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(safetyPoll);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchPending]);
 
   async function handle(id: number, action: "approve" | "reject", reason?: string) {
