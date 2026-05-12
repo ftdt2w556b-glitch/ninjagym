@@ -10,9 +10,33 @@ import PendingCheckIns from "@/components/admin/PendingCheckIns";
 export default async function PaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; member?: string; source?: string; cleaned?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; member?: string; source?: string; cleaned?: string; q?: string; range?: string }>;
 }) {
-  const { status, member, source = "members", cleaned, q } = await searchParams;
+  const { status, member, source = "members", cleaned, q, range = "today" } = await searchParams;
+
+  // Date range for the Approved-tab subsections (Belt Perks + Check-Ins Approved).
+  // Matches the period concept on the Check-ins tab. Default: today.
+  const approvedRange: "today" | "week" | "month" | "all" =
+    range === "week" || range === "month" || range === "all" ? range : "today";
+  const rangeStartIso = (() => {
+    const now = new Date();
+    const bkk = new Date(now.getTime() + 7 * 3_600_000);
+    bkk.setUTCHours(0, 0, 0, 0);
+    if (approvedRange === "today") {
+      return new Date(bkk.getTime() - 7 * 3_600_000).toISOString();
+    }
+    if (approvedRange === "week") {
+      // Last 7 days inclusive of today (Bangkok)
+      bkk.setUTCDate(bkk.getUTCDate() - 6);
+      return new Date(bkk.getTime() - 7 * 3_600_000).toISOString();
+    }
+    if (approvedRange === "month") {
+      // First day of the current Bangkok month
+      bkk.setUTCDate(1);
+      return new Date(bkk.getTime() - 7 * 3_600_000).toISOString();
+    }
+    return null; // "all" — no lower bound
+  })();
 
   async function cleanupTestRecords(_fd: FormData) {
     "use server";
@@ -111,26 +135,22 @@ export default async function PaymentsPage({
     .order("handled_at", { ascending: false, nullsFirst: false })
     .limit(200);
   if (q) perksQuery = perksQuery.ilike("member_name", `%${q}%`);
+  if (rangeStartIso) perksQuery = perksQuery.gte("handled_at", rangeStartIso);
 
   // Today's approved session-use check-ins (parent tapped "Use a Session" and
   // staff approved). These don't create member_registrations rows so the regular
   // Approved list misses them. Surfaced here so "everything approved today" is
   // visible on one page. Belt perks go in their own section above this one.
   const showCheckIns = source === "members" && status === "approved";
-  const startOfBkkToday = (() => {
-    const bkk = new Date(Date.now() + 7 * 3600 * 1000);
-    bkk.setUTCHours(0, 0, 0, 0);
-    return new Date(bkk.getTime() - 7 * 3600 * 1000).toISOString();
-  })();
   let checkInsQuery = admin
     .from("pending_checkins")
     .select("id, member_id, member_name, kids_count, kids_names, membership_type, membership_label, handled_at, handled_by, requested_at, payment_method")
     .eq("status", "approved")
     .not("membership_type", "like", "belt_perk_%")
-    .gte("handled_at", startOfBkkToday)
     .order("handled_at", { ascending: false, nullsFirst: false })
     .limit(200);
   if (q) checkInsQuery = checkInsQuery.ilike("member_name", `%${q}%`);
+  if (rangeStartIso) checkInsQuery = checkInsQuery.gte("handled_at", rangeStartIso);
 
   const [{ data: members }, { data: events }, { data: shopOrders }, { data: perks }, { data: approvedCheckIns }] = await Promise.all([
     source === "members" ? membersQuery   : Promise.resolve({ data: [] }),
@@ -279,12 +299,44 @@ export default async function PaymentsPage({
       {/* ── Members list ── */}
       {source === "members" && (
         <div className="flex flex-col gap-4">
+          {/* Range filter — only on Approved tab, applies to both Belt Perks and Check-Ins subsections */}
+          {status === "approved" && (
+            <div className="flex items-center gap-2 self-end -mb-2">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">Show approved:</span>
+              <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+                {([
+                  { id: "today", label: "Today" },
+                  { id: "week",  label: "Week"  },
+                  { id: "month", label: "Month" },
+                  { id: "all",   label: "All"   },
+                ] as const).map((r) => (
+                  <a
+                    key={r.id}
+                    href={`/admin/payments?source=members&status=approved&range=${r.id}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                      approvedRange === r.id
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {r.label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Approved belt perks (only on Approved tab) */}
           {showPerks && (perks?.length ?? 0) > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-base">🥋</span>
-                <h2 className="font-bold text-amber-900 text-sm">Belt Perks Approved</h2>
+                <h2 className="font-bold text-amber-900 text-sm">
+                  Belt Perks Approved
+                  {approvedRange === "today" ? " — Today" :
+                   approvedRange === "week"  ? " — This Week" :
+                   approvedRange === "month" ? " — This Month" : ""}
+                </h2>
                 <span className="text-xs text-amber-700 bg-amber-100 rounded-full px-2 py-0.5 font-semibold">
                   {perks?.length ?? 0}
                 </span>
@@ -324,7 +376,13 @@ export default async function PaymentsPage({
             <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-base">✅</span>
-                <h2 className="font-bold text-emerald-900 text-sm">Check-Ins Approved Today</h2>
+                <h2 className="font-bold text-emerald-900 text-sm">
+                  Check-Ins Approved
+                  {approvedRange === "today" ? " — Today" :
+                   approvedRange === "week"  ? " — This Week" :
+                   approvedRange === "month" ? " — This Month" :
+                                                " — All"}
+                </h2>
                 <span className="text-xs text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 font-semibold">
                   {approvedCheckIns?.length ?? 0}
                 </span>
