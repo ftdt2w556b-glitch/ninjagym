@@ -40,11 +40,28 @@ export async function POST(
 
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name")
+    .select("id, name, parent_member_id")
     .eq("id", memberId)
     .maybeSingle();
 
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
+
+  // Already redeemed? Belt perks are once-forever per family in current design.
+  // Resolve to parent so top-up rows can't sneak in a second redemption.
+  const familyId = (member.parent_member_id as number | null) ?? memberId;
+  const { data: alreadyRedeemed } = await admin
+    .from("member_perks_redeemed")
+    .select("redeemed_at")
+    .eq("family_id", familyId)
+    .eq("perk_type", perkType)
+    .maybeSingle();
+
+  if (alreadyRedeemed) {
+    return NextResponse.json(
+      { error: "This perk has already been redeemed.", redeemed_at: alreadyRedeemed.redeemed_at },
+      { status: 409 },
+    );
+  }
 
   // One pending request per perk type — prevent duplicate requests for the same perk
   const { data: existing } = await admin

@@ -81,6 +81,29 @@ export async function POST(req: NextRequest) {
         check_in_at:     now,
       });
 
+      // Mark the perk as consumed for this family. Belt perks are once-forever in
+      // current design — the UNIQUE (family_id, perk_type) index plus ON CONFLICT
+      // DO NOTHING makes this idempotent even if approval is somehow retried.
+      // We resolve top-up rows back to the parent family so a member can't redeem
+      // the same perk from each of their top-up registrations.
+      const { data: memberRow } = await admin
+        .from("member_registrations")
+        .select("parent_member_id")
+        .eq("id", pending.member_id)
+        .maybeSingle();
+      const familyId = (memberRow?.parent_member_id as number | null) ?? pending.member_id;
+      await admin
+        .from("member_perks_redeemed")
+        .upsert(
+          {
+            family_id:  familyId,
+            perk_type:  pending.membership_type,
+            pending_id: pending.id,
+            redeemed_at: now,
+          },
+          { onConflict: "family_id,perk_type", ignoreDuplicates: true },
+        );
+
     } else if (!isBulkPurchase) {
       // Create the attendance log
       await admin.from("attendance_logs").insert({

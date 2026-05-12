@@ -146,6 +146,11 @@ interface Props {
   prices?: Record<string, number>;
   descriptions?: Record<string, string>;
   pendingTopUp?: { id: number; membership_label: string; amount_paid: number | null; payment_method: string | null } | null;
+  /**
+   * Map of belt-perk type → ISO timestamp of when this family redeemed it.
+   * Perks here are filtered out of the redeem buttons (current design: once-forever).
+   */
+  redeemedPerks?: Record<string, string>;
 }
 
 // ── Sessions list with collapse for past purchases ────────────────────────────
@@ -253,6 +258,7 @@ export default function QrCardClient({
   prices,
   descriptions,
   pendingTopUp,
+  redeemedPerks = {},
 }: Props) {
   const { t, lang, setLang } = useLanguage();
   type RedeemPhase = "idle" | "submitting" | "pending" | "approved" | "rejected";
@@ -324,8 +330,11 @@ export default function QrCardClient({
   const freeSessionsAvailable  = Math.max(0, freeSessionsEarned - localRedeemed);
   const belt                   = getBelt(uniqueCheckInDays);
   const { pct: beltPct, next: nextBelt } = getBeltProgress(uniqueCheckInDays);
+  // Filter out perks the family has already redeemed (once-forever in current design).
+  // Server enforces uniqueness on (family_id, perk_type) — this is just UX.
   const unlockedPerks = BELTS
     .filter((b) => b.min > 0 && uniqueCheckInDays >= b.min && b.perk && b.perkType)
+    .filter((b) => !redeemedPerks[b.perkType!])
     .map((b) => ({ beltLabel: b.label, beltEmoji: b.emoji, perkLabel: b.perk!, perkType: b.perkType! }));
 
   async function handleRedeem() {

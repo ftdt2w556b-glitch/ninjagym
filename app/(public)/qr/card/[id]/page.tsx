@@ -202,6 +202,18 @@ export default async function QrCardPage({
     else if (key.startsWith("desc_")) descriptions[key] = row.value as string;
   }
 
+  // Belt perks the family has already redeemed (once-forever in current design).
+  // Keyed on family_id = parent registration (which is `member.id` here, since the
+  // top-up redirect above resolved any child rows back to the parent).
+  const { data: redeemedRows } = await admin
+    .from("member_perks_redeemed")
+    .select("perk_type, redeemed_at")
+    .eq("family_id", member.id);
+  const redeemedPerks: Record<string, string> = {};
+  for (const r of redeemedRows ?? []) {
+    redeemedPerks[r.perk_type as string] = r.redeemed_at as string;
+  }
+
   return (
     <QrCardClient
       member={member}
@@ -222,6 +234,7 @@ export default async function QrCardPage({
       prices={prices}
       descriptions={descriptions}
       pendingTopUp={pendingTopUp}
+      redeemedPerks={redeemedPerks}
     />
   );
 }
