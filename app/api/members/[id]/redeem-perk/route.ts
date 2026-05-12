@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyMemberToken } from "@/lib/member-token";
 
-const VALID_PERK_TYPES = new Set([
-  "belt_perk_friend",
-  "belt_perk_game",
-  "belt_perk_1on1",
-  "belt_perk_combo",
-  "belt_perk_party",
-  "belt_perk_birthday",
-]);
+// Base unique-check-in-day thresholds per perk. Must mirror BELTS in
+// components/public/QrCardClient.tsx. The Nth redemption of a perk requires
+// uniqueCheckInDays >= threshold × N.
+const PERK_BASE_THRESHOLD: Record<string, number> = {
+  belt_perk_friend:   10,
+  belt_perk_game:     15,
+  belt_perk_1on1:     20,
+  belt_perk_combo:    40,
+  belt_perk_party:    50,
+  belt_perk_birthday: 60,
+};
+const VALID_PERK_TYPES = new Set(Object.keys(PERK_BASE_THRESHOLD));
 
 export async function POST(
   request: NextRequest,
@@ -46,19 +50,49 @@ export async function POST(
 
   if (!member) return NextResponse.json({ error: "Member not found" }, { status: 404 });
 
-  // Already redeemed? Belt perks are once-forever per family in current design.
-  // Resolve to parent so top-up rows can't sneak in a second redemption.
+  // Perks are re-earnable. The Nth redemption requires uniqueCheckInDays >=
+  // baseThreshold × N. Family is the parent registration (top-up rows resolved up).
   const familyId = (member.parent_member_id as number | null) ?? memberId;
-  const { data: alreadyRedeemed } = await admin
-    .from("member_perks_redeemed")
-    .select("redeemed_at")
-    .eq("family_id", familyId)
-    .eq("perk_type", perkType)
-    .maybeSingle();
 
-  if (alreadyRedeemed) {
+  const { count: redeemedCount } = await admin
+    .from("member_perks_redeemed")
+    .select("*", { count: "exact", head: true })
+    .eq("family_id", familyId)
+    .eq("perk_type", perkType);
+
+  // Recompute uniqueCheckInDays the same way QrCardClient does: gather every
+  // attendance_logs row for this family (parent + top-ups), dedupe on Bangkok date,
+  // excluding climb_unguided + free_session_loyalty.
+  const { data: familyIds } = await admin
+    .from("member_registrations")
+    .select("id")
+    .or(`id.eq.${familyId},parent_member_id.eq.${familyId}`);
+  const allMemberIds = (familyIds ?? []).map((r) => r.id as number);
+  const { data: checkInRows } = await admin
+    .from("attendance_logs")
+    .select("check_in_at, membership_type")
+    .in("member_id", allMemberIds.length > 0 ? allMemberIds : [familyId]);
+  const uniqueDays = new Set(
+    (checkInRows ?? [])
+      .filter((r) => r.membership_type !== "climb_unguided" && r.membership_type !== "free_session_loyalty")
+      .map((r) => {
+        const t = r.check_in_at as string | null;
+        if (!t) return null;
+        // Shift to Bangkok (UTC+7) then slice YYYY-MM-DD
+        return new Date(new Date(t).getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+      })
+      .filter((d): d is string => d !== null),
+  ).size;
+
+  const baseThreshold = PERK_BASE_THRESHOLD[perkType];
+  const requiredDays  = baseThreshold * ((redeemedCount ?? 0) + 1);
+  if (uniqueDays < requiredDays) {
     return NextResponse.json(
-      { error: "This perk has already been redeemed.", redeemed_at: alreadyRedeemed.redeemed_at },
+      {
+        error: `This perk re-unlocks at ${requiredDays} unique check-in days. You're at ${uniqueDays}.`,
+        unique_days: uniqueDays,
+        required_days: requiredDays,
+      },
       { status: 409 },
     );
   }

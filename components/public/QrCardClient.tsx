@@ -92,12 +92,12 @@ interface Belt { label: string; emoji: string; min: number; perk: string | null;
 
 const BELTS: Belt[] = [
   { label: "White Belt",  emoji: "🤍", min: 0,  perk: null,                                           perkType: null                },
-  { label: "Yellow Belt", emoji: "💛", min: 5,  perk: "Bring a friend to any session you buy free",   perkType: "belt_perk_friend"   },
-  { label: "Orange Belt", emoji: "🧡", min: 10, perk: "Free 1 hour game session",                     perkType: "belt_perk_game"     },
-  { label: "Green Belt",  emoji: "💚", min: 15, perk: "Free 1 on 1 session",                          perkType: "belt_perk_1on1"     },
-  { label: "Blue Belt",   emoji: "💙", min: 20, perk: "Free Combo session",                           perkType: "belt_perk_combo"    },
-  { label: "Red Belt",    emoji: "❤️", min: 25, perk: "Free friends party Combo (max 4)",             perkType: "belt_perk_party"    },
-  { label: "Black Belt",  emoji: "🖤", min: 30, perk: "Free 1 hour birthday party",                   perkType: "belt_perk_birthday" },
+  { label: "Yellow Belt", emoji: "💛", min: 10, perk: "Bring a friend to any session you buy free",   perkType: "belt_perk_friend"   },
+  { label: "Orange Belt", emoji: "🧡", min: 15, perk: "Free 1 hour game session",                     perkType: "belt_perk_game"     },
+  { label: "Green Belt",  emoji: "💚", min: 20, perk: "Free 1 on 1 session",                          perkType: "belt_perk_1on1"     },
+  { label: "Blue Belt",   emoji: "💙", min: 40, perk: "Free Combo session",                           perkType: "belt_perk_combo"    },
+  { label: "Red Belt",    emoji: "❤️", min: 50, perk: "Free friends party Combo (max 4)",             perkType: "belt_perk_party"    },
+  { label: "Black Belt",  emoji: "🖤", min: 60, perk: "Free 1 hour birthday party",                   perkType: "belt_perk_birthday" },
 ];
 
 function getBelt(days: number): Belt {
@@ -147,10 +147,10 @@ interface Props {
   descriptions?: Record<string, string>;
   pendingTopUp?: { id: number; membership_label: string; amount_paid: number | null; payment_method: string | null } | null;
   /**
-   * Map of belt-perk type → ISO timestamp of when this family redeemed it.
-   * Perks here are filtered out of the redeem buttons (current design: once-forever).
+   * How many times this family has redeemed each belt perk. Perks are re-earnable:
+   * a perk button shows only when uniqueCheckInDays >= belt.min × (count + 1).
    */
-  redeemedPerks?: Record<string, string>;
+  redeemedPerkCounts?: Record<string, number>;
 }
 
 // ── Sessions list with collapse for past purchases ────────────────────────────
@@ -258,7 +258,7 @@ export default function QrCardClient({
   prices,
   descriptions,
   pendingTopUp,
-  redeemedPerks = {},
+  redeemedPerkCounts = {},
 }: Props) {
   const { t, lang, setLang } = useLanguage();
   type RedeemPhase = "idle" | "submitting" | "pending" | "approved" | "rejected";
@@ -330,11 +330,16 @@ export default function QrCardClient({
   const freeSessionsAvailable  = Math.max(0, freeSessionsEarned - localRedeemed);
   const belt                   = getBelt(uniqueCheckInDays);
   const { pct: beltPct, next: nextBelt } = getBeltProgress(uniqueCheckInDays);
-  // Filter out perks the family has already redeemed (once-forever in current design).
-  // Server enforces uniqueness on (family_id, perk_type) — this is just UX.
+  // Belt perks are re-earnable. The Nth redemption requires uniqueCheckInDays
+  // to reach belt.min × N. Server-side check in /api/members/[id]/redeem-perk
+  // mirrors this formula so a malicious client can't bypass.
   const unlockedPerks = BELTS
-    .filter((b) => b.min > 0 && uniqueCheckInDays >= b.min && b.perk && b.perkType)
-    .filter((b) => !redeemedPerks[b.perkType!])
+    .filter((b) => b.min > 0 && b.perk && b.perkType)
+    .filter((b) => {
+      const redeemedCount = redeemedPerkCounts[b.perkType!] ?? 0;
+      const nextThreshold = b.min * (redeemedCount + 1);
+      return uniqueCheckInDays >= nextThreshold;
+    })
     .map((b) => ({ beltLabel: b.label, beltEmoji: b.emoji, perkLabel: b.perk!, perkType: b.perkType! }));
 
   async function handleRedeem() {

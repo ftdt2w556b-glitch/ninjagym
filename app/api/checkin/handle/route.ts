@@ -81,11 +81,12 @@ export async function POST(req: NextRequest) {
         check_in_at:     now,
       });
 
-      // Mark the perk as consumed for this family. Belt perks are once-forever in
-      // current design — the UNIQUE (family_id, perk_type) index plus ON CONFLICT
-      // DO NOTHING makes this idempotent even if approval is somehow retried.
-      // We resolve top-up rows back to the parent family so a member can't redeem
-      // the same perk from each of their top-up registrations.
+      // Record this redemption. Perks are re-earnable — each approval is its own
+      // row. The /api/members/[id]/redeem-perk POST is the gate that prevents a
+      // family from queueing too many at once; once a redemption is recorded here,
+      // the threshold for the next one doubles (3rd triples, etc).
+      // Top-up rows resolve to the parent family so a member can't redeem the
+      // same perk from each of their top-up registrations.
       const { data: memberRow } = await admin
         .from("member_registrations")
         .select("parent_member_id")
@@ -94,15 +95,12 @@ export async function POST(req: NextRequest) {
       const familyId = (memberRow?.parent_member_id as number | null) ?? pending.member_id;
       await admin
         .from("member_perks_redeemed")
-        .upsert(
-          {
-            family_id:  familyId,
-            perk_type:  pending.membership_type,
-            pending_id: pending.id,
-            redeemed_at: now,
-          },
-          { onConflict: "family_id,perk_type", ignoreDuplicates: true },
-        );
+        .insert({
+          family_id:   familyId,
+          perk_type:   pending.membership_type,
+          pending_id:  pending.id,
+          redeemed_at: now,
+        });
 
     } else if (!isBulkPurchase) {
       // Create the attendance log
