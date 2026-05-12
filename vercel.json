@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cleanup-slips",
       "schedule": "0 19 * * *"
+    },
+    {
+      "path": "/api/cron/backup-members",
+      "schedule": "0 20 * * *"
     }
   ]
 }
