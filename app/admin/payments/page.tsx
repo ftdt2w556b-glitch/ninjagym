@@ -112,11 +112,32 @@ export default async function PaymentsPage({
     .limit(200);
   if (q) perksQuery = perksQuery.ilike("member_name", `%${q}%`);
 
-  const [{ data: members }, { data: events }, { data: shopOrders }, { data: perks }] = await Promise.all([
-    source === "members" ? membersQuery : Promise.resolve({ data: [] }),
-    source === "events"  ? eventsQuery  : Promise.resolve({ data: [] }),
-    source === "shop"    ? shopQuery    : Promise.resolve({ data: [] }),
-    showPerks            ? perksQuery   : Promise.resolve({ data: [] }),
+  // Today's approved session-use check-ins (parent tapped "Use a Session" and
+  // staff approved). These don't create member_registrations rows so the regular
+  // Approved list misses them. Surfaced here so "everything approved today" is
+  // visible on one page. Belt perks go in their own section above this one.
+  const showCheckIns = source === "members" && status === "approved";
+  const startOfBkkToday = (() => {
+    const bkk = new Date(Date.now() + 7 * 3600 * 1000);
+    bkk.setUTCHours(0, 0, 0, 0);
+    return new Date(bkk.getTime() - 7 * 3600 * 1000).toISOString();
+  })();
+  let checkInsQuery = admin
+    .from("pending_checkins")
+    .select("id, member_id, member_name, kids_count, kids_names, membership_type, membership_label, handled_at, handled_by, requested_at, payment_method")
+    .eq("status", "approved")
+    .not("membership_type", "like", "belt_perk_%")
+    .gte("handled_at", startOfBkkToday)
+    .order("handled_at", { ascending: false, nullsFirst: false })
+    .limit(200);
+  if (q) checkInsQuery = checkInsQuery.ilike("member_name", `%${q}%`);
+
+  const [{ data: members }, { data: events }, { data: shopOrders }, { data: perks }, { data: approvedCheckIns }] = await Promise.all([
+    source === "members" ? membersQuery   : Promise.resolve({ data: [] }),
+    source === "events"  ? eventsQuery    : Promise.resolve({ data: [] }),
+    source === "shop"    ? shopQuery      : Promise.resolve({ data: [] }),
+    showPerks            ? perksQuery     : Promise.resolve({ data: [] }),
+    showCheckIns         ? checkInsQuery  : Promise.resolve({ data: [] }),
   ]);
 
   // ── Duplicate-slip detection ─────────────────────────────────────
@@ -289,6 +310,51 @@ export default async function PaymentsPage({
                         <p className="text-xs text-gray-500">{handledStr}</p>
                         {p.handled_by && (
                           <p className="text-xs text-gray-400">by {p.handled_by as string}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Today's approved session-use check-ins (only on Approved tab) */}
+          {showCheckIns && (approvedCheckIns?.length ?? 0) > 0 && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">✅</span>
+                <h2 className="font-bold text-emerald-900 text-sm">Check-Ins Approved Today</h2>
+                <span className="text-xs text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 font-semibold">
+                  {approvedCheckIns?.length ?? 0}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {approvedCheckIns?.map((c) => {
+                  const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
+                  const handledStr = handledAt
+                    ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
+                    : "—";
+                  const isPayment = !!c.payment_method;
+                  return (
+                    <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
+                      <div className="min-w-0">
+                        <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
+                        <p className="text-xs text-emerald-800 font-semibold mt-0.5">
+                          {(c.membership_label as string | null) ?? (c.membership_type as string)}
+                          {c.kids_count ? ` · ${c.kids_count} kid${c.kids_count !== 1 ? "s" : ""}` : ""}
+                        </p>
+                        {c.kids_names && (
+                          <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {c.kids_names as string}</p>
+                        )}
+                        {isPayment && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">PromptPay payment + check-in</p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs text-gray-500">{handledStr}</p>
+                        {c.handled_by && (
+                          <p className="text-xs text-gray-400">by {c.handled_by as string}</p>
                         )}
                       </div>
                     </div>
