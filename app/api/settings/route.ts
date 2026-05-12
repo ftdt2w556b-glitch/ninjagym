@@ -63,17 +63,30 @@ export async function PATCH(req: Request) {
 
   const updates: Record<string, number | string> = await req.json();
 
-  const upserts = Object.entries(updates).map(([key, value]) => ({
-    key,
-    value: String(value),
-    label: key
-      .replace(/^(price_|desc_)/, "")
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase()),
-  }));
+  // Only accept the public-keyspace from this endpoint. The /admin/settings
+  // UI loads its `prices` state with a `STATIC_BASE` default that includes
+  // drawer_float=500 — if we accepted any key here, saving the page would
+  // silently overwrite the real drawer float in the DB to 500 every time.
+  // Admin-only settings (drawer_float, daycamp_end_time, *_retention_days, etc.)
+  // are edited from their dedicated pages (POS screen, etc.), not this one.
+  const upserts = Object.entries(updates)
+    .filter(([key]) => key.startsWith("price_") || key.startsWith("desc_"))
+    .map(([key, value]) => ({
+      key,
+      value: String(value),
+      label: key
+        .replace(/^(price_|desc_)/, "")
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    }));
+
+  const blocked = Object.keys(updates).filter((k) => !k.startsWith("price_") && !k.startsWith("desc_"));
+  if (upserts.length === 0) {
+    return NextResponse.json({ ok: true, accepted: 0, blocked });
+  }
 
   const { error } = await admin.from("settings").upsert(upserts, { onConflict: "key" });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, accepted: upserts.length, blocked });
 }

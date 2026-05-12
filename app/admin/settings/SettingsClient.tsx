@@ -244,19 +244,14 @@ export default function AdminSettingsPage() {
           ))}
         </SectionCard>
 
-        {/* Cash Drawer */}
+        {/* Cash Drawer — float is edited on /admin/pos (page reads/writes the
+            live value). Editing it here would silently overwrite the real value
+            with the in-memory default since the public settings GET never
+            returns admin-only keys. Kept the section as a pointer for staff. */}
         <SectionCard title="Cash Drawer">
-          <div className="px-5 py-2 text-xs text-gray-400 border-b border-gray-50">
-            The float is the starting change placed in the drawer each morning. It is included in the POS tally so staff can see the correct expected total at end of shift.
+          <div className="px-5 py-3 text-xs text-gray-500">
+            Edit the opening float on the <a href="/admin/pos" className="text-[#1a56db] hover:underline font-semibold">POS page</a>. The float is the starting change placed in the drawer each morning.
           </div>
-          {CASH_DRAWER_ROWS.map(({ key, label }) => (
-            <PriceRow
-              key={key}
-              label={label}
-              value={prices[key] ?? 500}
-              onChange={(v) => handlePrice(key, v)}
-            />
-          ))}
         </SectionCard>
 
         {/* Program Descriptions */}
