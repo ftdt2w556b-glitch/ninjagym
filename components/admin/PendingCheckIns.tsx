@@ -125,7 +125,11 @@ export default function PendingCheckIns({ staffName }: Props) {
         const isPayment  = !!item.payment_method;
         const isCash     = item.payment_method === "cash";
         const isPromptPay = item.payment_method === "promptpay";
-        const isBulk     = item.membership_type?.endsWith("_bulk") ?? false;
+        // Purchase = pending row carries a payment_method. A "use a bulk session"
+        // request ALSO has membership_type ending in _bulk (the parent is using
+        // sessions from a bulk pack), but no payment_method — it must render as a
+        // check-in, not as a "session pack purchase" / approve-payment card.
+        const isBulkPurchase = (item.membership_type?.endsWith("_bulk") ?? false) && !!item.payment_method;
         const isPerk     = item.membership_type?.startsWith("belt_perk_") ?? false;
         const slipUrl = item.slip_image
           ? `${SUPABASE_URL}/storage/v1/object/public/slips/${item.slip_image}`
@@ -163,7 +167,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                     View member card to verify belt rank
                   </a>
                 </div>
-              ) : isBulk ? (
+              ) : isBulkPurchase ? (
                 /* Bulk purchase — payment approval only, no check-in */
                 <div className="w-full">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Session pack purchase</p>
@@ -236,7 +240,7 @@ export default function PendingCheckIns({ staffName }: Props) {
               <p className="text-xs font-semibold text-amber-900 leading-snug">
                 {isPerk
                   ? "🥋 Belt perk reward. Open their member card to confirm the correct belt rank, then honor the perk."
-                  : isBulk
+                  : isBulkPurchase
                   ? "⚠️ Verify payment slip: date, amount, and program match. No check-in, sessions unlock after approval."
                   : "⚠️ Check number of kids (+names), pay date, and match program and amount paid."}
               </p>
@@ -298,7 +302,7 @@ export default function PendingCheckIns({ staffName }: Props) {
                   onClick={() => setApproveConfirm((s) => ({ ...s, [item.id]: true }))}
                   className="flex-1 bg-green-500 hover:bg-green-400 text-white font-bold py-3 rounded-xl text-base disabled:opacity-50 transition-colors"
                 >
-                  {handling[item.id] ? "…" : isPerk ? "✓ Honor Perk" : isBulk ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
+                  {handling[item.id] ? "…" : isPerk ? "✓ Honor Perk" : isBulkPurchase ? "✓ Approve Payment" : isPayment ? "✓ Paid & In" : "✓ Approve"}
                 </button>
                 <button
                   disabled={handling[item.id]}

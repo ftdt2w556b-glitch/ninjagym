@@ -26,10 +26,14 @@ export async function POST(req: NextRequest) {
 
   const now = new Date().toISOString();
 
-  // Bulk session purchases (e.g. 10_bulk, 20_bulk) are payment-only approvals.
-  // The parent buys sessions now and uses them later via UseSessionButton.
-  // Approving should NOT create an attendance log or deduct sessions.
-  const isBulkPurchase = pending.membership_type?.endsWith("_bulk") ?? false;
+  // Bulk session purchases (e.g. 10_bulk, 20_bulk) are payment-only approvals:
+  // staff approves the slip and the package becomes usable; no check-in occurs.
+  // A "use a session" tap from the parent's card ALSO creates a pending row whose
+  // membership_type ends in _bulk (since they're using sessions from a bulk pack),
+  // but it carries NO payment_method. The payment_method field is the reliable
+  // discriminator — purchase rows always have it, session-use rows never do.
+  const isBulkPurchase =
+    (pending.membership_type?.endsWith("_bulk") ?? false) && !!pending.payment_method;
 
   // Free loyalty session redemption — log attendance + increment free_sessions_redeemed.
   // Must NOT deduct sessions_remaining or touch slip_status/slip_reviewed_at.
