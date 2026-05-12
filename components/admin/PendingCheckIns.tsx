@@ -60,7 +60,10 @@ export default function PendingCheckIns({ staffName }: Props) {
             const direct = memberMap[r.member_id];
             const parentId = direct?.parent_member_id ?? null;
             const parent = parentId ? memberMap[parentId] : null;
-            r.pin = direct?.pin ?? parent?.pin ?? null;
+            // Show the FAMILY PIN (parent row) when this pending is for a top-up
+            // package, because that's the PIN parents know and staff recognize on
+            // their card. Fall back to the row's own PIN if there's no parent.
+            r.pin = parent?.pin ?? direct?.pin ?? null;
             r.sessions_remaining = direct?.sessions_remaining ?? null;
             r.card_member_id = parentId ?? r.member_id;
           }
