@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyMemberToken } from "@/lib/member-token";
+import { resolveMembershipType } from "@/lib/pricing";
 
 export async function POST(req: NextRequest) {
   const { member_id, auth_id, kids_count, kids_names, membership_type, membership_label, token } = await req.json();
+
+  // Older clients pass the label string into `membership_type`. Normalize to the
+  // canonical id so downstream (timers, pricing, reports) keys correctly.
+  const normalizedType = resolveMembershipType(membership_type);
 
   // auth_id is the parent/main registration ID that the cardToken is signed for.
   // member_id may be a top-up package with a different ID.
@@ -37,7 +42,7 @@ export async function POST(req: NextRequest) {
     // Parent may have gone back and changed their kids count or names — always update to latest
     await admin
       .from("pending_checkins")
-      .update({ kids_count, kids_names: kids_names ?? null, membership_type, membership_label })
+      .update({ kids_count, kids_names: kids_names ?? null, membership_type: normalizedType, membership_label })
       .eq("id", existing.id);
     return NextResponse.json({ id: existing.id });
   }
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
       member_name: reg.name,
       kids_count,
       kids_names: kids_names ?? null,
-      membership_type,
+      membership_type: normalizedType,
       membership_label,
     })
     .select("id")

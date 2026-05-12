@@ -78,6 +78,28 @@ export function calcBulkPrice(
 export type BirthdayTimeSlot = "morning" | "afternoon" | "evening" | "weekend";
 
 /**
+ * Normalize a free-form membership value (could be a canonical id like
+ * "day_camp" or a label like "Day Camp (10am–2pm)") to the canonical id.
+ *
+ * Older clients pass the label into `membership_type`, which silently breaks
+ * downstream logic (e.g. the Timers tab) that switches on the id. Run any
+ * untrusted input through this before writing to `pending_checkins.membership_type`
+ * or `attendance_logs.membership_type`.
+ *
+ * Returns the original string unchanged when no match is found, so unknown
+ * types still survive (just won't get auto-timers / pricing).
+ */
+export function resolveMembershipType(value: string | null | undefined): string | null {
+  if (!value) return null;
+  // Already a canonical id?
+  if (MEMBERSHIP_TYPES.some((m) => m.id === value)) return value;
+  // Label match?
+  const byLabel = MEMBERSHIP_TYPES.find((m) => m.label === value);
+  if (byLabel) return byLabel.id;
+  return value;
+}
+
+/**
  * Calculate birthday/event booking amount.
  * First 5 kids included; extras charged in bands.
  */

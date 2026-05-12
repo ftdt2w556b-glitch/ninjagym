@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { resolveMembershipType } from "@/lib/pricing";
 
 export async function POST(req: NextRequest) {
   // Verify POS auth cookie
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
         member_name: pending.member_name,
         kids_count: pending.kids_count,
         kids_names: pending.kids_names ?? null,
-        membership_type: pending.membership_type,
+        membership_type: resolveMembershipType(pending.membership_type),
         notes: `Check-in approved by ${staff_name ?? "staff"}`,
         check_in_at: now,
       });
