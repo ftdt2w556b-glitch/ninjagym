@@ -300,11 +300,19 @@ export default function QrCardClient({
     setLocalPrefs(updated);
     setSavingPrefs(true);
     try {
-      await fetch(`/api/members/${member.id}`, {
+      // Token-gated parent endpoint — the admin PATCH at /api/members/[id] would
+      // reject this call (it requires staff auth) and silently lose the toggle.
+      const res = await fetch(`/api/members/${member.id}/notify-prefs`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notify_prefs: updated }),
+        body: JSON.stringify({ token: cardToken, notify_prefs: updated }),
       });
+      if (!res.ok) {
+        // Revert local state so the UI stays truthful.
+        setLocalPrefs(localPrefs);
+      }
+    } catch {
+      setLocalPrefs(localPrefs);
     } finally {
       setSavingPrefs(false);
     }
