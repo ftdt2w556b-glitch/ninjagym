@@ -85,7 +85,7 @@ export async function GET() {
 }
 
 /**
- * POST /api/timers — create a custom timer (label + minutes).
+ * POST /api/timers, create a custom timer (label + minutes).
  * Body: { name: string, minutes: number }
  */
 export async function POST(request: NextRequest) {
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * PATCH /api/timers — dismiss a timer for everyone.
+ * PATCH /api/timers, dismiss a timer for everyone.
  * Body: { kind: "auto" | "custom", id: number }
  *
  * For "custom" we flip custom_timers.dismissed.

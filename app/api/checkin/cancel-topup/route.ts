@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (reg.slip_status === "approved") {
-    return NextResponse.json({ error: "Already approved — speak to staff to cancel" }, { status: 409 });
+    return NextResponse.json({ error: "Already approved, speak to staff to cancel" }, { status: 409 });
   }
 
   // Reject the pending_checkin so it disappears from staff queue

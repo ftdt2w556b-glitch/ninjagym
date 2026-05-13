@@ -2,11 +2,11 @@
  * Maps a check-in's membership_type to a session duration for the Timers tab.
  *
  * Two shapes:
- *   - { kind: "minutes", minutes }     — counts down from check_in_at + minutes
- *   - { kind: "endTime", hour, minute } — counts down to today's HH:MM (Bangkok)
+ *   - { kind: "minutes", minutes }    , counts down from check_in_at + minutes
+ *   - { kind: "endTime", hour, minute }, counts down to today's HH:MM (Bangkok)
  *
  * Returns null when no auto-timer applies (all_day, allday_bulk, birthday_event,
- * unknown types). Birthday timers are handled via the custom timer input — rare
+ * unknown types). Birthday timers are handled via the custom timer input, rare
  * enough that staff just type a name + minutes.
  */
 

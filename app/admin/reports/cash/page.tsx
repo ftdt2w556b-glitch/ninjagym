@@ -44,7 +44,7 @@ async function voidTransaction(formData: FormData) {
 
   if (source === "member") {
     // Clear slip_reviewed_at so the entry no longer appears in any date's report.
-    // Do NOT change slip_status — voiding a report entry should never reject the member's card.
+    // Do NOT change slip_status, voiding a report entry should never reject the member's card.
     await admin.from("member_registrations").update({ slip_reviewed_at: null }).eq("id", Number(id));
     const { data: linkedSales } = await admin.from("cash_sales").select("id").eq("reference_id", Number(id)).eq("sale_type", "membership");
     for (const s of linkedSales ?? []) {
@@ -128,7 +128,7 @@ export default async function RevenuePage({
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
   // ── Income queries ────────────────────────────────────────────────────
-  // ALL POS cash sales — single source of truth for cash
+  // ALL POS cash sales, single source of truth for cash
   const { data: cashSales } = await admin
     .from("cash_sales")
     .select("id, amount, processed_at, sale_type, notes, staff_name, reference_id")
@@ -136,7 +136,7 @@ export default async function RevenuePage({
     .lte("processed_at", to)
     .order("processed_at", { ascending: false });
 
-  // Approved non-cash registrations (PromptPay only — cash excluded, counted via cash_sales)
+  // Approved non-cash registrations (PromptPay only, cash excluded, counted via cash_sales)
   const { data: memberPayments } = await admin
     .from("member_registrations")
     .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image, pin")
@@ -366,7 +366,7 @@ export default async function RevenuePage({
               {visibleTx.map((tx, i) => (
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-gray-400 tabular-nums whitespace-nowrap">
-                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) : "—"}
+                    {tx.time ? new Date(tx.time).toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) : "-"}
                   </td>
                   <td className="px-4 py-3 text-gray-700 max-w-[260px]">
                     <div className="flex items-center gap-2 min-w-0">
@@ -403,7 +403,7 @@ export default async function RevenuePage({
                         />
                       </a>
                     ) : (
-                      <span className="text-gray-200 text-xs">—</span>
+                      <span className="text-gray-200 text-xs">-</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">

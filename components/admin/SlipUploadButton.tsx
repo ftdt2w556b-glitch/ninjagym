@@ -54,7 +54,7 @@ export default function SlipUploadButton({ memberId }: { memberId: number }) {
   }
 
   if (done) {
-    return <p className="text-xs text-green-600 font-semibold">✓ Slip uploaded — ready to approve.</p>;
+    return <p className="text-xs text-green-600 font-semibold">✓ Slip uploaded, ready to approve.</p>;
   }
 
   return (

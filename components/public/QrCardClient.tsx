@@ -300,7 +300,7 @@ export default function QrCardClient({
     setLocalPrefs(updated);
     setSavingPrefs(true);
     try {
-      // Token-gated parent endpoint — the admin PATCH at /api/members/[id] would
+      // Token-gated parent endpoint, the admin PATCH at /api/members/[id] would
       // reject this call (it requires staff auth) and silently lose the toggle.
       const res = await fetch(`/api/members/${member.id}/notify-prefs`, {
         method: "PATCH",
@@ -374,7 +374,7 @@ export default function QrCardClient({
     }
   }
 
-  // Multi-package selection — default to first active package, or parent
+  // Multi-package selection, default to first active package, or parent
   const defaultId = activePackages.length > 0 ? activePackages[0].id : member.id;
   const [selectedId, setSelectedId] = useState<number>(defaultId);
 
@@ -606,7 +606,7 @@ export default function QrCardClient({
       </div>
 
 
-      {/* ── Use Session — parent-initiated check-in ─────────────── */}
+      {/* ── Use Session, parent-initiated check-in ─────────────── */}
       {(() => {
         // Use the package the parent selected in "Today's Program" if it's usable,
         // otherwise fall back to the first usable package.
@@ -676,13 +676,13 @@ export default function QrCardClient({
             <p className="text-[#ffe033] text-xs font-semibold mb-4 text-center">{t.beltMaxAchieved} 🥷</p>
           )}
 
-          {/* Free session tracker — every 10 check-ins */}
+          {/* Free session tracker, every 10 check-ins */}
           <div className="border-t border-gray-700 pt-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Free Sessions</p>
               <p className="text-xs text-gray-500">Every 10 sessions</p>
             </div>
-            {/* Pip track — 10 pips, each = 1 check-in */}
+            {/* Pip track, 10 pips, each = 1 check-in */}
             <div className="flex gap-1.5 mb-3">
               {Array.from({ length: 10 }).map((_, i) => {
                 const filled = i < pipsToShow;
@@ -700,7 +700,7 @@ export default function QrCardClient({
                 : `${sessionsInCycle}/10 ${t.freeSessionProgress}`}
             </p>
 
-            {/* Free session redeem — phase-aware states */}
+            {/* Free session redeem, phase-aware states */}
             {redeemPhase === "pending" && (
               <div className="bg-amber-500/10 border border-amber-400/40 rounded-xl px-4 py-3 text-center">
                 <p className="text-2xl mb-1">⏳</p>
@@ -758,7 +758,7 @@ export default function QrCardClient({
       )}
 
 
-      {/* My Sessions — purchase history */}
+      {/* My Sessions, purchase history */}
       {(activePackages.length > 0 || pastPackages.length > 0) && (
         <SessionsList activePackages={activePackages} pastPackages={pastPackages} />
       )}
@@ -782,7 +782,7 @@ export default function QrCardClient({
         />
       )}
 
-      {/* Belt perks — collapsed by default, sits below booking so card stays scannable at the top */}
+      {/* Belt perks, collapsed by default, sits below booking so card stays scannable at the top */}
       {isApproved && unlockedPerks.length > 0 && (
         <BeltPerksSection
           memberId={member.id}

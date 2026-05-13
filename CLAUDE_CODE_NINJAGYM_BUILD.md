@@ -1,4 +1,4 @@
-# NinjaGym PWA — Claude Code Build Instructions
+# NinjaGym PWA, Claude Code Build Instructions
 ## Project: ninjagym.com (Full Replacement of dojo.ninjagym.com)
 ## Stack: Next.js 15 · Supabase · Vercel · Resend · TypeScript · Tailwind CSS · PWA
 
@@ -14,7 +14,7 @@ A full Progressive Web App (PWA) that:
 - Is usable offline for basic check-in (service worker caching)
 - Supports Thai, English, and Russian (flag switcher on public-facing forms)
 
-This is NOT a redesign — it is a feature-complete rebuild of the existing system with the same business logic, plus PWA and POS capabilities.
+This is NOT a redesign, it is a feature-complete rebuild of the existing system with the same business logic, plus PWA and POS capabilities.
 
 ---
 
@@ -36,38 +36,38 @@ This is NOT a redesign — it is a feature-complete rebuild of the existing syst
 
 Build in this order. Complete each phase before starting the next.
 
-### Phase 1 — Foundation
+### Phase 1, Foundation
 - Project scaffolding (Next.js 15, TypeScript, Tailwind)
 - Supabase schema (all tables below)
 - Auth: Supabase Auth with role-based access (admin / staff / owner)
 - Layout system: public layout (480px max), staff layout (900px max)
 - PWA manifest + service worker
 
-### Phase 2 — Public Pages
+### Phase 2, Public Pages
 - Home / landing page
-- /join — member self-registration form (EN/RU/TH switcher)
-- /qr/card/[id] — member QR check-in card
-- /promptpay — PromptPay instructions page
-- /birthdays — birthday/event booking form
-- /shop — public shop page
+- /join, member self-registration form (EN/RU/TH switcher)
+- /qr/card/[id], member QR check-in card
+- /promptpay, PromptPay instructions page
+- /birthdays, birthday/event booking form
+- /shop, public shop page
 
-### Phase 3 — Staff Dashboard
-- /dashboard — daily summary
-- /admin/members — member list + search
-- /admin/payments — PromptPay slip review + approval
-- /admin/event-bookings — birthday/event bookings list + edit
-- /admin/shop-orders — shop order queue
-- /admin/staff — staff account management
-- /admin/reports/cash — cash report + CSV export
-- /scanner — QR scan check-in page
+### Phase 3, Staff Dashboard
+- /dashboard, daily summary
+- /admin/members, member list + search
+- /admin/payments, PromptPay slip review + approval
+- /admin/event-bookings, birthday/event bookings list + edit
+- /admin/shop-orders, shop order queue
+- /admin/staff, staff account management
+- /admin/reports/cash, cash report + CSV export
+- /scanner, QR scan check-in page
 
-### Phase 4 — POS Layer (Tablet)
+### Phase 4, POS Layer (Tablet)
 - Staff PIN login screen (full-screen, no browser chrome when installed as PWA)
 - Cash sale recording with "who processed it + timestamp" logging
 - Local printer bridge integration (POST to http://localhost:3001)
-- /admin/pos — simplified POS view for counter staff
+- /admin/pos, simplified POS view for counter staff
 
-### Phase 5 — Polish
+### Phase 5, Polish
 - Multi-language EN/RU/TH (flag switcher, JS translations object)
 - Offline fallback (service worker caches check-in page + member lookup)
 - Stripe payment option (secondary, collapsed by default on forms)
@@ -186,7 +186,7 @@ create table shop_orders (
 );
 ```
 
-### cash_sales (new — POS layer)
+### cash_sales (new, POS layer)
 ```sql
 create table cash_sales (
   id bigserial primary key,
@@ -281,12 +281,12 @@ create table work_instructions (
 
 ---
 
-## BUSINESS LOGIC (CRITICAL — READ ALL OF THIS)
+## BUSINESS LOGIC (CRITICAL, READ ALL OF THIS)
 
 ### Membership Pricing Rules
-- `getPriceForType(type, kidsCount)` — base price from settings table
+- `getPriceForType(type, kidsCount)`, base price from settings table
 - Per-kid types (multiply base x kids_count): `climb_unguided`, `session_group`, `session_1to1`, `day_camp`, `combo_game_train`, `all_day`
-- Card types (NOT multiplied — one price covers the card): `sessions_4`, `sessions_8`, `sessions_16`, `sessions_20`, `day_camp_4` ... `combo_20`, `monthly_2hr`, `monthly_5hr`
+- Card types (NOT multiplied, one price covers the card): `sessions_4`, `sessions_8`, `sessions_16`, `sessions_20`, `day_camp_4` ... `combo_20`, `monthly_2hr`, `monthly_5hr`
 - ALWAYS use total_price for display and payment defaults, never the raw base price
 
 ### Birthday Booking Pricing
@@ -303,8 +303,8 @@ create table work_instructions (
 
 ### Role Permissions
 - **admin**: full access including delete, edit, settings
-- **staff**: operational — register members, scan QR, record payments, manage shop queue, view event bookings
-- **owner**: read-only — cash report, slip list, member list (no edits)
+- **staff**: operational, register members, scan QR, record payments, manage shop queue, view event bookings
+- **owner**: read-only, cash report, slip list, member list (no edits)
 
 ### QR Check-In Card
 - Public URL: /qr/card/[id]
@@ -333,7 +333,7 @@ create table work_instructions (
 - Max-width: 900px
 
 ### Rules
-- NEVER use em dashes (—) in any copy or content. Use commas, colons, or rephrase.
+- NEVER use em dashes (-) in any copy or content. Use commas, colons, or rephrase.
 - No nested HTML forms. Delete/action buttons must be in separate forms.
 - All images: use next/image with proper dimensions
 - Currency display: format as "7,000 THB" (Thai baht with comma thousands separator)
@@ -417,8 +417,8 @@ export const MEMBERSHIP_TYPES = [
 - From name: "Rick Tew NinjaGym"
 - From address: info@ninjagym.com
 - Emails to build:
-  1. **Registration confirmation** — fires on member signup, shows: name, membership type, total, payment instructions
-  2. **Birthday/event booking confirmation** — fires when email is provided, shows: child name/age, date, time slot, hours, kids count, total, payment method. Cash customers get a PromptPay option link.
+  1. **Registration confirmation**, fires on member signup, shows: name, membership type, total, payment instructions
+  2. **Birthday/event booking confirmation**, fires when email is provided, shows: child name/age, date, time slot, hours, kids count, total, payment method. Cash customers get a PromptPay option link.
 
 ---
 
@@ -461,7 +461,7 @@ module.exports = withPWA({ /* next config */ })
 ## POS / CASH DRAWER INTEGRATION
 
 ### IMPORTANT: Why Pure Browser Bluetooth Won't Work
-Chrome's Web Bluetooth API only supports Bluetooth Low Energy (BLE). The Xprinter XP-58iiW uses Classic Bluetooth (SPP profile). These are incompatible — a browser tab cannot directly open the cash drawer or print receipts on this printer model. This is a hardware protocol limitation, not a software one.
+Chrome's Web Bluetooth API only supports Bluetooth Low Energy (BLE). The Xprinter XP-58iiW uses Classic Bluetooth (SPP profile). These are incompatible, a browser tab cannot directly open the cash drawer or print receipts on this printer model. This is a hardware protocol limitation, not a software one.
 
 **The solution**: A tiny local bridge service running on the tablet (in Termux) that the browser calls via a normal HTTP fetch to localhost. The browser talks HTTP, the bridge talks Bluetooth. This is the standard approach for all browser-based POS systems with Classic Bluetooth printers.
 
@@ -469,17 +469,17 @@ Chrome's Web Bluetooth API only supports Bluetooth Low Energy (BLE). The Xprinte
 ```
 ninjagym.com (Vercel, Next.js)
     |
-    | HTTPS — all business logic, DB writes, auth
+    | HTTPS, all business logic, DB writes, auth
     v
 Browser on Tablet (Chrome, runs ninjagym.com as PWA)
     |
-    | HTTP fetch to localhost:3001 — only for print/drawer
+    | HTTP fetch to localhost:3001, only for print/drawer
     v
 Termux Bridge Service (Node.js, runs locally on tablet)
     |
     | Classic Bluetooth SPP
     v
-Xprinter XP-58iiW — prints receipt + opens cash drawer
+Xprinter XP-58iiW, prints receipt + opens cash drawer
     |
     | RJ11 cable
     v
@@ -504,15 +504,15 @@ export async function openDrawerAndPrint(saleData: SaleData): Promise<boolean> {
     })
     return res.ok
   } catch {
-    // Bridge unavailable — sale is already saved in Supabase
+    // Bridge unavailable, sale is already saved in Supabase
     // Show manual fallback UI
     return false
   }
 }
 ```
 
-### Bridge service setup on tablet (one-time, done by Rick — not part of Next.js build)
-This is a SEPARATE small Node.js app — NOT part of the Next.js codebase. Set up once on the Loyverse tablet.
+### Bridge service setup on tablet (one-time, done by Rick, not part of Next.js build)
+This is a SEPARATE small Node.js app, NOT part of the Next.js codebase. Set up once on the Loyverse tablet.
 
 Steps (do on the Android tablet):
 1. Open Chrome on tablet, go to f-droid.org, install Termux
@@ -520,7 +520,7 @@ Steps (do on the Android tablet):
 3. `npm install -g pm2`
 4. Pair the XP-58iiW in Android Bluetooth settings first
 5. Create the bridge folder and files (see server.js below)
-6. `pm2 start server.js && pm2 save` — runs on every Termux restart
+6. `pm2 start server.js && pm2 save`, runs on every Termux restart
 
 `printer-bridge/server.js`:
 ```javascript
@@ -584,10 +584,10 @@ app.listen(3001, '127.0.0.1', () => console.log('Bridge running'))
 
 ### POS screen in the app (/admin/pos)
 - Full-screen layout optimized for the tablet (landscape or portrait)
-- Staff selects their name from a list (or 4-digit PIN — see questions)
+- Staff selects their name from a list (or 4-digit PIN, see questions)
 - Quick buttons: Register Member, Record Cash Sale, Open Drawer (manual)
 - On cash confirmation: save to Supabase THEN call bridge
-- If bridge fails: show yellow warning "Printer offline — open drawer manually" but do NOT block the sale
+- If bridge fails: show yellow warning "Printer offline, open drawer manually" but do NOT block the sale
 - All sales, drawer opens, and who triggered them logged in `cash_sales` and `drawer_log`
 
 ### Phase ordering for POS
@@ -692,8 +692,8 @@ public/
 ## SUPABASE STORAGE
 
 Create two buckets in Supabase Storage:
-1. `slips` — PromptPay slip images (public read, authenticated write)
-2. `member-photos` — future use
+1. `slips`, PromptPay slip images (public read, authenticated write)
+2. `member-photos`, future use
 
 RLS on `slips`: allow anyone to insert (public upload), admins to read all.
 
@@ -837,5 +837,5 @@ Before starting, have these ready to give Claude Code:
 
 ---
 
-*Spec version: 1.0 — Based on dojo.ninjagym.com session 28 feature set*
+*Spec version: 1.0, Based on dojo.ninjagym.com session 28 feature set*
 *Prepared: 2026-03-27*

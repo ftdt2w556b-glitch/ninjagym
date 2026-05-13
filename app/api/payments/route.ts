@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   if (action === "restore" && !["admin", "manager"].includes(callerRole)) {
-    return NextResponse.json({ error: "Forbidden — only admin or manager can undo an approval" }, { status: 403 });
+    return NextResponse.json({ error: "Forbidden, only admin or manager can undo an approval" }, { status: 403 });
   }
   const slip_status =
     action === "approve"  ? "approved"       :
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (loyaltyErr) {
-      // Non-fatal — log but don't block the approval response
+      // Non-fatal, log but don't block the approval response
       console.error("Loyalty points award failed:", loyaltyErr);
     }
   }

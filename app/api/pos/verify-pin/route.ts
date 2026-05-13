@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (!profile?.pin) {
-    return NextResponse.json({ ok: true }); // no PIN set — allow through
+    return NextResponse.json({ ok: true }); // no PIN set, allow through
   }
   const match = await bcrypt.compare(pin, profile.pin);
   if (!match) return NextResponse.json({ error: "Incorrect PIN" }, { status: 401 });

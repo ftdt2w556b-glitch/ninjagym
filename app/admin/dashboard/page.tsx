@@ -58,7 +58,7 @@ export default async function DashboardPage() {
       .order("created_at", { ascending: false })
       .limit(30),
     // Approved non-cash member registrations today (PromptPay, transfer, etc.)
-    // Cash is excluded — it's tracked exclusively via cash_sales below.
+    // Cash is excluded, it's tracked exclusively via cash_sales below.
     admin
       .from("member_registrations")
       .select("amount_paid")
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       .neq("payment_method", "cash")
       .gte("slip_reviewed_at", bangkokStartOfDay())
       .lte("slip_reviewed_at", bangkokEndOfDay()),
-    // ALL POS cash sales today — single source of truth for cash revenue
+    // ALL POS cash sales today, single source of truth for cash revenue
     admin
       .from("cash_sales")
       .select("amount")
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
       .eq("status", "pending"),
   ]);
 
-  // Fetch replies separately — fails gracefully if table doesn't exist yet
+  // Fetch replies separately, fails gracefully if table doesn't exist yet
   type Reply = { id: number; question_id: number; author_name: string; body: string; created_at: string };
   let repliesMap: Record<number, Reply[]> = {};
   if (rawQuestions && rawQuestions.length > 0) {

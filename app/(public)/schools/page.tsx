@@ -300,7 +300,7 @@ export default function EventSpacePage() {
         <div className="bg-white rounded-2xl p-5 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-3">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            {/* Cash — green */}
+            {/* Cash, green */}
             <div className={`rounded-xl border-2 transition-colors ${
               form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
             }`}>
@@ -319,7 +319,7 @@ export default function EventSpacePage() {
                 </div>
               )}
             </div>
-            {/* PromptPay — blue */}
+            {/* PromptPay, blue */}
             <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
             }`}>
@@ -329,7 +329,7 @@ export default function EventSpacePage() {
                 className="accent-[#1a56db]" />
               <span className="text-sm font-semibold text-[#1a56db]">📱 {t.promptpayOption}</span>
             </label>
-            {/* Credit card — re-enable when needed */}
+            {/* Credit card, re-enable when needed */}
             {/* { value: "stripe", label: "💳 Credit / Debit Card" } */}
           </div>
           {form.payment_method === "stripe" && (

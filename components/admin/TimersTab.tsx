@@ -96,7 +96,7 @@ function playChime() {
       osc.stop(start + 1.3);
     });
   } catch {
-    // Browser blocked it — silent fail
+    // Browser blocked it, silent fail
   }
 }
 
@@ -200,7 +200,7 @@ export default function TimersTab() {
 
   // Chime when a timer crosses zero, then re-chime every minute it stays overdue
   // until the user dismisses it. We don't spam the chime for timers that were
-  // already overdue at page load — we just align with the next minute mark.
+  // already overdue at page load, we just align with the next minute mark.
   const loadedAtRef = useRef<number>(Date.now());
   useEffect(() => {
     const now = Date.now();

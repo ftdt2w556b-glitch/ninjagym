@@ -97,7 +97,7 @@ export async function POST(
     );
   }
 
-  // One pending request per perk type — prevent duplicate requests for the same perk
+  // One pending request per perk type, prevent duplicate requests for the same perk
   const { data: existing } = await admin
     .from("pending_checkins")
     .select("id")

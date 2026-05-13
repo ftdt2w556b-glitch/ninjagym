@@ -235,7 +235,7 @@ export default function EditMemberPage() {
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">
               ⭐ Loyalty Discount (THB)
-              <span className="ml-2 font-normal text-gray-400">— auto-shown to staff at check-in</span>
+              <span className="ml-2 font-normal text-gray-400">- auto-shown to staff at check-in</span>
             </label>
             <input
               type="number" min={0}
@@ -271,7 +271,7 @@ export default function EditMemberPage() {
                 <div key={pkg.id} className={`border rounded-xl p-3 ${isExhausted ? "border-gray-100 opacity-50" : "border-gray-200"}`}>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className={`text-sm font-semibold ${isExhausted ? "text-gray-400" : "text-gray-800"}`}>{label}{isExhausted ? " — used" : ""}</p>
+                      <p className={`text-sm font-semibold ${isExhausted ? "text-gray-400" : "text-gray-800"}`}>{label}{isExhausted ? ", used" : ""}</p>
                       <p className="text-xs text-gray-400">
                         #{pkg.id} · {date}
                         {purchased ? ` · ${purchased}` : ""}
@@ -297,7 +297,7 @@ export default function EditMemberPage() {
                             )
                           )
                         }
-                        placeholder="—"
+                        placeholder="-"
                         className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
                       />
                       <button

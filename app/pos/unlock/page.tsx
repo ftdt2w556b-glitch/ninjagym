@@ -17,7 +17,7 @@ async function unlockKiosk(formData: FormData) {
   const expected = await getPosPassword();
 
   if (!expected) {
-    // No password set anywhere — allow through
+    // No password set anywhere, allow through
     const cookieStore = await cookies();
     cookieStore.set("pos_auth", "unlocked", {
       httpOnly: true, sameSite: "strict", path: "/",

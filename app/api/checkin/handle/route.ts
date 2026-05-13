@@ -31,15 +31,15 @@ export async function POST(req: NextRequest) {
   // A "use a session" tap from the parent's card ALSO creates a pending row whose
   // membership_type ends in _bulk (since they're using sessions from a bulk pack),
   // but it carries NO payment_method. The payment_method field is the reliable
-  // discriminator — purchase rows always have it, session-use rows never do.
+  // discriminator, purchase rows always have it, session-use rows never do.
   const isBulkPurchase =
     (pending.membership_type?.endsWith("_bulk") ?? false) && !!pending.payment_method;
 
-  // Free loyalty session redemption — log attendance + increment free_sessions_redeemed.
+  // Free loyalty session redemption, log attendance + increment free_sessions_redeemed.
   // Must NOT deduct sessions_remaining or touch slip_status/slip_reviewed_at.
   const isFreeSessionLoyalty = pending.membership_type === "free_session_loyalty";
 
-  // Belt perk redemption — no attendance log, no session deduction, no slip_status change.
+  // Belt perk redemption, no attendance log, no session deduction, no slip_status change.
   // Staff just confirms the perk at the centre; the pending_checkin is the only record.
   const isPerkRedemption = pending.membership_type?.startsWith("belt_perk_") ?? false;
 
@@ -81,11 +81,11 @@ export async function POST(req: NextRequest) {
         kids_count:      pending.kids_count,
         kids_names:      pending.kids_names ?? null,
         membership_type: null,
-        notes:           `🥋 PERK: ${perkLabel} — approved by ${staff_name ?? "staff"}`,
+        notes:           `🥋 PERK: ${perkLabel}, approved by ${staff_name ?? "staff"}`,
         check_in_at:     now,
       });
 
-      // Record this redemption. Perks are re-earnable — each approval is its own
+      // Record this redemption. Perks are re-earnable, each approval is its own
       // row. The /api/members/[id]/redeem-perk POST is the gate that prevents a
       // family from queueing too many at once; once a redemption is recorded here,
       // the threshold for the next one doubles (3rd triples, etc).
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     if (!isFreeSessionLoyalty && !isPerkRedemption) {
       // Only stamp slip_reviewed_at + flip to approved for real payment approvals.
-      // Session USE approvals (already-approved packages) must NOT update slip_reviewed_at —
+      // Session USE approvals (already-approved packages) must NOT update slip_reviewed_at -
       // doing so re-surfaces the original purchase amount in today's sales totals.
       await admin
         .from("member_registrations")
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     if (!isFreeSessionLoyalty && !isPerkRedemption) {
       // Only mark the registration rejected if it is still pending_review
       // (i.e. this is a payment rejection, not a rejection of a session USE request
-      // on an already-approved package — we must never flip approved → rejected here)
+      // on an already-approved package, we must never flip approved → rejected here)
       const rejectUpdate: Record<string, string> = { slip_status: "rejected" };
       if (reason?.trim()) {
         rejectUpdate.slip_notes = `Rejected by ${staff_name ?? "staff"}: ${reason.trim()}`;

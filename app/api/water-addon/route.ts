@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/server";
  *
  * Decrements inventory and records a shop cash_sale (cash only).
  * For PromptPay/Stripe, water is already included in the member registration
- * amount — no separate cash_sale is created to avoid double-counting.
+ * amount, no separate cash_sale is created to avoid double-counting.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
     const amount = waterQty * WATER_PRICE;
     const admin = createAdminClient();
 
-    // Never create a separate cash_sale for water — the water amount is always
+    // Never create a separate cash_sale for water, the water amount is always
     // included in the registration's amount_paid regardless of payment method.
     // For cash: the POS cash_sale covers the full registration total (session + water).
-    // For PromptPay/Stripe: same — water is baked into the registration total.
+    // For PromptPay/Stripe: same, water is baked into the registration total.
     // Creating a separate cash_sale here would double-count water in the drawer tally.
 
     // Always decrement shop inventory regardless of payment method

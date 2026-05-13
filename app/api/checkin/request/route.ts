@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (existing) {
-    // Parent may have gone back and changed their kids count or names — always update to latest
+    // Parent may have gone back and changed their kids count or names, always update to latest
     await admin
       .from("pending_checkins")
       .update({ kids_count, kids_names: kids_names ?? null, membership_type: normalizedType, membership_label })

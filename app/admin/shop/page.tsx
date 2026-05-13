@@ -57,7 +57,7 @@ export default async function AdminShopPage({
       });
     }
   } catch {
-    // table may not exist yet — show 0s
+    // table may not exist yet, show 0s
   }
 
   // ── Orders ───────────────────────────────────────────────────
@@ -71,7 +71,7 @@ export default async function AdminShopPage({
     if (status) ordersQuery = ordersQuery.eq("slip_status", status);
     else ordersQuery = ordersQuery.in("slip_status", ["pending_review", "cash_pending"]);
   } else {
-    // inventory tab — still load pending orders count
+    // inventory tab, still load pending orders count
     ordersQuery = ordersQuery.in("slip_status", ["pending_review", "cash_pending"]);
   }
 

@@ -1,6 +1,6 @@
 /**
  * Bangkok timezone utilities (Asia/Bangkok = UTC+7)
- * All dates stored in DB as UTC — use these for display and "today" calculations.
+ * All dates stored in DB as UTC, use these for display and "today" calculations.
  */
 
 const TZ = "Asia/Bangkok";

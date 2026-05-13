@@ -254,7 +254,7 @@ export default async function PosArchivePage({
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id as number}</td>
                     <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{timeStr}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">
-                      {(s.staff_name as string | null) ?? "—"}
+                      {(s.staff_name as string | null) ?? "-"}
                     </td>
                     <td className="px-4 py-3 text-gray-600 max-w-[240px]">
                       <span className="line-clamp-1">{desc}</span>
@@ -268,7 +268,7 @@ export default async function PosArchivePage({
                           -฿{Number((s as Record<string, unknown>).change_given).toLocaleString()}
                         </span>
                       ) : (
-                        <span className="text-gray-200">—</span>
+                        <span className="text-gray-200">-</span>
                       )}
                     </td>
                     {canManage && (

@@ -425,7 +425,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
               <h2 className="font-bold text-gray-900">
-                Tax Invoices — Sales
+                Tax Invoices, Sales
                 <span className="ml-2 text-sm font-normal text-gray-400">({taxInvoices?.length ?? 0})</span>
               </h2>
               <span className="text-xs text-gray-400">Auto-created from POS + PromptPay</span>
@@ -463,7 +463,7 @@ export default async function TaxPage({
                             ? "bg-green-100 text-green-700"
                             : "bg-blue-100 text-blue-700"
                         }`}>
-                          {inv.payment_method === "cash" ? "Cash" : inv.payment_method ?? "—"}
+                          {inv.payment_method === "cash" ? "Cash" : inv.payment_method ?? "-"}
                         </span>
                       </td>
                     </tr>
@@ -517,7 +517,7 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* Add Expense Form — admin/owner only */}
+          {/* Add Expense Form, admin/owner only */}
           {canEdit && <div className="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 className="font-bold text-gray-900 mb-5">Add Expense Invoice</h2>
             <form action={addExpenseAction}>
@@ -576,8 +576,8 @@ export default async function TaxPage({
                 <div>
                   <label className={labelCls}>Input VAT Claimable?</label>
                   <select name="is_vat_claimable" className={inputCls}>
-                    <option value="true">Yes — I have a tax invoice</option>
-                    <option value="false">No — no tax invoice</option>
+                    <option value="true">Yes, I have a tax invoice</option>
+                    <option value="false">No, no tax invoice</option>
                   </select>
                 </div>
                 <div>
@@ -620,7 +620,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="font-bold text-gray-900">
-                Expenses — {monthLabel}
+                Expenses, {monthLabel}
                 <span className="ml-2 text-sm font-normal text-gray-400">({expenses?.length ?? 0})</span>
               </h2>
             </div>
@@ -658,7 +658,7 @@ export default async function TaxPage({
                       <td className="px-4 py-2.5 text-center">
                         {exp.is_vat_claimable
                           ? <span className="text-green-600 text-xs font-bold">✓</span>
-                          : <span className="text-gray-300 text-xs">—</span>
+                          : <span className="text-gray-300 text-xs">-</span>
                         }
                       </td>
                     </tr>
@@ -691,7 +691,7 @@ export default async function TaxPage({
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          TAB: WHT — PND 3 & 53
+          TAB: WHT, PND 3 & 53
       ══════════════════════════════════════════════════════════════════════ */}
       {tab === "wht" && (
         <div>
@@ -699,12 +699,12 @@ export default async function TaxPage({
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-white rounded-2xl shadow p-5">
               <p className="text-xl font-bold text-[#1a56db]">฿{fmt(whtPnd3Total)}</p>
-              <p className="text-sm text-gray-500 mt-1">PND 3 — Individuals</p>
+              <p className="text-sm text-gray-500 mt-1">PND 3, Individuals</p>
               <p className="text-xs text-gray-400">{(whtRecords ?? []).filter((w) => w.pnd_type === "pnd3").length} records</p>
             </div>
             <div className="bg-white rounded-2xl shadow p-5">
               <p className="text-xl font-bold text-purple-600">฿{fmt(whtPnd53Total)}</p>
-              <p className="text-sm text-gray-500 mt-1">PND 53 — Companies</p>
+              <p className="text-sm text-gray-500 mt-1">PND 53, Companies</p>
               <p className="text-xs text-gray-400">{(whtRecords ?? []).filter((w) => w.pnd_type === "pnd53").length} records</p>
             </div>
             <div className="bg-gray-800 text-white rounded-2xl shadow p-5">
@@ -714,7 +714,7 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* Add WHT Form — admin/owner only */}
+          {/* Add WHT Form, admin/owner only */}
           {canEdit && <div className="bg-white rounded-2xl shadow p-6 mb-6">
             <h2 className="font-bold text-gray-900 mb-5">Add WHT Record</h2>
             <form action={addWhtAction}>
@@ -722,8 +722,8 @@ export default async function TaxPage({
                 <div>
                   <label className={labelCls}>Form Type *</label>
                   <select name="pnd_type" required className={inputCls}>
-                    <option value="pnd3">PND 3 — Individual</option>
-                    <option value="pnd53">PND 53 — Company / Juristic</option>
+                    <option value="pnd3">PND 3, Individual</option>
+                    <option value="pnd53">PND 53, Company / Juristic</option>
                   </select>
                 </div>
                 <div>
@@ -819,7 +819,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100">
               <h2 className="font-bold text-gray-900">
-                WHT Records — {monthLabel}
+                WHT Records, {monthLabel}
                 <span className="ml-2 text-sm font-normal text-gray-400">({whtRecords?.length ?? 0})</span>
               </h2>
             </div>
@@ -945,7 +945,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h2 className="font-bold text-gray-900">PP.30 — Monthly VAT Return</h2>
+                <h2 className="font-bold text-gray-900">PP.30, Monthly VAT Return</h2>
                 <p className="text-sm text-gray-500 mt-1">ภ.พ.30 · Output VAT minus Input VAT = Net payable to Revenue Department</p>
               </div>
               <a
@@ -985,12 +985,12 @@ export default async function TaxPage({
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-700">{row.description}</td>
-                        <td className="px-4 py-3 text-right tabular-nums text-gray-500">{row.invoice_count ?? "—"}</td>
+                        <td className="px-4 py-3 text-right tabular-nums text-gray-500">{row.invoice_count ?? "-"}</td>
                         <td className="px-4 py-3 text-right tabular-nums text-gray-700">
-                          {row.base_amount != null ? `฿${fmt(Number(row.base_amount))}` : "—"}
+                          {row.base_amount != null ? `฿${fmt(Number(row.base_amount))}` : "-"}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums font-semibold text-gray-900">
-                          {row.vat_amount != null ? `฿${fmt(Number(row.vat_amount))}` : "—"}
+                          {row.vat_amount != null ? `฿${fmt(Number(row.vat_amount))}` : "-"}
                         </td>
                       </tr>
                     ))}
@@ -1004,7 +1004,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="font-bold text-gray-900">PND 3 — Individual WHT Return</h2>
+                <h2 className="font-bold text-gray-900">PND 3, Individual WHT Return</h2>
                 <p className="text-sm text-gray-500 mt-1 max-w-md">
                   ภ.ง.ด.3 · Tab-delimited .txt file. Open RD Prep &rarr; Import .txt &rarr; verify &rarr; generate .rdx &rarr; submit at e-filing.rd.go.th
                 </p>
@@ -1022,7 +1022,7 @@ export default async function TaxPage({
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="font-bold text-gray-900">PND 53 — Juristic WHT Return</h2>
+                <h2 className="font-bold text-gray-900">PND 53, Juristic WHT Return</h2>
                 <p className="text-sm text-gray-500 mt-1 max-w-md">
                   ภ.ง.ด.53 · Same process as PND 3 but for companies and juristic persons.
                 </p>
@@ -1036,11 +1036,11 @@ export default async function TaxPage({
             </div>
           </div>
 
-          {/* CIT 51 / CIT 50 — Corporate Income Tax */}
+          {/* CIT 51 / CIT 50, Corporate Income Tax */}
           <div className="bg-white rounded-2xl shadow p-6">
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h2 className="font-bold text-gray-900">CIT — Corporate Income Tax</h2>
+                <h2 className="font-bold text-gray-900">CIT, Corporate Income Tax</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   CIT 51 (semi-annual prepayment, due 31 Aug) &nbsp;|&nbsp; CIT 50 (annual return, due within 150 days of FY end)
                 </p>

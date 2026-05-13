@@ -47,7 +47,7 @@ export default function MyMembershipPage() {
       const res = await fetch(`/api/scanner/lookup?pin=${pin}`);
       const data = await res.json();
       if (res.status === 429) {
-        // Locked out — show a longer-lived message; don't auto-clear.
+        // Locked out, show a longer-lived message; don't auto-clear.
         const mins = Number(data?.retry_after_minutes) || 30;
         setShake(true);
         setPinError(`Too many wrong tries. Please try again in ${mins} minute${mins === 1 ? "" : "s"}.`);
@@ -56,7 +56,7 @@ export default function MyMembershipPage() {
         return;
       }
       if (!res.ok || !data?.id) { triggerPinError(); setPinLoading(false); return; }
-      // Keep spinner showing until navigation completes — don't reset loading
+      // Keep spinner showing until navigation completes, don't reset loading
       router.push(`/qr/card/${data.id}?token=${data.token}`);
     } catch {
       triggerPinError();

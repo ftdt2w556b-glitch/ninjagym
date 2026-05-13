@@ -7,7 +7,7 @@ type Phase = "idle" | "picking" | "confirming" | "submitting" | "pending" | "app
 
 interface Props {
   memberId: number;
-  authMemberId: number;   // parent registration ID — what the cardToken is signed for
+  authMemberId: number;   // parent registration ID, what the cardToken is signed for
   memberName: string;
   membershipLabel: string;
   sessionsRemaining: number;
@@ -60,7 +60,7 @@ export default function UseSessionButton({
   }, [memberId]);
 
   // Poll for status changes (replaces a realtime channel that leaked every
-  // pending_checkins row to anon subscribers — see /api/checkin/pending-status).
+  // pending_checkins row to anon subscribers, see /api/checkin/pending-status).
   useEffect(() => {
     if (!pendingId) return;
     let cancelled = false;
@@ -73,7 +73,7 @@ export default function UseSessionButton({
           if (status === "approved") setPhase("approved");
           else if (status === "rejected") setPhase("rejected");
         }
-      } catch { /* network blip — next tick will retry */ }
+      } catch { /* network blip, next tick will retry */ }
     };
     const handle = setInterval(tick, 3000);
     tick(); // also fire one immediately on mount
@@ -140,7 +140,7 @@ export default function UseSessionButton({
             +
           </button>
         </div>
-        {/* Kids names — required so staff can find the right child */}
+        {/* Kids names, required so staff can find the right child */}
         <div>
           <label className="block text-sm font-semibold text-gray-600 mb-1">
             Kids names <span className="text-red-400">*</span>

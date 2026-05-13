@@ -4,7 +4,7 @@ import { signMemberId } from "@/lib/member-token";
 
 /**
  * POST /api/find-member
- * Requires both name AND phone to match — two-factor lookup.
+ * Requires both name AND phone to match, two-factor lookup.
  * Uses admin client so RLS never blocks the query.
  * Only returns approved members.
  */

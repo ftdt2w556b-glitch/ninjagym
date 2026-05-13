@@ -52,7 +52,7 @@ export default function CameraScanner({ onScan, onClose }: Props) {
             const param = url.searchParams.get("member");
             if (param) memberId = param;
           } catch {
-            // not a URL — use raw value
+            // not a URL, use raw value
           }
 
           onScan(memberId);

@@ -32,7 +32,7 @@ export default function BeltPerksSection({
   const [phases, setPhases]       = useState<Record<string, Phase>>({});
   const [pendingIds, setPendingIds] = useState<Record<string, number | null>>({});
 
-  // Poll for perk approval/rejection — one timer per pending perk.
+  // Poll for perk approval/rejection, one timer per pending perk.
   // Replaces a realtime channel that exposed every pending_checkins row to
   // anon subscribers. See /api/checkin/pending-status for the gated endpoint.
   useEffect(() => {

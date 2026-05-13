@@ -35,7 +35,7 @@ export default async function PaymentsPage({
       bkk.setUTCDate(1);
       return new Date(bkk.getTime() - 7 * 3_600_000).toISOString();
     }
-    return null; // "all" — no lower bound
+    return null; // "all", no lower bound
   })();
 
   async function cleanupTestRecords(_fd: FormData) {
@@ -76,12 +76,12 @@ export default async function PaymentsPage({
   const userRole = profile?.role ?? "staff";
   const staffName = (profile as { name?: string | null } | null)?.name ?? "Staff";
 
-  // ── Members query (exclude birthday_event — managed via Events tab) ──
+  // ── Members query (exclude birthday_event, managed via Events tab) ──
   let membersQuery = admin
     .from("member_registrations")
     .select("id, name, phone, email, membership_type, kids_count, kids_names, payment_method, amount_paid, slip_image, slip_hash, slip_status, slip_notes, slip_uploaded_at, created_at")
     .neq("membership_type", "birthday_event")
-    .neq("payment_method", "self_register");  // auto-approved at join — no payment to review
+    .neq("payment_method", "self_register");  // auto-approved at join, no payment to review
 
   if (status) {
     // Approved/Rejected: sort by slip_reviewed_at so today's check-ins always appear at top
@@ -274,7 +274,7 @@ export default async function PaymentsPage({
             </a>
           ))}
         </div>
-        {/* Name search — useful for finding old approved/rejected records */}
+        {/* Name search, useful for finding old approved/rejected records */}
         <form method="GET" className="flex items-center gap-1 ml-auto">
           <input type="hidden" name="source" value={source} />
           {status && <input type="hidden" name="status" value={status} />}
@@ -299,7 +299,7 @@ export default async function PaymentsPage({
       {/* ── Members list ── */}
       {source === "members" && (
         <div className="flex flex-col gap-4">
-          {/* Range filter — only on Approved tab, applies to both Belt Perks and Check-Ins subsections */}
+          {/* Range filter, only on Approved tab, applies to both Belt Perks and Check-Ins subsections */}
           {status === "approved" && (
             <div className="flex items-center gap-2 self-end -mb-2">
               <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide mr-1">Show approved:</span>
@@ -333,9 +333,9 @@ export default async function PaymentsPage({
                 <span className="text-base">🥋</span>
                 <h2 className="font-bold text-amber-900 text-sm">
                   Belt Perks Approved
-                  {approvedRange === "today" ? " — Today" :
-                   approvedRange === "week"  ? " — This Week" :
-                   approvedRange === "month" ? " — This Month" : ""}
+                  {approvedRange === "today" ? ", Today" :
+                   approvedRange === "week"  ? ", This Week" :
+                   approvedRange === "month" ? ", This Month" : ""}
                 </h2>
                 <span className="text-xs text-amber-700 bg-amber-100 rounded-full px-2 py-0.5 font-semibold">
                   {perks?.length ?? 0}
@@ -346,7 +346,7 @@ export default async function PaymentsPage({
                   const handledAt = p.handled_at ? new Date(p.handled_at as string) : null;
                   const handledStr = handledAt
                     ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })
-                    : "—";
+                    : "-";
                   return (
                     <div key={p.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-amber-100">
                       <div className="min-w-0">
@@ -378,10 +378,10 @@ export default async function PaymentsPage({
                 <span className="text-base">✅</span>
                 <h2 className="font-bold text-emerald-900 text-sm">
                   Check-Ins Approved
-                  {approvedRange === "today" ? " — Today" :
-                   approvedRange === "week"  ? " — This Week" :
-                   approvedRange === "month" ? " — This Month" :
-                                                " — All"}
+                  {approvedRange === "today" ? ", Today" :
+                   approvedRange === "week"  ? ", This Week" :
+                   approvedRange === "month" ? ", This Month" :
+                                                ", All"}
                 </h2>
                 <span className="text-xs text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 font-semibold">
                   {approvedCheckIns?.length ?? 0}
@@ -392,7 +392,7 @@ export default async function PaymentsPage({
                   const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
                   const handledStr = handledAt
                     ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
-                    : "—";
+                    : "-";
                   const isPayment = !!c.payment_method;
                   return (
                     <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
@@ -474,7 +474,7 @@ export default async function PaymentsPage({
                     <p className="text-xs text-gray-500 mb-2">Payment Slip:</p>
                     {isDupeSlip && (
                       <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
-                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                        ⚠️ Duplicate slip, this image was uploaded on another record. Verify before approving.
                       </div>
                     )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">
@@ -577,7 +577,7 @@ export default async function PaymentsPage({
                     <p className="text-xs text-gray-500 mb-2">Payment Slip:</p>
                     {isDupeSlip && (
                       <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
-                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                        ⚠️ Duplicate slip, this image was uploaded on another record. Verify before approving.
                       </div>
                     )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">
@@ -676,7 +676,7 @@ export default async function PaymentsPage({
                   <div className="mb-4">
                     {isDupeSlip && (
                       <div className="mb-2 inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 rounded-full px-3 py-1">
-                        ⚠️ Duplicate slip — this image was uploaded on another record. Verify before approving.
+                        ⚠️ Duplicate slip, this image was uploaded on another record. Verify before approving.
                       </div>
                     )}
                     <a href={slipUrl} target="_blank" rel="noopener noreferrer">

@@ -149,7 +149,7 @@ export default function PosSimple({
         }
       }
 
-      setSaleResult({ ok: true, message: `Sale complete — ${total.toLocaleString()} THB collected` });
+      setSaleResult({ ok: true, message: `Sale complete, ${total.toLocaleString()} THB collected` });
       // Reset sale fields
       setKids(1);
       setMemberPin("");
@@ -281,7 +281,7 @@ export default function PosSimple({
             <p style={s.label}>Product</p>
             <select style={s.select} value={selectedOption} onChange={(e) => { setSelectedOption(Number(e.target.value)); setKids(1); }}>
               {MEMBERSHIP_OPTIONS.map((o, i) => (
-                <option key={i} value={i}>{o.label} — {o.amount.toLocaleString()} THB{i === 0 ? "/kid" : ""}</option>
+                <option key={i} value={i}>{o.label}, {o.amount.toLocaleString()} THB{i === 0 ? "/kid" : ""}</option>
               ))}
             </select>
 
@@ -347,7 +347,7 @@ export default function PosSimple({
             onClick={processSale}
             disabled={processing}
           >
-            {processing ? "Processing..." : "Confirm — Cash Received"}
+            {processing ? "Processing..." : "Confirm, Cash Received"}
           </button>
           <button style={{ ...s.btn, ...s.btnGray }} onClick={() => setScreen("sale")} disabled={processing}>
             Back

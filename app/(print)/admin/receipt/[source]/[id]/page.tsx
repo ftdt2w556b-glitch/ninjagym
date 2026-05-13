@@ -82,13 +82,13 @@ export default async function ReceiptPage({
     const items = data.items as Array<{ name?: string; label?: string; qty?: number }> | null;
     const rawItemName = items?.[0]?.name || items?.[0]?.label || "";
     if (rawItemName) {
-      // POS prefixes items with "CustomerName: Program" — strip the prefix
+      // POS prefixes items with "CustomerName: Program", strip the prefix
       const programPart = rawItemName.includes(": ")
         ? rawItemName.split(": ").slice(1).join(": ")
         : rawItemName;
 
       // If qty is already encoded in the label (e.g. "Group Sessions (bulk) ×10 (10% off)")
-      // use it directly — stripping the discount suffix for cleaner receipt display
+      // use it directly, stripping the discount suffix for cleaner receipt display
       if (programPart.includes("×")) {
         program = programPart.replace(/\s*\(\d+%\s*off\)/i, "").trim();
       } else {

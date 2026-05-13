@@ -96,7 +96,7 @@ export default function JoinPage() {
       body.append("email", form.email);
       body.append("kids_names", form.kids_names);
       body.append("kids_count", "1");  // default; parent sets actual count when choosing program
-      body.append("membership_type", "session_group");  // placeholder — no sessions yet
+      body.append("membership_type", "session_group");  // placeholder, no sessions yet
       body.append("payment_method", "self_register");   // auto-approved, 0 sessions
       body.append("sessions_remaining", "0");
       body.append("amount_paid", "0");

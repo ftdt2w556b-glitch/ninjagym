@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { hashSlipFile } from "@/lib/slip-hash";
 
-/** POST /api/members/[id]/slip — staff uploads a slip for an existing registration */
+/** POST /api/members/[id]/slip, staff uploads a slip for an existing registration */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

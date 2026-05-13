@@ -7,7 +7,7 @@ import { createHash } from "crypto";
  * re-uploads the exact same image (different registration / event / shop order)
  * to claim a payment that was already used.
  *
- * Won't catch near-duplicates (re-cropped, brightness-adjusted, etc.) — that
+ * Won't catch near-duplicates (re-cropped, brightness-adjusted, etc.), that
  * would need perceptual hashing. Won't catch a fresh screenshot of the same
  * underlying transaction either. But it cleanly catches the most common cheat:
  * exact-byte image reuse.

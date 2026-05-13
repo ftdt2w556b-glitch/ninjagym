@@ -72,11 +72,32 @@ export default function BirthdaysPage() {
   const total = baseTotal + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0);
   const selectedSlot = TIME_SLOTS.find((s) => s.id === form.time_slot)!;
 
+  // Parse the first hour-like number out of the free-text start/end time field.
+  // Handles "2:00pm-4:00pm", "14:00-16:00", "2pm to 4pm", and similar.
+  // Returns null if no clear hour can be parsed.
+  function parseStartHour(hours: string): number | null {
+    const m = hours.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+    if (!m) return null;
+    let h = parseInt(m[1], 10);
+    const ampm = m[3]?.toLowerCase();
+    if (ampm === "pm" && h < 12) h += 12;
+    if (ampm === "am" && h === 12) h = 0;
+    return h;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!termsAccepted) {
       setError("Please read and accept the Terms before submitting.");
       return;
+    }
+    // Weekend events cannot start before 2:00pm (daytime is for training).
+    if (form.time_slot === "weekend") {
+      const startHour = parseStartHour(form.hours);
+      if (startHour !== null && startHour < 14) {
+        setError("Weekend birthdays must start at 2:00pm or later. Earlier hours are reserved for daily training.");
+        return;
+      }
     }
     setSubmitting(true);
     setError("");
@@ -301,6 +322,14 @@ export default function BirthdaysPage() {
                 </label>
               ))}
             </div>
+            {form.time_slot === "weekend" && (
+              <div className="mt-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3">
+                <p className="text-xs font-bold text-amber-900 mb-1">NOTE: Weekend bookings must start at 2:00pm or later</p>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Mornings and early afternoons on Saturday and Sunday are reserved for regular training. Please set your start time to 2:00pm or later in the field below.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -374,7 +403,7 @@ export default function BirthdaysPage() {
           </p>
         </div>
 
-        {/* Payment method — online birthday bookings are PromptPay only.
+        {/* Payment method, online birthday bookings are PromptPay only.
             Cash bookings must be made IN PERSON at the centre so the date is
             held only after the cash is in hand. */}
         <div className="bg-white rounded-2xl p-5 shadow">
@@ -394,7 +423,7 @@ export default function BirthdaysPage() {
           <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <p className="text-xs font-bold text-amber-900 mb-1">💵 Want to pay cash?</p>
             <p className="text-xs text-amber-800 leading-relaxed">
-              Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only — your date is not held until payment is received.
+              Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only, your date is not held until payment is received.
             </p>
           </div>
         </div>

@@ -85,7 +85,7 @@ export default function HomePage() {
         <LanguageSwitcher current={lang} onChange={handleLang} />
       </div>
 
-      {/* Logo — large enough to read "Rick Tew's" text on it */}
+      {/* Logo, large enough to read "Rick Tew's" text on it */}
       <div className="mt-2 mb-3">
         <Image
           src="/images/logo_small.png"
@@ -97,7 +97,7 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Animated headline — words light up one by one then stay yellow */}
+      {/* Animated headline, words light up one by one then stay yellow */}
       <div
         className="font-fredoka font-bold text-center drop-shadow-lg mb-2 select-none"
         style={{ fontSize: "clamp(1.5rem, 6.5vw, 2.1rem)", textShadow: "1px 2px 0px rgba(0,0,0,0.45)", lineHeight: 1.25 }}
@@ -119,7 +119,7 @@ export default function HomePage() {
             </span>
           ))}
         </div>
-        {/* Line 2: Play like a Ninja!! — all lights up together */}
+        {/* Line 2: Play like a Ninja!!, all lights up together */}
         <div style={{
           color: litStage >= 5 ? "#ffe033" : "rgba(255,255,255,0.85)",
           transition: "color 0.55s ease",
@@ -139,7 +139,7 @@ export default function HomePage() {
         className="relative w-full flex justify-center pointer-events-none"
         style={{ marginTop: "-18px", marginBottom: "-42px", zIndex: 10 }}
       >
-        {/* Yellow stars — behind the ninja (zIndex 1) */}
+        {/* Yellow stars, behind the ninja (zIndex 1) */}
         {YELLOW_STARS.map((s, i) => (
           <span
             key={i}
@@ -161,7 +161,7 @@ export default function HomePage() {
           </span>
         ))}
 
-        {/* Ninja image — above stars (zIndex 2) */}
+        {/* Ninja image, above stars (zIndex 2) */}
         <div style={{ animation: "floatNinja 4s ease-in-out infinite", position: "relative", zIndex: 2 }}>
           <Image
             src="/images/App1_small.png"
@@ -174,10 +174,10 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CTA buttons — mt-3 gives breathing room below ninja; zIndex 5 */}
+      {/* CTA buttons, mt-3 gives breathing room below ninja; zIndex 5 */}
       <div className="flex flex-col gap-3 w-full relative mt-3" style={{ zIndex: 5 }}>
 
-        {/* JOIN NOW — trampoline glow synced with ninja float (4s) */}
+        {/* JOIN NOW, trampoline glow synced with ninja float (4s) */}
         <Link
           href="/join"
           className="bg-gradient-to-b from-[#5dff70] to-[#18a828] text-white font-bangers text-4xl rounded-full py-3 text-center shadow-xl active:scale-95 tracking-wider"
@@ -233,7 +233,7 @@ export default function HomePage() {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-12px); }
         }
-        /* Button brightens when ninja is at lowest point (0%/100%) — trampoline */
+        /* Button brightens when ninja is at lowest point (0%/100%), trampoline */
         @keyframes trampolineGlow {
           0%, 100% { filter: brightness(1.25) saturate(1.15); box-shadow: 0 0 18px rgba(93,255,112,0.55); }
           40%, 60% { filter: brightness(1)    saturate(1);    box-shadow: 0 4px 14px rgba(0,0,0,0.25); }

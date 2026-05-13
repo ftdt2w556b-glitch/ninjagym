@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Block unapproved members
     if (member.slip_status !== "approved") {
       return NextResponse.json(
-        { error: "Payment not approved yet — approve the member first before checking in." },
+        { error: "Payment not approved yet, approve the member first before checking in." },
         { status: 403 }
       );
     }
@@ -67,12 +67,12 @@ export async function POST(request: NextRequest) {
     const outOfSessions = member.sessions_remaining !== null && member.sessions_remaining === 0;
     const warned = outOfSessions;
 
-    // Kids count — use override from staff (e.g. mom has 2 kids but only brought 1 today)
+    // Kids count, use override from staff (e.g. mom has 2 kids but only brought 1 today)
     const kidsCount = kids_count_override !== null ? kids_count_override : Math.max(1, member.kids_count ?? 1);
     const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
     const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
 
-    // Kids names — for top-ups, look up from parent registration
+    // Kids names, for top-ups, look up from parent registration
     let kidsNames: string | null = member.kids_names ?? null;
     if (!kidsNames && member.parent_member_id) {
       const { data: parent } = await admin

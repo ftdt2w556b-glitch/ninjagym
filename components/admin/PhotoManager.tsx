@@ -87,7 +87,7 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
       return;
     }
 
-    // Optimistic add to pending — use the server-generated file_path so the image URL is correct
+    // Optimistic add to pending, use the server-generated file_path so the image URL is correct
     setPhotos(prev => [{
       id: data.id,
       file_path: data.file_path,
@@ -182,7 +182,7 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
           ))}
         </div>
 
-        {/* Tag filter bar — only shown when tags exist */}
+        {/* Tag filter bar, only shown when tags exist */}
         {availableTags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
             <button

@@ -16,7 +16,7 @@ async function requireAdmin(request: NextRequest) {
   return user;
 }
 
-/** GET /api/members/[id] — fetch a single member + top-up packages (admin only) */
+/** GET /api/members/[id], fetch a single member + top-up packages (admin only) */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -44,7 +44,7 @@ export async function GET(
   return NextResponse.json({ ...data, packages: packages ?? [] });
 }
 
-/** PATCH /api/members/[id] — update member fields (admin only) */
+/** PATCH /api/members/[id], update member fields (admin only) */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -72,7 +72,7 @@ export async function PATCH(
   const admin = createAdminClient();
 
   // Only stamp slip_reviewed_at on the FIRST approval (pending_review → approved).
-  // Never re-stamp — re-stamping shifts the record into today's sales report at ฿0.
+  // Never re-stamp, re-stamping shifts the record into today's sales report at ฿0.
   if (updates.slip_status === "approved") {
     const { data: current } = await admin
       .from("member_registrations")
@@ -102,7 +102,7 @@ export async function PATCH(
   return NextResponse.json({ success: true });
 }
 
-/** DELETE /api/members/[id] — permanently remove a member (admin only) */
+/** DELETE /api/members/[id], permanently remove a member (admin only) */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -127,7 +127,7 @@ export async function DELETE(
     await admin.from("member_registrations").delete().eq("id", child.id);
   }
 
-  // Delete remaining related records (order matters — clear FKs before parent)
+  // Delete remaining related records (order matters, clear FKs before parent)
   await admin.from("pending_checkins").delete().eq("member_id", id);
   await admin.from("tax_invoices").delete().eq("member_registration_id", id);
   await admin.from("attendance_logs").delete().eq("member_id", id);

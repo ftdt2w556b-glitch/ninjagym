@@ -143,7 +143,7 @@ export default async function PrintAllReceiptsPage({
   return (
     <html>
       <head>
-        <title>All Receipts — {label}</title>
+        <title>All Receipts, {label}</title>
         <style>{`
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f5f5f5; }

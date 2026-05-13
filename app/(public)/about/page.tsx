@@ -209,7 +209,7 @@ export default function AboutPage() {
                 Gaming consoles and computers, including Minecraft. Kids can play, build and explore in a fun supervised space.
               </p>
 
-              {/* Minecraft expandable — in-app, no external link */}
+              {/* Minecraft expandable, in-app, no external link */}
               <button
                 onClick={() => setMinecraftOpen((o) => !o)}
                 className="inline-flex items-center gap-1 text-xs text-[#1a56db] font-semibold underline"

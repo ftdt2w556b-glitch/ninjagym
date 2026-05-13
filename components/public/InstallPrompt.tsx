@@ -34,7 +34,7 @@ export default function InstallPrompt() {
       return;
     }
 
-    // Android/Chrome — native install prompt
+    // Android/Chrome, native install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setPrompt(e as BeforeInstallPromptEvent);
@@ -79,18 +79,18 @@ export default function InstallPrompt() {
             <p className="font-bold text-sm">{t.installTitle}</p>
             {isIOS ? (
               isIOSSafari ? (
-                /* Safari on iOS — can install via Share sheet */
+                /* Safari on iOS, can install via Share sheet */
                 <p className="text-xs text-white/80 mt-0.5">
                   Tap <strong>Share ↑</strong> then <strong>Add to Home Screen</strong> to save your card.
                 </p>
               ) : (
-                /* Chrome / Firefox on iOS — must switch to Safari */
+                /* Chrome / Firefox on iOS, must switch to Safari */
                 <p className="text-xs text-white/80 mt-0.5">
                   Open this page in <strong>Safari</strong> to add NinjaGym to your home screen.
                 </p>
               )
             ) : (
-              /* Android / Chrome / Edge — native install prompt */
+              /* Android / Chrome / Edge, native install prompt */
               <p className="text-xs text-white/80 mt-0.5">{t.installHint}</p>
             )}
           </div>

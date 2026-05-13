@@ -8,7 +8,7 @@ import { verifyMemberToken } from "@/lib/member-token";
  *
  * Parent-facing endpoint for toggling email notifications on their own card.
  * Token-gated (same signed token used by /qr/card/[id]). Only the three known
- * boolean keys are accepted — anything else is dropped to prevent privilege
+ * boolean keys are accepted, anything else is dropped to prevent privilege
  * escalation via this route.
  */
 const ALLOWED_KEYS = new Set(["checkin", "low_sessions", "milestone"]);

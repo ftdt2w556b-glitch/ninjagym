@@ -41,14 +41,14 @@ export async function GET() {
     const total = (data ?? []).reduce((s, r) => s + Number(r.amount), 0);
     const count = (data ?? []).length;
 
-    // Only use drawer_removed if it was recorded today (Bangkok time) — auto-resets each day
+    // Only use drawer_removed if it was recorded today (Bangkok time), auto-resets each day
     const today = bangkokToday();
     const removedDate = removedDateSetting?.value ?? "";
     const removed = (removedDate === today && removedSetting?.value)
       ? parseInt(removedSetting.value, 10)
       : 0;
 
-    // notes_1k is a newer column — fetch separately to avoid breaking tally if column missing
+    // notes_1k is a newer column, fetch separately to avoid breaking tally if column missing
     let boxTotal = 0;
     const ids = (data ?? []).map((r) => r.id as number);
     if (ids.length > 0) {
@@ -61,7 +61,7 @@ export async function GET() {
 
     const drawerTotal = total - boxTotal;
     const float = floatSetting?.value ? parseInt(floatSetting.value, 10) : 3000;
-    // Only use drawer_expected override if it was set today — auto-resets each day like drawer_removed
+    // Only use drawer_expected override if it was set today, auto-resets each day like drawer_removed
     const expectedDate = expectedDateSetting?.value ?? "";
     const expectedOverride = (expectedDate === today && expectedSetting?.value && expectedSetting.value !== "")
       ? parseInt(expectedSetting.value, 10)

@@ -23,7 +23,7 @@ const serwist = new Serwist({
         expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
       },
     },
-    // QR card pages are NOT cached — they contain live member data
+    // QR card pages are NOT cached, they contain live member data
     // and caching them caused ERR_FAILED on navigation
   ],
 });

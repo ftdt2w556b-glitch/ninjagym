@@ -70,7 +70,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   const [correctBulkQty, setCorrectBulkQty] = useState(4);
   const [showCorrect, setShowCorrect] = useState(false);
 
-  // Pending cash registrations — client-side copy so we can remove approved ones instantly
+  // Pending cash registrations, client-side copy so we can remove approved ones instantly
   const [pendingList, setPendingList] = useState<PendingReg[]>(pendingCash);
 
   // Live prices from admin settings (falls back to lib/pricing hardcoded values)
@@ -255,7 +255,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
   }
 
   async function verifyPin(entered: string) {
-    // Server-side check via API — just check against hashed pin
+    // Server-side check via API, just check against hashed pin
     const res = await fetch("/api/pos/verify-pin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -474,7 +474,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
       body: JSON.stringify({ action: "open_drawer", staffId: activeStaff!.id, staffType: activeStaff!.staffType, staffName: activeStaff!.name, reason: "manual_open" }),
     });
     const bridgeOk = await openDrawerOnly(activeStaff!.name);
-    setDrawerMsg(bridgeOk ? "Drawer opened." : "⚠️ Drawer did not open — tap Setup Drawer to select the port.");
+    setDrawerMsg(bridgeOk ? "Drawer opened." : "⚠️ Drawer did not open, tap Setup Drawer to select the port.");
     setTimeout(() => setDrawerMsg(""), 5000);
   }
 
@@ -606,7 +606,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
         </div>
 
         <div className="w-full max-w-sm flex flex-col gap-4">
-          {/* Pending cash correction panel — admin/manager only */}
+          {/* Pending cash correction panel, admin/manager only */}
           {referenceId && (activeStaff?.role === "admin" || activeStaff?.role === "manager") && (
             <div className="bg-gray-800 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-1">
@@ -660,7 +660,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-sm">Cash given</span>
               <span className={`font-fredoka text-2xl ${cashInput ? "text-[#ffe033]" : "text-gray-500"}`}>
-                {cashInput ? parseInt(cashInput).toLocaleString() + " THB" : "—"}
+                {cashInput ? parseInt(cashInput).toLocaleString() + " THB" : "-"}
               </span>
             </div>
             <div className="border-t border-gray-700 pt-3 flex justify-between items-center">
@@ -670,7 +670,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                 : isEnough ? "text-[#22c55e]"
                 : "text-red-400"
               }`}>
-                {!cashInput ? "—" : isEnough ? `${change.toLocaleString()} THB` : "Not enough"}
+                {!cashInput ? "-" : isEnough ? `${change.toLocaleString()} THB` : "Not enough"}
               </span>
             </div>
           </div>
@@ -716,7 +716,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             </button>
           </div>
 
-          {/* ฿1,000 note tracker — only shown if customer paid with 1K notes */}
+          {/* ฿1,000 note tracker, only shown if customer paid with 1K notes */}
           {isEnough && maxNotes1k > 0 && (
             <div className="bg-gray-800 rounded-2xl p-4">
               <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">
@@ -817,7 +817,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                     </button>
                     {(activeStaff?.role === "admin" || activeStaff?.role === "manager") && (
                       <button
-                        title="Dismiss — already paid or no longer needed"
+                        title="Dismiss, already paid or no longer needed"
                         onClick={async () => {
                           await fetch("/api/pos/action", {
                             method: "POST",
@@ -1156,7 +1156,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
               className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
           </div>
 
-          {/* B2B Customer — for tax invoices issued to a company */}
+          {/* B2B Customer, for tax invoices issued to a company */}
           <div className="bg-white rounded-2xl shadow p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-0.5">B2B Customer (optional)</label>
             <p className="text-xs text-gray-400 mb-3">Only needed when issuing a formal tax invoice to a company. Leave blank for walk-in / individual customers.</p>
@@ -1191,7 +1191,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                   {result.printerOk ? (
                     <p className="text-green-100 text-sm">Receipt printed, drawer opened.</p>
                   ) : (
-                    <p className="text-yellow-200 text-sm font-semibold">⚠️ Drawer did not open — check printer bridge connection.</p>
+                    <p className="text-yellow-200 text-sm font-semibold">⚠️ Drawer did not open, check printer bridge connection.</p>
                   )}
                   <div className="mt-3 flex justify-end">
                     <span className="text-green-200 text-xs">
@@ -1201,7 +1201,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
                 </>
               ) : (
                 <>
-                  <p className="font-bold">Sale failed — check connection</p>
+                  <p className="font-bold">Sale failed, check connection</p>
                   <button onClick={() => setResult(null)} className="mt-2 bg-white/20 text-white font-bold px-4 py-2 rounded-xl">Try Again</button>
                 </>
               )}

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/cron/backup-members
  *
- * Daily Vercel Cron — dumps every `member_registrations` row (parents + top-ups)
+ * Daily Vercel Cron, dumps every `member_registrations` row (parents + top-ups)
  * to JSON, plus a parents-only CSV, and uploads both to the private `backups`
  * Supabase Storage bucket. Old backups beyond `settings.backup_retention_days`
  * (default 30) are deleted on the same pass.
@@ -47,7 +47,7 @@ function toCsv(rows: Record<string, unknown>[], fields: readonly string[]): stri
 }
 
 async function ensureBucket(admin: ReturnType<typeof createAdminClient>) {
-  // Create-if-missing. Bucket is PRIVATE — only service-role reads.
+  // Create-if-missing. Bucket is PRIVATE, only service-role reads.
   const { data: existing } = await admin.storage.getBucket(BUCKET);
   if (!existing) {
     const { error } = await admin.storage.createBucket(BUCKET, { public: false });
@@ -56,7 +56,7 @@ async function ensureBucket(admin: ReturnType<typeof createAdminClient>) {
 }
 
 export async function GET(request: NextRequest) {
-  // Auth — same convention as /api/cron/cleanup-slips
+  // Auth, same convention as /api/cron/cleanup-slips
   const secret = process.env.CRON_SECRET;
   if (secret) {
     const auth = request.headers.get("authorization");

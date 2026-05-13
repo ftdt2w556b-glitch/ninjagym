@@ -1,5 +1,9 @@
 @AGENTS.md
 
+## Style rules
+
+- **Never use em dashes (—) in any text.** Anywhere. UI strings, placeholders, code comments, docs, commit messages, chat responses. The user considers em dashes unprofessional and actively wants them removed. Use a comma, colon, period, parentheses, or rewrite the sentence. En dashes (–) in numeric ranges like "Ages 3–10" are acceptable.
+
 ## How staff actually use the app
 
 - **PIN codes, not QR scanning.** The URL paths (`/qr/card/[id]`) and some component names (e.g. `ScannerClient`) still say "QR" for historical reasons, but in the dojo staff look members up by their 4-digit PIN. There is no physical QR scanner on site. Don't suggest scan-based UX; suggest PIN entry / PIN lookup.
@@ -16,27 +20,27 @@
   - `GET /api/checkin/pending-status?id=&token=` (one pending row)
   - `GET /api/members/[id]/topup-status?token=` (cash + PromptPay top-up flow)
 - **Parent-facing token endpoints (token = signed `cardToken`):**
-  - `POST /api/members/[id]/redeem-perk` — perk request
-  - `PATCH /api/members/[id]/notify-prefs` — toggle email notifications
-  - `GET /api/checkin/pending-status` — poll pending status
-  - `GET /api/members/[id]/topup-status` — poll top-up status
-  - The admin `PATCH /api/members/[id]` is staff-only — don't route parent updates there (it'll silently 401 and the toggle won't save).
+  - `POST /api/members/[id]/redeem-perk`, perk request
+  - `PATCH /api/members/[id]/notify-prefs`, toggle email notifications
+  - `GET /api/checkin/pending-status`, poll pending status
+  - `GET /api/members/[id]/topup-status`, poll top-up status
+  - The admin `PATCH /api/members/[id]` is staff-only, don't route parent updates there (it'll silently 401 and the toggle won't save).
 - **`membership_type` is canonical-id-only on writes.** Use `resolveMembershipType()` in `lib/pricing.ts` before writing to `pending_checkins.membership_type` or `attendance_logs.membership_type`. Older clients sometimes sent a label string here, which breaks the Timers tab and report grouping.
 - **`attendance_logs.kids_names` must be populated on every check-in path.** Three writers: `/api/checkin` (admin), `/api/checkin/handle` (parent QR), `/api/pos/action` (cash POS auto-checkin). All three resolve top-ups → parent for kids name lookup.
 
 ## Open security TODOs (deferred, no urgency)
 
-- **Captcha on `/join`** — cosmetic; only matters if junk member rows become a real problem.
-- **Rate limit on `/api/checkin/request`** — token-holder spam; low risk, defer until seen.
-- **Bump PIN to 6 digits** — bigger keyspace; defer until brute-force lock fires for real users.
+- **Captcha on `/join`**, cosmetic; only matters if junk member rows become a real problem.
+- **Rate limit on `/api/checkin/request`**, token-holder spam; low risk, defer until seen.
+- **Bump PIN to 6 digits**, bigger keyspace; defer until brute-force lock fires for real users.
 
-## Pending feature ideas (not built yet — wait for go-ahead)
+## Pending feature ideas (not built yet, wait for go-ahead)
 
 ### Member notes (per account, parent-visible)
 Surface a short stream of staff notes at the bottom of the parent's QR card so parents see real touchpoints from each session.
 
 - **Scope:** per-account (member_registrations.id, not per-kid). Staff free-types the kid's name in the note body if relevant.
-- **Tone:** parent-visible only. Negative / behavioural ("tattle-tale") notes stay in-person — never written here. The point is to encourage staff to find positive observations and keep the parent app feeling alive.
+- **Tone:** parent-visible only. Negative / behavioural ("tattle-tale") notes stay in-person, never written here. The point is to encourage staff to find positive observations and keep the parent app feeling alive.
 - **Likely shape:** new `member_notes` table (`id`, `member_id`, `body`, `created_by`, `created_at`); `GET`/`POST /api/members/[id]/notes`; display block on `QrCardClient`; add-note form on the admin member page (`app/admin/members/[id]/page.tsx`). Append-only for v1.
 - **Why parked:** user wants to think about framing and the surface area before building. Wait for the user to ping this before implementing.
 - **Related:** the late-pickup / overtime feature (also parked) may attach into this notes channel rather than become a separate billing feature.

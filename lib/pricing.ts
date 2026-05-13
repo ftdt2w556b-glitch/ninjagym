@@ -19,7 +19,7 @@ export const MEMBERSHIP_TYPES: MembershipType[] = [
   { id: "combo_bulk",   label: "Combo Sessions (bulk)",    perKid: false, bulk: true, bulkBase: "price_combo_game_train", note: "Buy 2–20 combo sessions upfront. 1% off per session purchased. Max 20% off." },
 ];
 
-// Static price map — mirrors Supabase settings table
+// Static price map, mirrors Supabase settings table
 // These are the REAL prices from dojo.ninjagym.com
 export const BASE_PRICES: Record<string, number> = {
   price_climb_unguided:    200,

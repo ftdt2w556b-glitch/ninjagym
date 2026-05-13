@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       payment_method === "stripe"    ? "pending_review"  :
       "approved";
 
-    // slip_reviewed_at is only set when staff approves — not at submission time.
+    // slip_reviewed_at is only set when staff approves, not at submission time.
     const slip_reviewed_at = null;
 
     const { data, error } = await admin

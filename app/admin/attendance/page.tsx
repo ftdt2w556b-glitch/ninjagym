@@ -142,7 +142,7 @@ export default async function AttendancePage({
         <div>
           <h1 className="text-xl font-bold text-gray-900">Check-in Records</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {count ?? 0} check-in{count !== 1 ? "s" : ""} — {label}
+            {count ?? 0} check-in{count !== 1 ? "s" : ""}, {label}
           </p>
         </div>
 

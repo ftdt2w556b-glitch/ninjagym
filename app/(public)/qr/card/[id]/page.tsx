@@ -119,7 +119,7 @@ export default async function QrCardPage({
 
   const checkIns = checkInsRaw ?? [];
 
-  // Each check-in may cover multiple kids — sum them for loyalty/belt accuracy
+  // Each check-in may cover multiple kids, sum them for loyalty/belt accuracy
   // Unguided Climb Zone (20 min) does NOT count toward free sessions
   function kidsFromLog(r: { kids_count?: number | null; notes?: string | null; membership_type?: string | null }) {
     if (r.membership_type === "climb_unguided") return 0;

@@ -118,14 +118,14 @@ function getCheckInRange(period: CheckInPeriod, dateParam?: string): { from: str
     return { from: bangkokStartOfDay(target), to: bangkokEndOfDay(target) };
   }
   if (period === "month") {
-    // dateParam can be "YYYY-MM" or "YYYY-MM-DD" — extract year+month
+    // dateParam can be "YYYY-MM" or "YYYY-MM-DD", extract year+month
     const ym = dateParam && /^\d{4}-\d{2}/.test(dateParam) ? dateParam.slice(0, 7) : today.slice(0, 7);
     const [y, m] = ym.split("-");
     const lastDay = new Date(Number(y), Number(m), 0).getDate();
     const endDate = ym === today.slice(0, 7) ? today : `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
     return { from: bangkokStartOfDay(`${y}-${m}-01`), to: bangkokEndOfDay(endDate) };
   }
-  // year — dateParam can be "YYYY" or "YYYY-MM-DD"
+  // year, dateParam can be "YYYY" or "YYYY-MM-DD"
   const yr = dateParam && /^\d{4}/.test(dateParam) ? dateParam.slice(0, 4) : today.slice(0, 4);
   const endDate = yr === today.slice(0, 4) ? today : `${yr}-12-31`;
   return { from: bangkokStartOfDay(`${yr}-01-01`), to: bangkokEndOfDay(endDate) };
@@ -537,7 +537,7 @@ export default async function MembersPage({
             <div>
               <h1 className="text-xl font-bold text-gray-900">Check-in Records</h1>
               <p className="text-sm text-gray-500 mt-0.5">
-                {checkInCount} check-in{checkInCount !== 1 ? "s" : ""} — {periodLabels[checkInPeriod]}
+                {checkInCount} check-in{checkInCount !== 1 ? "s" : ""}, {periodLabels[checkInPeriod]}
               </p>
             </div>
             {/* Period tabs */}
@@ -712,7 +712,7 @@ export default async function MembersPage({
                             )}
                           </div>
                         </div>
-                        {/* Sub-details — always visible, wrap on small screens */}
+                        {/* Sub-details, always visible, wrap on small screens */}
                         {(() => {
                           const reg = log.member_registrations as { kids_names?: string | null; phone?: string | null; email?: string | null } | null;
                           const names = log.kids_names || reg?.kids_names;

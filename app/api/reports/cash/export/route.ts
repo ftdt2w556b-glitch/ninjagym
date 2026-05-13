@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     }
 
     const description = customerName && programLabel
-      ? `${customerName} — ${programLabel}`
+      ? `${customerName}, ${programLabel}`
       : customerName || programLabel || "POS Sale";
 
     return {
@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
       date: dt ? dt.toLocaleDateString("en-GB", { timeZone: "Asia/Bangkok" }) : "",
       time: dt ? dt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true }) : "",
       type: "Registration",
-      description: `${m.name} — ${programLabel}`,
+      description: `${m.name}, ${programLabel}`,
       method: "PromptPay / Transfer",
       amount: amt,
       staff: "",

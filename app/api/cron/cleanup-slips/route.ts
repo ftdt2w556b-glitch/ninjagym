@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/cron/cleanup-slips
  *
- * Daily Vercel Cron — deletes slip images older than `slip_retention_days`
+ * Daily Vercel Cron, deletes slip images older than `slip_retention_days`
  * (default 180 days = 6 months) from Supabase Storage and nulls out the
  * `slip_image` column on the corresponding row. The financial record (amount,
  * payment_method, slip_hash, slip_uploaded_at, slip_reviewed_at, notes) is
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       else        tableReport.storage_objects = fileNames.length;
     }
 
-    // Null the column regardless of storage outcome — if a file was already
+    // Null the column regardless of storage outcome, if a file was already
     // gone the next run shouldn't keep finding it. Keep the hash + metadata.
     const ids = rows.map((r) => r.id);
     const { error: updError } = await admin

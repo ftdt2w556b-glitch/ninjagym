@@ -167,7 +167,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
   async function handleQuickRegister() {
     if (!form.staffName) { setQrError("Please select the staff member on duty."); return; }
     if (!form.name.trim()) { setQrError("Parent / guardian name is required."); return; }
-    if (!form.kidsNames.trim()) { setQrError("Kids names are required — staff need this to find the right child."); return; }
+    if (!form.kidsNames.trim()) { setQrError("Kids names are required, staff need this to find the right child."); return; }
 
     setQrLoading(true);
     setQrError("");
@@ -473,7 +473,7 @@ export default function ScannerClient({ staffNames }: { staffNames: string[] }) 
                       !form.kidsNames.trim() ? "border-red-500" : "border-gray-600"
                     }`}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Required — helps staff find the right child quickly</p>
+                  <p className="text-xs text-gray-500 mt-1">Required, helps staff find the right child quickly</p>
                 </div>
 
                 {/* Kids count */}

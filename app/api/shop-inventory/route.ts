@@ -3,8 +3,8 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
 
 /**
  * PATCH /api/shop-inventory
- * Body: { item_id, variant?, delta? } — increment/decrement by delta
- *    or { item_id, variant?, set_qty } — set an absolute quantity
+ * Body: { item_id, variant?, delta? }, increment/decrement by delta
+ *    or { item_id, variant?, set_qty }, set an absolute quantity
  */
 export async function PATCH(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -33,7 +33,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true, stock_qty: qty });
   }
 
-  // Delta update — fetch current first
+  // Delta update, fetch current first
   const { data: current } = await admin
     .from("shop_inventory")
     .select("stock_qty")

@@ -162,7 +162,7 @@ export default async function AdminPosPage({
   const expectedIsToday = expectedDateSetting?.value === bangkokToday();
   const manualExpected = (expectedIsToday && expectedSetting?.value) ? parseInt(expectedSetting.value, 10) : null;
 
-  // Recent POS activity — last 20 cash sales
+  // Recent POS activity, last 20 cash sales
   const { data: recentSales } = await admin
     .from("cash_sales")
     .select("id, processed_at, amount, amount_tendered, change_given, sale_type, staff_name, notes, items, notes_1k")
@@ -171,7 +171,7 @@ export default async function AdminPosPage({
 
   // Today's cash by staff (Bangkok time)
   const today = bangkokToday();
-  // ALL cash sales today — used for drawer calculations (no membership exclusion here;
+  // ALL cash sales today, used for drawer calculations (no membership exclusion here;
   // double-count prevention is only needed on the cash report page, not here)
   const { data: todaySales } = await admin
     .from("cash_sales")
@@ -323,7 +323,7 @@ export default async function AdminPosPage({
           Also editable directly on the POS screen (admin/manager only).
         </p>
 
-        {/* Today's drawer tally — always shown so Expected in Drawer is visible at day start */}
+        {/* Today's drawer tally, always shown so Expected in Drawer is visible at day start */}
         <div className="mt-5 pt-5 border-t border-gray-100">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Today&apos;s Drawer Check</p>
             <div className="grid grid-cols-2 gap-3 text-sm mb-3">
@@ -416,7 +416,7 @@ export default async function AdminPosPage({
         <div className="mt-5 pt-5 border-t border-gray-100">
           <h3 className="text-sm font-bold text-gray-700 mb-1">Cash Removed from Drawer</h3>
           <p className="text-xs text-gray-400 mb-3">
-            Record cash physically taken out of the drawer (safe drop, 1K notes to box, etc). Resets automatically each morning — only today&apos;s entry counts.
+            Record cash physically taken out of the drawer (safe drop, 1K notes to box, etc). Resets automatically each morning, only today&apos;s entry counts.
           </p>
           {params.removedsaved === "1" && (
             <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-2 mb-3 font-semibold">
@@ -526,7 +526,7 @@ export default async function AdminPosPage({
                   <tr key={s.id} className={inBox ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-gray-50"}>
                     <td className="px-4 py-3 text-gray-400 text-xs">#{s.id}</td>
                     <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{dateStr} {timeStr}</td>
-                    <td className="px-4 py-3 font-medium text-gray-800">{s.staff_name ?? "—"}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{s.staff_name ?? "-"}</td>
                     <td className="px-4 py-3">
                       {(() => {
                         // Derive types from items array if available, else fall back to sale_type
@@ -564,7 +564,7 @@ export default async function AdminPosPage({
                       {(s as Record<string, unknown>).change_given != null ? (
                         <span className="text-orange-600 font-semibold">฿{Number((s as Record<string, unknown>).change_given).toLocaleString()} change</span>
                       ) : (
-                        <span className="text-gray-300">—</span>
+                        <span className="text-gray-300">-</span>
                       )}
                       {inBox && (
                         <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-200 rounded-full px-2 py-0.5">

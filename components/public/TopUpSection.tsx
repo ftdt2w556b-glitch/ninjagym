@@ -139,7 +139,7 @@ export default function TopUpSection({
           setPendingPurchase({ label: stored!.label, amount: stored!.amount, method: stored!.method, regId: stored!.regId });
           timer = window.setInterval(tick, 3000);
         } else {
-          // Already processed since the parent left the page — clear and stop.
+          // Already processed since the parent left the page, clear and stop.
           localStorage.removeItem(SESSION_KEY);
         }
       } catch { /* fall through; will retry on next mount */ }
@@ -233,13 +233,13 @@ export default function TopUpSection({
       if (paymentMethod === "cash") {
         const pending = { regId: data.id, label: selectedMt?.label ?? selectedType, amount: price, method: "cash" };
         localStorage.setItem(SESSION_KEY, JSON.stringify(pending));
-        // Show the pending banner immediately — no need for a separate success message
+        // Show the pending banner immediately, no need for a separate success message
         setPendingPurchase({ label: pending.label, amount: pending.amount, method: pending.method, regId: pending.regId });
       } else if (paymentMethod === "stripe") {
         setPendingId(data.id);
         setStripeStep(true);
       } else {
-        // PromptPay — store in localStorage and show pending banner immediately
+        // PromptPay, store in localStorage and show pending banner immediately
         const pending = { regId: data.id, label: selectedMt?.label ?? selectedType, amount: price, method: paymentMethod };
         localStorage.setItem(SESSION_KEY, JSON.stringify(pending));
         setShowPromptPay(false);
@@ -252,10 +252,10 @@ export default function TopUpSection({
     }
   }
 
-  // ── Pending purchase (PromptPay awaiting staff approval) — survives page refresh ──
+  // ── Pending purchase (PromptPay awaiting staff approval), survives page refresh ──
   async function cancelPending() {
     if (!pendingPurchase?.regId || !cardToken) {
-      // No API call possible — just clear locally so parent can resubmit
+      // No API call possible, just clear locally so parent can resubmit
       localStorage.removeItem(SESSION_KEY);
       setPendingPurchase(null);
       return;
@@ -424,14 +424,14 @@ export default function TopUpSection({
           ))}
         </select>
 
-        {/* Selected program description — from DB if admin set it, fallback to hardcoded note */}
+        {/* Selected program description, from DB if admin set it, fallback to hardcoded note */}
         {(descriptions?.[`desc_${selectedType}`] ?? selectedMt?.note) && (
           <p className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2 mb-3 leading-relaxed">
             ℹ️ {descriptions?.[`desc_${selectedType}`] ?? selectedMt?.note}
           </p>
         )}
 
-        {/* Bulk qty slider — appears only for bulk types */}
+        {/* Bulk qty slider, appears only for bulk types */}
         {isBulk && (
           <div className="bg-blue-50 border border-[#1a56db]/20 rounded-xl px-4 py-3 mb-3">
             <div className="flex items-center justify-between text-sm mb-2">
@@ -453,7 +453,7 @@ export default function TopUpSection({
           </div>
         )}
 
-        {/* Kids count + names — not shown for bulk (bulk packs are per-pack, not per-kid) */}
+        {/* Kids count + names, not shown for bulk (bulk packs are per-pack, not per-kid) */}
         {!isBulk && (
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
@@ -485,7 +485,7 @@ export default function TopUpSection({
         )}
       </div>
 
-      {/* ── ADD SESSIONS / TOP UP — payment buttons + live price ────────────── */}
+      {/* ── ADD SESSIONS / TOP UP, payment buttons + live price ────────────── */}
       <div className="bg-white rounded-2xl p-5 shadow">
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
           {t.addSessions}
@@ -551,7 +551,7 @@ export default function TopUpSection({
                 {loading === "cash" ? t.submitting : t.payCashGym}
               </button>
 
-              {/* Credit card — re-enable when needed
+              {/* Credit card, re-enable when needed
               <p className="text-center text-gray-300 text-xs">{t.or}</p>
               <button
                 onClick={() => doRegister("stripe")}

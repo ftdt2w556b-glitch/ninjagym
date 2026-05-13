@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   // Token may be signed for the pending row's member_id (e.g. perk redemption
   // on the parent card), the parent family id, or the original top-up row.
-  // Accept any of them — they all prove possession of the same card.
+  // Accept any of them, they all prove possession of the same card.
   const tokenOk =
     verifyMemberToken(pending.member_id, token) ||
     verifyMemberToken(familyId,           token);

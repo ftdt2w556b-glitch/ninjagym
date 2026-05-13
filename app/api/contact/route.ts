@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    // No email configured — still return success so the form works
+    // No email configured, still return success so the form works
     console.log("Contact form submission (no Resend key):", { name, email, subject, message });
     return NextResponse.json({ ok: true });
   }

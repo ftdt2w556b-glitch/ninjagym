@@ -10,7 +10,7 @@ const BASE_DESCRIPTIONS: Record<string, string> = Object.fromEntries(
 );
 
 // Public GET only returns price/description keys. Other settings (e.g. pos_password,
-// drawer_float, drawer_removed) must NEVER be returned here — they are admin-only
+// drawer_float, drawer_removed) must NEVER be returned here, they are admin-only
 // and read directly via the service-role client from server components.
 const isPublicKey = (key: string) => key.startsWith("price_") || key.startsWith("desc_");
 
@@ -65,7 +65,7 @@ export async function PATCH(req: Request) {
 
   // Only accept the public-keyspace from this endpoint. The /admin/settings
   // UI loads its `prices` state with a `STATIC_BASE` default that includes
-  // drawer_float=500 — if we accepted any key here, saving the page would
+  // drawer_float=500, if we accepted any key here, saving the page would
   // silently overwrite the real drawer float in the DB to 500 every time.
   // Admin-only settings (drawer_float, daycamp_end_time, *_retention_days, etc.)
   // are edited from their dedicated pages (POS screen, etc.), not this one.

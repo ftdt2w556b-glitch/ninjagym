@@ -68,7 +68,7 @@ export default function PendingCheckIns({ staffName }: Props) {
             r.card_member_id = parentId ?? r.member_id;
           }
         }
-      } catch { /* non-fatal — show without enrichment */ }
+      } catch { /* non-fatal, show without enrichment */ }
     }
 
     setItems(rows);
@@ -86,10 +86,10 @@ export default function PendingCheckIns({ staffName }: Props) {
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "pending_checkins" }, (payload) => {
         const updated = payload.new as PendingCheckin;
         if (updated.status !== "pending") {
-          // Approved or rejected — remove from list
+          // Approved or rejected, remove from list
           setItems((prev) => prev.filter((p) => p.id !== updated.id));
         } else {
-          // Still pending but something changed (e.g. parent updated kids_count) — refresh in place
+          // Still pending but something changed (e.g. parent updated kids_count), refresh in place
           setItems((prev) => prev.map((p) => p.id === updated.id ? updated : p));
         }
       })
@@ -138,7 +138,7 @@ export default function PendingCheckIns({ staffName }: Props) {
         const isPromptPay = item.payment_method === "promptpay";
         // Purchase = pending row carries a payment_method. A "use a bulk session"
         // request ALSO has membership_type ending in _bulk (the parent is using
-        // sessions from a bulk pack), but no payment_method — it must render as a
+        // sessions from a bulk pack), but no payment_method, it must render as a
         // check-in, not as a "session pack purchase" / approve-payment card.
         const isBulkPurchase = (item.membership_type?.endsWith("_bulk") ?? false) && !!item.payment_method;
         const isPerk     = item.membership_type?.startsWith("belt_perk_") ?? false;
@@ -179,14 +179,14 @@ export default function PendingCheckIns({ staffName }: Props) {
                   </a>
                 </div>
               ) : isBulkPurchase ? (
-                /* Bulk purchase — payment approval only, no check-in */
+                /* Bulk purchase, payment approval only, no check-in */
                 <div className="w-full">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Session pack purchase</p>
                   <p className="text-2xl font-black text-gray-900 leading-none">{item.membership_label}</p>
-                  <p className="text-sm text-gray-500 mt-1">Verify payment slip — sessions will be available after approval</p>
+                  <p className="text-sm text-gray-500 mt-1">Verify payment slip, sessions will be available after approval</p>
                 </div>
               ) : (
-                /* Regular check-in — kids count is the key detail */
+                /* Regular check-in, kids count is the key detail */
                 <>
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Kids checking in today</p>

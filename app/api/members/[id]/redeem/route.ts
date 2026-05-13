@@ -5,7 +5,7 @@ import { verifyMemberToken } from "@/lib/member-token";
 /**
  * POST /api/members/[id]/redeem
  * Creates a pending_checkin for a free loyalty session.
- * Auth: member card token — no admin login required.
+ * Auth: member card token, no admin login required.
  *
  * On staff approval (/api/checkin/handle), the handle route detects
  * membership_type === "free_session_loyalty" and increments
@@ -31,7 +31,7 @@ export async function POST(
 
   const admin = createAdminClient();
 
-  // Fetch member — need name, kids_names, and current redemption count
+  // Fetch member, need name, kids_names, and current redemption count
   const { data: member } = await admin
     .from("member_registrations")
     .select("id, name, kids_names, free_sessions_redeemed")
@@ -42,7 +42,7 @@ export async function POST(
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // Server-side eligibility check — count attendance_logs ourselves so the
+  // Server-side eligibility check, count attendance_logs ourselves so the
   // client can't claim more sessions than they've earned. Mirrors the rule in
   // app/(public)/qr/card/[id]/page.tsx and components/public/QrCardClient.tsx:
   // 1 pip per unique Bangkok day, excluding climb_unguided and free_session_loyalty.
@@ -90,7 +90,7 @@ export async function POST(
     return NextResponse.json({ id: existing.id });
   }
 
-  // Create the pending_checkin — staff see it in the approval queue
+  // Create the pending_checkin, staff see it in the approval queue
   const { data, error } = await admin
     .from("pending_checkins")
     .insert({

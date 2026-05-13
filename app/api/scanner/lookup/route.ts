@@ -4,7 +4,7 @@ import { signMemberId } from "@/lib/member-token";
 
 /**
  * GET /api/scanner/lookup?pin=1234
- * Public endpoint — no login required. Used by /my-membership and the staff scanner.
+ * Public endpoint, no login required. Used by /my-membership and the staff scanner.
  *
  * Brute-force protection:
  * - 8 wrong PINs from the same IP within a 10-minute window → 30-minute lockout
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     .maybeSingle();
 
   if (member) {
-    // Clear this IP's counter on success — legitimate users shouldn't accrue.
+    // Clear this IP's counter on success, legitimate users shouldn't accrue.
     await admin
       .from("lookup_attempts")
       .upsert({ ip, fails: 0, locked_until: null, updated_at: new Date().toISOString() });

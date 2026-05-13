@@ -18,7 +18,7 @@ export async function createSupabaseServerClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Called from Server Component — cookie mutations are ignored
+            // Called from Server Component, cookie mutations are ignored
           }
         },
       },

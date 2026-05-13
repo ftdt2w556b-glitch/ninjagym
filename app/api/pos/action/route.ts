@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
-    // POS runs as a kiosk (no admin login) — verify pos_auth cookie instead
+    // POS runs as a kiosk (no admin login), verify pos_auth cookie instead
     const cookieStore = await cookies();
     const posAuth = cookieStore.get("pos_auth")?.value;
     const admin = createAdminClient();
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Approve pending cash membership registration + auto check-in.
-      // Parent already chose their program and kids count on their card —
+      // Parent already chose their program and kids count on their card -
       // POS approval is the single staff action (payment + check-in combined).
       if (referenceId && saleType === "membership") {
         // Fetch registration details for check-in
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
           .eq("id", referenceId)
           .single();
 
-        // Top-ups don't store kids_names — pull from the parent registration.
+        // Top-ups don't store kids_names, pull from the parent registration.
         let regKidsNames: string | null = (reg?.kids_names as string | null) ?? null;
         if (!regKidsNames && reg?.parent_member_id) {
           const { data: parent } = await admin
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
         await admin.from("member_registrations").update(regUpdate).eq("id", referenceId);
 
         // Auto check-in: parent is physically here paying cash for today's session.
-        // Bulk purchases are payment-only — sessions are used later via UseSessionButton.
+        // Bulk purchases are payment-only, sessions are used later via UseSessionButton.
         const isBulkPurchase = finalType.endsWith("_bulk");
         if (reg && !isBulkPurchase) {
           const kidsCount = reg.kids_count ?? 1;

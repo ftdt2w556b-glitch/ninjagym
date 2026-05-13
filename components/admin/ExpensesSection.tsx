@@ -246,7 +246,7 @@ export default function ExpensesSection({ initialExpenses, from, to, supabaseUrl
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-700 max-w-[200px]">
-                    <span className="line-clamp-1">{exp.description ?? "—"}</span>
+                    <span className="line-clamp-1">{exp.description ?? "-"}</span>
                     {exp.added_by_name && (
                       <span className="block text-xs text-gray-400">{exp.added_by_name}</span>
                     )}
@@ -267,14 +267,14 @@ export default function ExpensesSection({ initialExpenses, from, to, supabaseUrl
                           alt="receipt"
                           className="w-10 h-10 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity"
                           onError={(e) => {
-                            // PDF or other non-image — show icon instead
+                            // PDF or other non-image, show icon instead
                             (e.target as HTMLImageElement).style.display = "none";
                           }}
                         />
                         <span className="text-xs text-blue-600 underline hidden">View</span>
                       </a>
                     ) : (
-                      <span className="text-gray-200 text-xs">—</span>
+                      <span className="text-gray-200 text-xs">-</span>
                     )}
                   </td>
                   {canEdit && (

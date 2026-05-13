@@ -28,7 +28,7 @@ export default async function StaffPage({
     .select("id, name, email, role, pin, show_on_pos, created_at")
     .order("created_at", { ascending: true });
 
-  // Fetch pos_staff separately — fails gracefully if table doesn't exist yet
+  // Fetch pos_staff separately, fails gracefully if table doesn't exist yet
   const { data: posStaffList } = await admin
     .from("pos_staff")
     .select("id, name, pin_hash, active, created_at")
@@ -128,7 +128,7 @@ export default async function StaffPage({
       adminClient.from("staff_question_replies").update({ author_id: null }).eq("author_id", userId),
     ]);
 
-    // Delete from Supabase Auth — profile cascades automatically
+    // Delete from Supabase Auth, profile cascades automatically
     await adminClient.auth.admin.deleteUser(userId);
 
     redirect("/admin/staff");
@@ -202,7 +202,7 @@ export default async function StaffPage({
                 return (
                   <tr key={p.id} className="hover:bg-gray-50">
                     <td className="px-2 py-3 font-medium text-gray-900 whitespace-nowrap">
-                      {p.name ?? "—"}
+                      {p.name ?? "-"}
                       {isSelf && <span className="ml-1 text-xs text-[#1a56db] font-semibold">(you)</span>}
                     </td>
                     <td className="px-2 py-3 text-gray-500 text-xs">{p.email}</td>
@@ -338,7 +338,7 @@ export default async function StaffPage({
               {(posStaffList ?? []).length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-6 text-center text-gray-400 text-sm">
-                    No POS staff yet — add one below.
+                    No POS staff yet, add one below.
                   </td>
                 </tr>
               )}

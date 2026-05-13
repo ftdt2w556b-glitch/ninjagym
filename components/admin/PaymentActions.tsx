@@ -117,10 +117,10 @@ export default function PaymentActions({
 
       <div className="flex gap-2 flex-wrap">
 
-        {/* ── CASH PENDING: must go through POS — no approve button ── */}
+        {/* ── CASH PENDING: must go through POS, no approve button ── */}
         {isCashPending && !confirmWrongProgram && (
           <div className="w-full bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-1">
-            <p className="text-xs font-bold text-blue-800 mb-1">💵 Cash payment — collect at POS</p>
+            <p className="text-xs font-bold text-blue-800 mb-1">💵 Cash payment, collect at POS</p>
             <p className="text-xs text-blue-700 mb-3">
               All cash must be recorded through the POS register to keep the drawer total accurate. Even exact amounts need to go through POS.
             </p>
@@ -224,7 +224,7 @@ export default function PaymentActions({
               <button
                 onClick={() => {
                   setConfirmWrongProgram(false);
-                  doAction("reject", "rejected", "Wrong program selected — please re-register with the correct program from your member card.");
+                  doAction("reject", "rejected", "Wrong program selected, please re-register with the correct program from your member card.");
                 }}
                 disabled={!!busy}
                 className="bg-orange-500 text-white font-semibold text-xs px-4 py-2 rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
@@ -241,7 +241,7 @@ export default function PaymentActions({
           </div>
         )}
 
-        {/* Undo — admin/manager only */}
+        {/* Undo, admin/manager only */}
         {canManage && (isApproved || isRejected) && (
           <button
             onClick={() => doAction("restore", "pending_review")}
@@ -261,7 +261,7 @@ export default function PaymentActions({
           </a>
         )}
 
-        {/* Delete — admin/owner only, approved or rejected records */}
+        {/* Delete, admin/owner only, approved or rejected records */}
         {canDelete && (isApproved || isRejected) && !confirmDelete && (
           <button
             onClick={() => setConfirmDelete(true)}

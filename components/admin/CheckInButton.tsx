@@ -110,7 +110,7 @@ export default function CheckInButton({
     return (
       <div className="flex flex-col gap-1.5 mt-0.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 max-w-xs">
         <p className="text-xs font-bold text-amber-700">
-          ⚠️ Parent submitted {pending.kids_count} kid{pending.kids_count !== 1 ? "s" : ""} — pending approval
+          ⚠️ Parent submitted {pending.kids_count} kid{pending.kids_count !== 1 ? "s" : ""}, pending approval
         </p>
         <div className="flex gap-1.5 flex-wrap">
           <button

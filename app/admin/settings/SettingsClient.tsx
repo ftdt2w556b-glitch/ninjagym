@@ -244,7 +244,7 @@ export default function AdminSettingsPage() {
           ))}
         </SectionCard>
 
-        {/* Cash Drawer — float is edited on /admin/pos (page reads/writes the
+        {/* Cash Drawer, float is edited on /admin/pos (page reads/writes the
             live value). Editing it here would silently overwrite the real value
             with the in-memory default since the public settings GET never
             returns admin-only keys. Kept the section as a pointer for staff. */}

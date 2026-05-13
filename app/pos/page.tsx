@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import PosScreen from "@/components/admin/PosScreen";
 
 export default async function PosKioskPage() {
-  // Check kiosk cookie — no Supabase auth required
+  // Check kiosk cookie, no Supabase auth required
   const cookieStore = await cookies();
   const posAuth = cookieStore.get("pos_auth")?.value;
 
@@ -36,7 +36,7 @@ export default async function PosKioskPage() {
     .from("shop_inventory")
     .select("item_id, variant, stock_qty");
 
-  // Pending cash registrations — customers who self-registered and chose cash
+  // Pending cash registrations, customers who self-registered and chose cash
   const { data: pendingCash } = await admin
     .from("member_registrations")
     .select("id, name, membership_type, amount_paid, kids_names, notes, created_at")

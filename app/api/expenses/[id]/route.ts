@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 
-// DELETE /api/expenses/[id]  — void (soft delete)
+// DELETE /api/expenses/[id] , void (soft delete)
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
