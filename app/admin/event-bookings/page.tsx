@@ -45,7 +45,7 @@ export default async function EventBookingsPage({
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-900">
-        Use{" "}<strong>+ New Birthday Booking</strong>{" "}when a parent is at the centre without their phone. Cash bookings submitted by parents on their phones show up in the <strong>Cash</strong> tab below for your approval. Approving a cash booking records the payment in today&apos;s POS sales.
+        Use{" "}<strong>+ New Birthday Booking</strong>{" "}when a parent is at the centre without their phone. Cash bookings submitted by parents on their phones show up in the{" "}<strong>Cash</strong>{" "}tab below for your approval. Approving a cash booking records the payment in today&apos;s POS sales.
       </div>
 
       <div className="flex items-center justify-end mb-6">
