@@ -261,6 +261,29 @@ export default function BirthdaysPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
+        {/* Staff-mode banner: visible to signed-in staff only */}
+        {staffMode && (
+          <div className="bg-emerald-100 border-2 border-emerald-400 rounded-2xl px-5 py-3 flex items-start gap-3">
+            <span className="text-2xl">🥷</span>
+            <div className="flex-1">
+              <p className="font-bold text-emerald-900 text-sm">Staff mode</p>
+              <p className="text-xs text-emerald-800 mt-0.5">
+                You are signed in. Use this form to record a booking on a parent&apos;s behalf. If you pick <strong>Cash</strong>, the booking is auto-approved and the payment is logged to today&apos;s POS sales.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Public-only top warning: keeps the cash-at-centre rule in front of parents */}
+        {!staffMode && (
+          <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl px-5 py-3">
+            <p className="font-bold text-amber-900 text-sm mb-1">💡 Before you book</p>
+            <p className="text-xs text-amber-900 leading-relaxed">
+              Birthdays must be booked <strong>in advance</strong>. Online bookings are PromptPay only, your date is held after payment is verified. <strong>Cash bookings happen in person at the centre, not online.</strong>
+            </p>
+          </div>
+        )}
+
         {/* Your details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
           <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.birthdayYourDetails}</h2>

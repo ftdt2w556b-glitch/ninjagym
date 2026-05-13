@@ -32,8 +32,23 @@ export default async function EventBookingsPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <h1 className="text-xl font-bold text-gray-900">Event Bookings</h1>
+        <Link
+          href="/birthdays"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-colors"
+        >
+          + New Birthday Booking
+        </Link>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-900">
+        Use <strong>+ New Birthday Booking</strong> when a parent comes in to pay cash for a birthday. Because you are signed in, the form will show the Cash option and the payment will be recorded in today&apos;s POS sales automatically once you submit.
+      </div>
+
+      <div className="flex items-center justify-end mb-6">
         <div className="flex gap-2 text-sm flex-wrap">
           {[
             { value: "", label: "All" },
