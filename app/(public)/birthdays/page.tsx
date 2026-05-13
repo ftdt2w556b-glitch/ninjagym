@@ -57,10 +57,23 @@ export default function BirthdaysPage() {
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
   const [cashStaffName, setCashStaffName] = useState("");
+  const [staffMode, setStaffMode] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
+
+    // Detect staff session: if the visitor is signed in as admin/manager/staff/owner,
+    // re-enable the cash payment option (parents online stay PromptPay-only).
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d: { role: string | null; name: string | null }) => {
+        if (d.role && ["admin", "manager", "staff", "owner"].includes(d.role)) {
+          setStaffMode(true);
+          if (d.name) setCashStaffName(d.name);
+        }
+      })
+      .catch(() => { /* anon visitor, cash stays hidden */ });
   }, []);
 
   function handleLang(l: Lang) {
@@ -403,12 +416,32 @@ export default function BirthdaysPage() {
           </p>
         </div>
 
-        {/* Payment method, online birthday bookings are PromptPay only.
-            Cash bookings must be made IN PERSON at the centre so the date is
-            held only after the cash is in hand. */}
+        {/* Payment method. Online (public) bookings are PromptPay only.
+            Cash bookings are only available when staff is signed in (detected
+            via /api/auth/me on mount). Parents online see only PromptPay. */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-3">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
+            {staffMode && (
+              <div className={`rounded-xl border-2 transition-colors ${
+                form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
+              }`}>
+                <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
+                  <input type="radio" name="payment_method" value="cash"
+                    checked={form.payment_method === "cash"}
+                    onChange={() => setForm({ ...form, payment_method: "cash" })}
+                    className="accent-green-500" />
+                  <span className="text-sm font-semibold text-green-700">💵 {t.cashOption} <span className="text-xs font-normal text-green-600">(staff at centre)</span></span>
+                </label>
+                {form.payment_method === "cash" && (
+                  <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
+                    <p className="text-xs font-semibold text-green-700 mb-1">Staff Name <span className="font-normal">(who received the cash)</span></p>
+                    <input type="text" value={cashStaffName} onChange={(e) => setCashStaffName(e.target.value)}
+                      className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
+                  </div>
+                )}
+              </div>
+            )}
             <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
             }`}>
@@ -420,12 +453,14 @@ export default function BirthdaysPage() {
             </label>
           </div>
 
-          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-            <p className="text-xs font-bold text-amber-900 mb-1">💵 Want to pay cash?</p>
-            <p className="text-xs text-amber-800 leading-relaxed">
-              Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only, your date is not held until payment is received.
-            </p>
-          </div>
+          {!staffMode && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+              <p className="text-xs font-bold text-amber-900 mb-1">💵 Want to pay cash?</p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only, your date is not held until payment is received.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* PromptPay panel */}
