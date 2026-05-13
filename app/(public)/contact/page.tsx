@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
@@ -18,6 +18,8 @@ const SUBJECTS = [
 export default function ContactPage() {
   const { t } = useLanguage();
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
+  const [honeypot, setHoneypot] = useState(""); // Spam bots fill it; humans can not see it.
+  const loadedAt = useRef<number>(Date.now()); // Form mount time for the time-on-form check.
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +33,7 @@ export default function ContactPage() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, honeypot, loadedAt: loadedAt.current }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Send failed");
@@ -74,6 +76,23 @@ export default function ContactPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-6 pb-6 flex flex-col gap-4">
+            {/* Honeypot: invisible to humans, bots fill it. Server drops any
+                submission where this field has a value. Inline styles + aria
+                so it stays hidden from screen readers and tab navigation too. */}
+            <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", overflow: "hidden" }}>
+              <label>
+                Your website (leave blank)
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </label>
+            </div>
+
             {/* Name + Email row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
