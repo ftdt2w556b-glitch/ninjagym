@@ -11,6 +11,8 @@ export default async function PhotosPage() {
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  // Staff approves/unapproves photos. Only admin/manager/owner can delete them.
+  const canDelete = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
   const { data: photos } = await admin
     .from("marketing_photos")
@@ -31,6 +33,7 @@ export default async function PhotosPage() {
         photos={photos ?? []}
         members={members ?? []}
         supabaseUrl={SUPABASE_URL}
+        canDelete={canDelete}
       />
     </div>
   );

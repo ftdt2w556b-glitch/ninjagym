@@ -7,14 +7,15 @@ export default async function EditEventBookingPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // Auth: any staff role may edit, but only admin / owner may delete.
+  // Auth: edit page is admin / manager / owner only. Staff cannot edit any
+  // booking fields. Within edit, Delete is restricted further to admin / owner.
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/admin/login");
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   const role = profile?.role ?? "";
-  if (!["admin", "manager", "staff", "owner"].includes(role)) redirect("/admin/dashboard");
+  if (!["admin", "manager", "owner"].includes(role)) redirect("/admin/event-bookings");
   const canDelete = ["admin", "owner"].includes(role);
 
   const { id } = await params;
@@ -29,7 +30,17 @@ export default async function EditEventBookingPage({
 
   async function updateBooking(formData: FormData) {
     "use server";
+    // Defence-in-depth: even if the form is somehow submitted (replayed POST),
+    // re-verify the caller is admin / manager / owner. Staff stays blocked.
+    const sb = await createSupabaseServerClient();
+    const { data: { user: actor } } = await sb.auth.getUser();
+    if (!actor) redirect("/admin/login");
     const adminClient = createAdminClient();
+    const { data: actorProfile } = await adminClient
+      .from("profiles").select("role").eq("id", actor.id).single();
+    if (!["admin", "manager", "owner"].includes(actorProfile?.role ?? "")) {
+      redirect("/admin/event-bookings");
+    }
     await adminClient.from("event_bookings").update({
       name: formData.get("name"),
       phone: formData.get("phone") || null,

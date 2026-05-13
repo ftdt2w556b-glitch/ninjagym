@@ -14,7 +14,10 @@ export default async function EventBookingsPage({
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
   if (!["admin", "manager", "staff", "owner"].includes(profile?.role ?? "")) redirect("/admin/dashboard");
+  // Staff may approve / reject bookings but never edit, undo, or delete.
+  // Edit + undo + delete are admin / manager / owner only.
   const canManage = ["admin", "manager", "staff", "owner"].includes(profile?.role ?? "");
+  const canEdit   = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
   const { status } = await searchParams;
 
@@ -155,7 +158,7 @@ export default async function EventBookingsPage({
                     </form>
                   </>
                 )}
-                {canManage && (b.slip_status === "rejected" || b.slip_status === "approved") && ["admin", "manager", "owner"].includes(profile?.role ?? "") && (
+                {canEdit && (b.slip_status === "rejected" || b.slip_status === "approved") && (
                   <form action="/api/payments" method="POST">
                     <input type="hidden" name="id" value={b.id} />
                     <input type="hidden" name="action" value="restore" />
@@ -165,12 +168,14 @@ export default async function EventBookingsPage({
                     </button>
                   </form>
                 )}
-                <Link
-                  href={`/admin/event-bookings/${b.id}/edit`}
-                  className="bg-gray-100 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors"
-                >
-                  Edit
-                </Link>
+                {canEdit && (
+                  <Link
+                    href={`/admin/event-bookings/${b.id}/edit`}
+                    className="bg-gray-100 text-gray-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors"
+                  >
+                    Edit
+                  </Link>
+                )}
               </div>
             </div>
           );

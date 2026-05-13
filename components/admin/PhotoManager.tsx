@@ -21,6 +21,8 @@ interface Props {
   photos: Photo[];
   members: Member[];
   supabaseUrl: string;
+  /** Staff may approve / unapprove photos but never delete them. */
+  canDelete?: boolean;
 }
 
 function photoUrl(supabaseUrl: string, filePath: string) {
@@ -31,7 +33,7 @@ function memberLabel(m: Member): string {
   return m.kids_names ? `${m.name} (${m.kids_names})` : m.name;
 }
 
-export default function PhotoManager({ photos: initial, members, supabaseUrl }: Props) {
+export default function PhotoManager({ photos: initial, members, supabaseUrl, canDelete = false }: Props) {
   const [photos, setPhotos] = useState(initial);
   const [tab, setTab] = useState<"pending" | "approved">("pending");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -272,10 +274,12 @@ export default function PhotoManager({ photos: initial, members, supabaseUrl }: 
                         ✓ Approve
                       </button>
                     )}
-                    <button onClick={() => { if (confirm("Delete this photo?")) handleAction(photo.id, "delete"); }}
-                      className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors font-semibold">
-                      ✕
-                    </button>
+                    {canDelete && (
+                      <button onClick={() => { if (confirm("Delete this photo?")) handleAction(photo.id, "delete"); }}
+                        className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition-colors font-semibold">
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
