@@ -139,7 +139,7 @@ export default async function RevenuePage({
   // Approved non-cash registrations (PromptPay only, cash excluded, counted via cash_sales)
   const { data: memberPayments } = await admin
     .from("member_registrations")
-    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image, pin")
+    .select("id, name, amount_paid, payment_method, slip_reviewed_at, membership_type, notes, slip_image, pin, parent_member_id")
     .eq("slip_status", "approved")
     .neq("payment_method", "cash")
     .gte("slip_reviewed_at", from)
@@ -160,6 +160,32 @@ export default async function RevenuePage({
 
   const expenses: Expense[] = (expensesRaw ?? []) as Expense[];
   const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
+
+  // ── PIN lookup for PromptPay member rows ──
+  // Top-up rows have parent_member_id set; show the FAMILY (parent) PIN, not
+  // the auto-generated phantom PIN of the top-up row itself.
+  const memberPinMap: Record<number, string> = {};
+  const mpParentIds = [...new Set(
+    (memberPayments ?? [])
+      .map((m) => m.parent_member_id as number | null)
+      .filter((id): id is number => id !== null)
+  )];
+  const mpParentPins: Record<number, string> = {};
+  if (mpParentIds.length > 0) {
+    const { data: mpParents } = await admin
+      .from("member_registrations")
+      .select("id, pin")
+      .in("id", mpParentIds);
+    for (const p of mpParents ?? []) {
+      if (p.id && p.pin) mpParentPins[p.id as number] = p.pin as string;
+    }
+  }
+  for (const m of memberPayments ?? []) {
+    const pin = m.parent_member_id
+      ? (mpParentPins[m.parent_member_id as number] ?? null)
+      : (m.pin as string | null);
+    if (m.id && pin) memberPinMap[m.id as number] = pin;
+  }
 
   // ── PIN lookup for cash sales (reference_id → member_registrations) ──
   const cashRefIds = (cashSales ?? [])
@@ -221,7 +247,8 @@ export default async function RevenuePage({
       method: m.payment_method ?? "cash",
       amount: Number(m.amount_paid ?? 0),
       slipImage: m.slip_image as string | null,
-      pin: m.pin as string | null,
+      // Family PIN, walked through parent_member_id for top-up rows.
+      pin: memberPinMap[m.id as number] ?? null,
     })),
   ].sort((a, b) => b.time.localeCompare(a.time));
 
