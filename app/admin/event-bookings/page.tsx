@@ -120,6 +120,11 @@ export default async function EventBookingsPage({
                 </div>
               )}
 
+              {/* Refundable ฿500 deposit reminder — every birthday booking includes one. */}
+              <div className="bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 mb-3 text-xs text-emerald-900">
+                💰 <strong>Set aside ฿500 deposit</strong>{" "}in the free drawer slot.{" "}<strong>Not counted in POS sales.</strong>{" "}Return in cash after the event if no overtime, damage, or extra cleanup.
+              </div>
+
               {b.notes && (
                 <div className="bg-gray-50 rounded-xl px-3 py-2 mb-4 text-xs text-gray-600">
                   {b.notes}

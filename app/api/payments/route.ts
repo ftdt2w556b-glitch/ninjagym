@@ -69,7 +69,13 @@ export async function POST(request: NextRequest) {
     // today's POS tally and Sales report. We only insert on the approve action
     // when the booking's payment_method is cash and we don't already have a
     // matching cash_sales row (defensive against double-clicks / re-approvals).
+    //
+    // The ฿500 refundable deposit is EXCLUDED from the POS amount. Staff sets
+    // aside the deposit cash in the free drawer slot, refunds it after the
+    // event, and the drawer reconciliation stays clean. The deposit lives only
+    // as a visible note on /admin/event-bookings, not as a POS sale.
     if (action === "approve") {
+      const DEPOSIT_FEE = 500; // mirrors DEPOSIT_FEE in app/(public)/birthdays/page.tsx
       const { data: booking } = await admin
         .from("event_bookings")
         .select("payment_method, amount_paid, name, birthday_child_name, notes")
@@ -83,12 +89,13 @@ export async function POST(request: NextRequest) {
           .eq("reference_id", Number(id))
           .maybeSingle();
         if (!existing) {
+          const serviceAmount = Math.max(0, (booking.amount_paid as number) - DEPOSIT_FEE);
           await admin.from("cash_sales").insert({
             sale_type:    "event",
             reference_id: Number(id),
-            amount:       booking.amount_paid,
+            amount:       serviceAmount,
             staff_name:   callerName ?? "Staff",
-            notes:        `Birthday: ${booking.birthday_child_name ?? booking.name}${booking.notes ? ` | ${booking.notes}` : ""}`,
+            notes:        `Birthday: ${booking.birthday_child_name ?? booking.name} (deposit ฿${DEPOSIT_FEE} set aside, not in POS)${booking.notes ? ` | ${booking.notes}` : ""}`,
             processed_at: new Date().toISOString(),
           });
         }
