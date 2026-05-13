@@ -24,8 +24,9 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const admin = createAdminClient();
-  const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  const { data: callerProfile } = await admin.from("profiles").select("role, name").eq("id", user.id).single();
   const callerRole = callerProfile?.role ?? "";
+  const callerName = (callerProfile as { name?: string | null } | null)?.name ?? null;
   if (!["admin", "manager", "staff", "owner"].includes(callerRole)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -63,6 +64,36 @@ export async function POST(request: NextRequest) {
       .from("member_registrations")
       .update({ slip_status, slip_reviewed_at: new Date().toISOString() })
       .eq("event_booking_id", id);
+
+    // Cash birthday approval: write a cash_sales row so the payment lands in
+    // today's POS tally and Sales report. We only insert on the approve action
+    // when the booking's payment_method is cash and we don't already have a
+    // matching cash_sales row (defensive against double-clicks / re-approvals).
+    if (action === "approve") {
+      const { data: booking } = await admin
+        .from("event_bookings")
+        .select("payment_method, amount_paid, name, birthday_child_name, notes")
+        .eq("id", id)
+        .maybeSingle();
+      if (booking?.payment_method === "cash" && (booking.amount_paid ?? 0) > 0) {
+        const { data: existing } = await admin
+          .from("cash_sales")
+          .select("id")
+          .eq("sale_type", "event")
+          .eq("reference_id", Number(id))
+          .maybeSingle();
+        if (!existing) {
+          await admin.from("cash_sales").insert({
+            sale_type:    "event",
+            reference_id: Number(id),
+            amount:       booking.amount_paid,
+            staff_name:   callerName ?? "Staff",
+            notes:        `Birthday: ${booking.birthday_child_name ?? booking.name}${booking.notes ? ` | ${booking.notes}` : ""}`,
+            processed_at: new Date().toISOString(),
+          });
+        }
+      }
+    }
   }
 
   // ── Award loyalty points on approval ──────────────────────────

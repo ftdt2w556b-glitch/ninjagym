@@ -45,7 +45,7 @@ export default async function EventBookingsPage({
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-900">
-        Use <strong>+ New Birthday Booking</strong> when a parent comes in to pay cash for a birthday. Because you are signed in, the form will show the Cash option and the payment will be recorded in today&apos;s POS sales automatically once you submit.
+        Use{" "}<strong>+ New Birthday Booking</strong>{" "}when a parent is at the centre without their phone. Cash bookings submitted by parents on their phones show up in the <strong>Cash</strong> tab below for your approval. Approving a cash booking records the payment in today&apos;s POS sales.
       </div>
 
       <div className="flex items-center justify-end mb-6">
@@ -146,6 +146,16 @@ export default async function EventBookingsPage({
                       </button>
                     </form>
                   </>
+                )}
+                {canManage && (b.slip_status === "rejected" || b.slip_status === "approved") && ["admin", "manager", "owner"].includes(profile?.role ?? "") && (
+                  <form action="/api/payments" method="POST">
+                    <input type="hidden" name="id" value={b.id} />
+                    <input type="hidden" name="action" value="restore" />
+                    <input type="hidden" name="type" value="event" />
+                    <button type="submit" className="bg-amber-100 text-amber-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-amber-200 transition-colors">
+                      ↶ Undo {b.slip_status === "rejected" ? "Reject" : "Approval"}
+                    </button>
+                  </form>
                 )}
                 <Link
                   href={`/admin/event-bookings/${b.id}/edit`}

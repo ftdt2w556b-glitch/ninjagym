@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { sendEventConfirmation } from "@/lib/email";
 import { hashSlipFile } from "@/lib/slip-hash";
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-
-    // Detect a signed-in staff session. Staff at the centre is the only path
-    // allowed to take cash for an event booking (parent-online forms hide cash).
-    // When staff submits a cash booking we auto-approve the slip status and
-    // record a matching cash_sales row so the payment lands in the POS tally.
-    const supabase = await createSupabaseServerClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    const adminStaff = createAdminClient();
-    const { data: staffProfile } = authUser
-      ? await adminStaff.from("profiles").select("role, name").eq("id", authUser.id).maybeSingle()
-      : { data: null };
-    const isStaff = !!staffProfile && ["admin", "manager", "staff", "owner"].includes(staffProfile.role);
-    const staffName = (staffProfile as { name?: string | null } | null)?.name ?? null;
 
     const name = formData.get("name") as string;
     const phone = formData.get("phone") as string;
@@ -78,15 +65,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Staff at the centre taking cash: auto-approve (they have the cash in hand)
-    // so it lands in today's sales report immediately. Public cash flow is blocked
-    // upstream by the form, but we double-check here as defense in depth.
-    const staffCashApprove = isStaff && payment_method === "cash";
-    const slip_status =
-      staffCashApprove                     ? "approved" :
-      payment_method === "cash"            ? "cash_pending" :
-                                              "pending_review";
-    const slip_reviewed_at = staffCashApprove ? new Date().toISOString() : null;
+    // Cash bookings sit in cash_pending until staff at the centre approves them
+    // (which is when the cash is actually collected, see /api/payments approve).
+    const slip_status = payment_method === "cash" ? "cash_pending" : "pending_review";
 
     const { data, error } = await admin
       .from("event_bookings")
@@ -106,7 +87,6 @@ export async function POST(request: NextRequest) {
         slip_image,
         slip_hash,
         slip_status,
-        slip_reviewed_at,
         slip_uploaded_at,
         notes: notes || null,
         photographer_requested,
@@ -116,19 +96,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
-
-    // Staff cash booking: write a matching cash_sales row so the cash payment
-    // shows up in the POS daily tally and the Sales report.
-    if (staffCashApprove && amount_paid && amount_paid > 0) {
-      await admin.from("cash_sales").insert({
-        sale_type:     "event",
-        reference_id:  data.id,
-        amount:        amount_paid,
-        staff_name:    staffName ?? "Staff",
-        notes:         `Birthday: ${birthday_child_name ?? name}${notes ? ` | ${notes}` : ""}`,
-        processed_at:  new Date().toISOString(),
-      });
-    }
 
     // Auto-create a member page so the guest can receive photos and check-ins
     await admin.from("member_registrations").insert({
@@ -142,7 +109,6 @@ export async function POST(request: NextRequest) {
       amount_paid,
       slip_image,
       slip_status,
-      slip_reviewed_at,
       slip_uploaded_at,
       notes: notes || null,
       sessions_remaining: null,

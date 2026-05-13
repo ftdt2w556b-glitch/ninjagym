@@ -57,23 +57,10 @@ export default function BirthdaysPage() {
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
   const [cashStaffName, setCashStaffName] = useState("");
-  const [staffMode, setStaffMode] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
     if (saved) setLang(saved);
-
-    // Detect staff session: if the visitor is signed in as admin/manager/staff/owner,
-    // re-enable the cash payment option (parents online stay PromptPay-only).
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d: { role: string | null; name: string | null }) => {
-        if (d.role && ["admin", "manager", "staff", "owner"].includes(d.role)) {
-          setStaffMode(true);
-          if (d.name) setCashStaffName(d.name);
-        }
-      })
-      .catch(() => { /* anon visitor, cash stays hidden */ });
   }, []);
 
   function handleLang(l: Lang) {
@@ -261,28 +248,14 @@ export default function BirthdaysPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-        {/* Staff-mode banner: visible to signed-in staff only */}
-        {staffMode && (
-          <div className="bg-emerald-100 border-2 border-emerald-400 rounded-2xl px-5 py-3 flex items-start gap-3">
-            <span className="text-2xl">🥷</span>
-            <div className="flex-1">
-              <p className="font-bold text-emerald-900 text-sm">Staff mode</p>
-              <p className="text-xs text-emerald-800 mt-0.5">
-                You are signed in. Use this form to record a booking on a parent&apos;s behalf. If you pick <strong>Cash</strong>, the booking is auto-approved and the payment is logged to today&apos;s POS sales.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Public-only top warning: keeps the cash-at-centre rule in front of parents */}
-        {!staffMode && (
-          <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl px-5 py-3">
-            <p className="font-bold text-amber-900 text-sm mb-1">💡 Before you book</p>
-            <p className="text-xs text-amber-900 leading-relaxed">
-              Birthdays must be booked <strong>in advance</strong>. Online bookings are PromptPay only, your date is held after payment is verified. <strong>Cash bookings happen in person at the centre, not online.</strong>
-            </p>
-          </div>
-        )}
+        {/* Top warning: every booker sees this before any input. Keeps the
+            cash-at-centre rule unmissable. */}
+        <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl px-5 py-3">
+          <p className="font-bold text-amber-900 text-sm mb-1">💡 Before you book</p>
+          <p className="text-xs text-amber-900 leading-relaxed">
+            Birthdays must be booked <strong>in advance</strong>. Your date is held only after payment is verified by staff. <strong>Cash bookings must be submitted while at the centre, with staff present.</strong>
+          </p>
+        </div>
 
         {/* Your details */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
@@ -439,32 +412,13 @@ export default function BirthdaysPage() {
           </p>
         </div>
 
-        {/* Payment method. Online (public) bookings are PromptPay only.
-            Cash bookings are only available when staff is signed in (detected
-            via /api/auth/me on mount). Parents online see only PromptPay. */}
+        {/* Payment method. Cash and PromptPay both available. Cash submissions
+            land in cash_pending status until staff at the centre approves them
+            (which creates the cash_sales row for the POS tally). The big amber
+            warning below makes the cash policy unmissable. */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-3">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            {staffMode && (
-              <div className={`rounded-xl border-2 transition-colors ${
-                form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
-              }`}>
-                <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
-                  <input type="radio" name="payment_method" value="cash"
-                    checked={form.payment_method === "cash"}
-                    onChange={() => setForm({ ...form, payment_method: "cash" })}
-                    className="accent-green-500" />
-                  <span className="text-sm font-semibold text-green-700">💵 {t.cashOption} <span className="text-xs font-normal text-green-600">(staff at centre)</span></span>
-                </label>
-                {form.payment_method === "cash" && (
-                  <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
-                    <p className="text-xs font-semibold text-green-700 mb-1">Staff Name <span className="font-normal">(who received the cash)</span></p>
-                    <input type="text" value={cashStaffName} onChange={(e) => setCashStaffName(e.target.value)}
-                      className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
-                  </div>
-                )}
-              </div>
-            )}
             <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
             }`}>
@@ -474,14 +428,27 @@ export default function BirthdaysPage() {
                 className="accent-[#1a56db]" />
               <span className="text-sm font-semibold text-[#1a56db]">📱 {t.promptpayOption}</span>
             </label>
+            <div className={`rounded-xl border-2 transition-colors ${
+              form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
+            }`}>
+              <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
+                <input type="radio" name="payment_method" value="cash"
+                  checked={form.payment_method === "cash"}
+                  onChange={() => setForm({ ...form, payment_method: "cash" })}
+                  className="accent-green-500" />
+                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption} <span className="text-xs font-normal text-green-600">(at centre only)</span></span>
+              </label>
+            </div>
           </div>
 
-          {!staffMode && (
-            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-              <p className="text-xs font-bold text-amber-900 mb-1">💵 Want to pay cash?</p>
-              <p className="text-xs text-amber-800 leading-relaxed">
-                Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only, your date is not held until payment is received.
-              </p>
+          {form.payment_method === "cash" && (
+            <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
+              <p className="text-sm font-bold text-red-900 mb-1">⚠️ Cash bookings: MUST BE DONE AT THE CENTRE WITH STAFF</p>
+              <ul className="text-xs text-red-800 leading-relaxed list-disc pl-4 space-y-1">
+                <li>Submit this form on your phone <strong>while at the centre</strong>.</li>
+                <li>Hand the cash directly to staff. Staff will approve your booking once payment is received.</li>
+                <li>Your date is NOT held until staff approves. Bookings submitted from home with cash may be rejected.</li>
+              </ul>
             </div>
           )}
         </div>
