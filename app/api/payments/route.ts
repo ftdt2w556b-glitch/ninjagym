@@ -75,10 +75,9 @@ export async function POST(request: NextRequest) {
     // event, and the drawer reconciliation stays clean. The deposit lives only
     // as a visible note on /admin/event-bookings, not as a POS sale.
     if (action === "approve") {
-      const DEPOSIT_FEE = 500; // mirrors DEPOSIT_FEE in app/(public)/birthdays/page.tsx
       const { data: booking } = await admin
         .from("event_bookings")
-        .select("payment_method, amount_paid, name, birthday_child_name, notes")
+        .select("payment_method, amount_paid, deposit_amount, name, birthday_child_name, notes")
         .eq("id", id)
         .maybeSingle();
       if (booking?.payment_method === "cash" && (booking.amount_paid ?? 0) > 0) {
@@ -89,13 +88,15 @@ export async function POST(request: NextRequest) {
           .eq("reference_id", Number(id))
           .maybeSingle();
         if (!existing) {
-          const serviceAmount = Math.max(0, (booking.amount_paid as number) - DEPOSIT_FEE);
+          const deposit       = (booking.deposit_amount as number | null) ?? 0;
+          const serviceAmount = Math.max(0, (booking.amount_paid as number) - deposit);
+          const depositNote   = deposit > 0 ? ` (deposit ฿${deposit} set aside, not in POS)` : "";
           await admin.from("cash_sales").insert({
             sale_type:    "event",
             reference_id: Number(id),
             amount:       serviceAmount,
             staff_name:   callerName ?? "Staff",
-            notes:        `Birthday: ${booking.birthday_child_name ?? booking.name} (deposit ฿${DEPOSIT_FEE} set aside, not in POS)${booking.notes ? ` | ${booking.notes}` : ""}`,
+            notes:        `Birthday: ${booking.birthday_child_name ?? booking.name}${depositNote}${booking.notes ? ` | ${booking.notes}` : ""}`,
             processed_at: new Date().toISOString(),
           });
         }

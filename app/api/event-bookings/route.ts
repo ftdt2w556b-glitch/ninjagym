@@ -69,6 +69,13 @@ export async function POST(request: NextRequest) {
     // (which is when the cash is actually collected, see /api/payments approve).
     const slip_status = payment_method === "cash" ? "cash_pending" : "pending_review";
 
+    // Every new birthday booking now includes a 500 THB refundable deposit
+    // baked into amount_paid. This column is the source of truth so the admin
+    // UI can show a reminder + the POS cash_sales row excludes it on approve.
+    // Mirrors DEPOSIT_FEE in app/(public)/birthdays/page.tsx.
+    const DEPOSIT_FEE = 500;
+    const deposit_amount = (amount_paid ?? 0) >= DEPOSIT_FEE ? DEPOSIT_FEE : 0;
+
     const { data, error } = await admin
       .from("event_bookings")
       .insert({
@@ -91,6 +98,7 @@ export async function POST(request: NextRequest) {
         notes: notes || null,
         photographer_requested,
         photographer_fee,
+        deposit_amount,
       })
       .select("id")
       .single();
