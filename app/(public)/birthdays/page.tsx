@@ -14,6 +14,10 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 const HOUR_OPTIONS = [1, 1.5, 2, 2.5, 3, 3.5, 4];
 const PHOTOGRAPHER_FEE = 1000;
+// Refundable deposit added to every birthday booking. Returned in cash after
+// the event if no overtime, damage, or extra cleanup. Tracked as part of
+// amount_paid; staff records a manual cash-out from the drawer when refunding.
+const DEPOSIT_FEE = 500;
 
 export default function BirthdaysPage() {
   const router = useRouter();
@@ -33,6 +37,7 @@ export default function BirthdaysPage() {
     t.birthdayTerm3,
     t.birthdayTerm4,
     t.birthdayTerm5,
+    t.birthdayTerm6,
   ];
 
   const [form, setForm] = useState({
@@ -69,7 +74,7 @@ export default function BirthdaysPage() {
   }
 
   const baseTotal = getBirthdayAmount(form.time_slot, form.num_hours, form.num_kids);
-  const total = baseTotal + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0);
+  const total = baseTotal + (form.photographer_requested ? PHOTOGRAPHER_FEE : 0) + DEPOSIT_FEE;
   const selectedSlot = TIME_SLOTS.find((s) => s.id === form.time_slot)!;
 
   // Parse the first hour-like number out of the free-text start/end time field.
@@ -213,7 +218,6 @@ export default function BirthdaysPage() {
             t.birthdayIncluded2,
             t.birthdayIncluded3,
             t.birthdayIncluded4,
-            t.birthdayIncluded5,
             t.birthdayIncluded6,
           ].map((item) => (
             <li key={item} className="flex items-start gap-3">
@@ -248,12 +252,11 @@ export default function BirthdaysPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
-        {/* Top warning: every booker sees this before any input. Keeps the
-            cash-at-centre rule unmissable. */}
+        {/* Top warning: every booker sees this before any input. */}
         <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl px-5 py-3">
           <p className="font-bold text-amber-900 text-sm mb-1">💡 Before you book</p>
           <p className="text-xs text-amber-900 leading-relaxed">
-            Birthdays must be booked <strong>in advance</strong>. Your date is held only after payment is verified by staff. <strong>Cash bookings must be submitted while at the centre, with staff present.</strong>
+            Book at least <strong>2 weeks prior</strong> and your date is held only after payment is verified. <strong>Cash bookings must be done while at the centre.</strong>
           </p>
         </div>
 
@@ -333,9 +336,8 @@ export default function BirthdaysPage() {
             </div>
             {form.time_slot === "weekend" && (
               <div className="mt-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3">
-                <p className="text-xs font-bold text-amber-900 mb-1">NOTE: Weekend bookings must start at 2:00pm or later</p>
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  Mornings and early afternoons on Saturday and Sunday are reserved for regular training. Please set your start time to 2:00pm or later in the field below.
+                  Saturday and Sunday mornings are reserved for regular training. Please set your start time to 2:00pm or later in the field below.
                 </p>
               </div>
             )}
@@ -409,6 +411,17 @@ export default function BirthdaysPage() {
             {selectedSlot.rate.toLocaleString()} THB/hr × {form.num_hours} hr{form.num_hours !== 1 ? "s" : ""}
             {form.num_kids > 5 ? " + extra kids" : " (first 5 included)"}
             {form.photographer_requested ? " + photos (1,000 THB)" : ""}
+            {" + ฿500 refundable deposit"}
+          </p>
+        </div>
+
+        {/* Refundable deposit callout — every birthday includes a 500 THB
+            deposit returned in cash after the event if no overtime, damage,
+            or extra cleanup is needed. */}
+        <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl px-5 py-3">
+          <p className="font-bold text-emerald-900 text-sm mb-1">💰 ฿500 Refundable Deposit (included)</p>
+          <p className="text-xs text-emerald-900 leading-relaxed">
+            Every booking includes a ฿500 deposit added to the total. It is{" "}<strong>returned in cash after the event</strong>{" "}if there is no overtime, damage to equipment, or extra cleanup needed.
           </p>
         </div>
 
@@ -443,11 +456,10 @@ export default function BirthdaysPage() {
 
           {form.payment_method === "cash" && (
             <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
-              <p className="text-sm font-bold text-red-900 mb-1">⚠️ Cash bookings: MUST BE DONE AT THE CENTRE WITH STAFF</p>
-              <ul className="text-xs text-red-800 leading-relaxed list-disc pl-4 space-y-1">
-                <li>Submit this form on your phone <strong>while at the centre</strong>.</li>
-                <li>Hand the cash directly to staff. Staff will approve your booking once payment is received.</li>
-                <li>Your date is NOT held until staff approves. Bookings submitted from home with cash may be rejected.</li>
+              <ul className="text-xs text-red-800 leading-relaxed list-disc pl-4 space-y-1.5">
+                <li>Must be done <strong>well in advance</strong>, not the day of the birthday. Submit this form while at NinjaGym.</li>
+                <li>Pay cash directly to staff. Staff will review your booking once payment is received.</li>
+                <li>Your date is <strong>NOT</strong> held until staff approves.</li>
               </ul>
             </div>
           )}
