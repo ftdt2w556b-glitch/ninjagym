@@ -46,7 +46,7 @@ export default function BirthdaysPage() {
     num_kids: 5,
     birthday_child_name: "",
     birthday_child_age: "",
-    payment_method: "cash",
+    payment_method: "promptpay",
     notes: "",
     photographer_requested: false,
   });
@@ -374,30 +374,12 @@ export default function BirthdaysPage() {
           </p>
         </div>
 
-        {/* Payment method */}
+        {/* Payment method — online birthday bookings are PromptPay only.
+            Cash bookings must be made IN PERSON at the centre so the date is
+            held only after the cash is in hand. */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-3">{t.paymentMethodLabel}</label>
           <div className="flex flex-col gap-2">
-            {/* Cash — green */}
-            <div className={`rounded-xl border-2 transition-colors ${
-              form.payment_method === "cash" ? "border-green-500 bg-green-100" : "border-green-200 bg-green-50"
-            }`}>
-              <label className="flex items-center gap-3 px-4 py-3 cursor-pointer">
-                <input type="radio" name="payment_method" value="cash"
-                  checked={form.payment_method === "cash"}
-                  onChange={() => setForm({ ...form, payment_method: "cash" })}
-                  className="accent-green-500" />
-                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption}</span>
-              </label>
-              {form.payment_method === "cash" && (
-                <div className="px-4 pb-3" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-xs font-semibold text-green-700 mb-1">Staff Name <span className="font-normal">(who received the cash)</span></p>
-                  <input type="text" value={cashStaffName} onChange={(e) => setCashStaffName(e.target.value)}
-                    className="w-full border border-green-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white" />
-                </div>
-              )}
-            </div>
-            {/* PromptPay — blue */}
             <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-colors ${
               form.payment_method === "promptpay" ? "border-[#1a56db] bg-blue-100" : "border-blue-200 bg-blue-50"
             }`}>
@@ -407,8 +389,13 @@ export default function BirthdaysPage() {
                 className="accent-[#1a56db]" />
               <span className="text-sm font-semibold text-[#1a56db]">📱 {t.promptpayOption}</span>
             </label>
-            {/* Credit card — re-enable when needed */}
-            {/* { value: "stripe", label: t.birthdayCardOption } */}
+          </div>
+
+          <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+            <p className="text-xs font-bold text-amber-900 mb-1">💵 Want to pay cash?</p>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Cash bookings must be made <strong>in person at the centre</strong>. Online bookings are PromptPay only — your date is not held until payment is received.
+            </p>
           </div>
         </div>
 
