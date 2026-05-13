@@ -1,13 +1,23 @@
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import DeleteEventButton from "@/components/admin/DeleteEventButton";
 
 export default async function EditEventBookingPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  // Auth: any staff role may edit, but only admin / owner may delete.
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/admin/login");
   const admin = createAdminClient();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  const role = profile?.role ?? "";
+  if (!["admin", "manager", "staff", "owner"].includes(role)) redirect("/admin/dashboard");
+  const canDelete = ["admin", "owner"].includes(role);
+
+  const { id } = await params;
 
   const { data: b } = await admin
     .from("event_bookings")
@@ -97,6 +107,16 @@ export default async function EditEventBookingPage({
           </a>
         </div>
       </form>
+
+      {canDelete && (
+        <div className="mt-8 pt-6 border-t border-red-200">
+          <p className="text-xs font-bold text-red-700 uppercase tracking-wide mb-2">Danger Zone</p>
+          <p className="text-xs text-gray-500 mb-3">
+            Deleting a booking is permanent. It also removes the linked member record and any cash sale row created when the booking was approved. Admin and owner only.
+          </p>
+          <DeleteEventButton bookingId={b.id as number} />
+        </div>
+      )}
     </div>
   );
 }
