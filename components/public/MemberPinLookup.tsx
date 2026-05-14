@@ -26,19 +26,19 @@ interface Props {
 }
 
 /**
- * Optional "Already a member?" PIN lookup widget. Sits at the top of the
- * public form. Walk-ins ignore it and fill the form manually; members tap it
- * and have their name / phone / email pre-filled. The PIN check goes through
- * `/api/scanner/lookup`, which is rate-limited (8 wrong / 10 min → 30 min
- * lockout) so brute-forcing here is no easier than on /my-membership.
+ * "Already a member?" PIN lookup widget. Always shown expanded so existing
+ * members can't miss it. Walk-ins simply ignore the PIN row and fill the
+ * form manually; members type their 4-digit PIN and get their name / phone
+ * / email pre-filled. Lookup goes through `/api/scanner/lookup`, which is
+ * rate-limited (8 wrong / 10 min → 30 min lockout) so brute-forcing here
+ * is no easier than on /my-membership.
  */
 export default function MemberPinLookup({ onLink, onClear, dark = false, lang = "en" }: Props) {
   const t = translations[lang];
-  const [open, setOpen]       = useState(false);
-  const [pin, setPin]         = useState("");
-  const [busy, setBusy]       = useState(false);
-  const [err, setErr]         = useState<string | null>(null);
-  const [linked, setLinked]   = useState<LinkedMember | null>(null);
+  const [pin, setPin]       = useState("");
+  const [busy, setBusy]     = useState(false);
+  const [err, setErr]       = useState<string | null>(null);
+  const [linked, setLinked] = useState<LinkedMember | null>(null);
 
   async function apply() {
     if (!/^\d{4}$/.test(pin)) {
@@ -67,7 +67,6 @@ export default function MemberPinLookup({ onLink, onClear, dark = false, lang = 
         kids_names: data.kids_names   ?? null,
       };
       setLinked(m);
-      setOpen(false);
       onLink(m);
     } catch {
       setErr(t.pinLookupConnectionError);
@@ -107,40 +106,13 @@ export default function MemberPinLookup({ onLink, onClear, dark = false, lang = 
     );
   }
 
-  // ── Collapsed prompt ───────────────────────────────────────────
-  // Bright yellow CTA so existing members can't miss it. Using the same
-  // #ffe033 the rest of the app uses for the Total banner, so it reads as
-  // a primary action, not a tooltip.
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="w-full rounded-2xl bg-[#ffe033] hover:bg-yellow-300 border-2 border-yellow-500 px-5 py-4 mb-4 shadow-lg shadow-yellow-500/20 transition-colors flex items-center justify-between gap-3"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="text-2xl shrink-0" aria-hidden>🎫</span>
-          <span className="flex flex-col items-start min-w-0 text-left">
-            <span className="font-bold text-gray-900 text-sm sm:text-base leading-tight">
-              {t.pinLookupAlreadyMember}
-            </span>
-            <span className="text-xs text-gray-700 leading-tight">
-              {t.pinLookupUseMyPin}
-            </span>
-          </span>
-        </span>
-        <span className="font-bold text-[#1a56db] text-lg shrink-0" aria-hidden>→</span>
-      </button>
-    );
-  }
-
-  // ── Expanded PIN input ─────────────────────────────────────────
+  // ── Always-on PIN input ─────────────────────────────────────────
+  // Yellow card so members spot it instantly. Same #ffe033 the rest of the
+  // app uses for the Total banner so it reads as a primary action.
   return (
-    <div className={`rounded-2xl border-2 px-4 py-3 mb-4 ${
-      dark ? "border-white/20 bg-white/5" : "border-gray-300 bg-white"
-    }`}>
-      <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${dark ? "text-white/70" : "text-gray-600"}`}>
-        {t.pinLookupPinLabel}
+    <div className="rounded-2xl bg-[#ffe033] border-2 border-yellow-500 px-4 py-3 mb-4 shadow-lg shadow-yellow-500/20">
+      <p className="text-xs font-bold uppercase tracking-wide mb-2 text-gray-800">
+        🎫 {t.pinLookupAlreadyMember} <span className="font-bold">{t.pinLookupPinLabel}</span>
       </p>
       <div className="flex gap-2">
         <input
@@ -150,31 +122,19 @@ export default function MemberPinLookup({ onLink, onClear, dark = false, lang = 
           value={pin}
           onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
           placeholder="1234"
-          className={`flex-1 rounded-xl border px-3 py-2.5 text-base font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${
-            dark ? "bg-[#1a2d40] text-white border-white/10 placeholder-white/30"
-                 : "bg-white border-gray-200"
-          }`}
+          className="flex-1 rounded-xl border border-yellow-600/40 bg-white px-3 py-2.5 text-base font-mono tracking-widest text-center focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
         />
         <button
           type="button"
           onClick={apply}
           disabled={busy || pin.length !== 4}
-          className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
+          className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
         >
           {busy ? "…" : t.pinLookupApply}
         </button>
-        <button
-          type="button"
-          onClick={() => { setOpen(false); setPin(""); setErr(null); }}
-          className={`text-sm font-semibold px-3 py-2.5 rounded-xl ${
-            dark ? "text-white/60 hover:text-white" : "text-gray-500 hover:text-gray-700"
-          }`}
-        >
-          {t.pinLookupCancel}
-        </button>
       </div>
       {err && (
-        <p className={`text-xs mt-2 ${dark ? "text-red-300" : "text-red-600"}`}>{err}</p>
+        <p className="text-xs mt-2 text-red-700 font-semibold">{err}</p>
       )}
     </div>
   );
