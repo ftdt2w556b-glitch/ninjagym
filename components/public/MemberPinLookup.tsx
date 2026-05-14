@@ -108,17 +108,28 @@ export default function MemberPinLookup({ onLink, onClear, dark = false, lang = 
   }
 
   // ── Collapsed prompt ───────────────────────────────────────────
+  // Bright yellow CTA so existing members can't miss it. Using the same
+  // #ffe033 the rest of the app uses for the Total banner, so it reads as
+  // a primary action, not a tooltip.
   if (!open) {
     return (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`w-full rounded-2xl border-2 border-dashed px-4 py-3 mb-4 text-sm font-semibold transition-colors ${
-          dark ? "border-white/20 text-white/70 hover:bg-white/5"
-               : "border-gray-300 text-gray-600 hover:bg-gray-50"
-        }`}
+        className="w-full rounded-2xl bg-[#ffe033] hover:bg-yellow-300 border-2 border-yellow-500 px-5 py-4 mb-4 shadow-lg shadow-yellow-500/20 transition-colors flex items-center justify-between gap-3"
       >
-        {t.pinLookupAlreadyMember} <span className={dark ? "text-[#38bdf8]" : "text-[#1a56db]"}>{t.pinLookupUseMyPin}</span>
+        <span className="flex items-center gap-3 min-w-0">
+          <span className="text-2xl shrink-0" aria-hidden>🎫</span>
+          <span className="flex flex-col items-start min-w-0 text-left">
+            <span className="font-bold text-gray-900 text-sm sm:text-base leading-tight">
+              {t.pinLookupAlreadyMember}
+            </span>
+            <span className="text-xs text-gray-700 leading-tight">
+              {t.pinLookupUseMyPin}
+            </span>
+          </span>
+        </span>
+        <span className="font-bold text-[#1a56db] text-lg shrink-0" aria-hidden>→</span>
       </button>
     );
   }
