@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
   // ── Member lookup ────────────────────────────────────────────────
   const { data: member } = await admin
     .from("member_registrations")
-    .select("id, name, membership_type, slip_status, sessions_remaining, expires_at, kids_names, kids_count")
+    .select("id, name, phone, email, membership_type, slip_status, sessions_remaining, expires_at, kids_names, kids_count")
     .eq("pin", Number(pin))
     .maybeSingle();
 

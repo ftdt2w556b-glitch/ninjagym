@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
     const photographer_requested = formData.get("photographer_requested") === "true";
     const photographer_fee = photographer_requested ? 1500 : 0;
     const slipFile = formData.get("slip") as File | null;
+    const memberIdRaw = formData.get("member_id") as string | null;
+    const member_id = memberIdRaw && /^\d+$/.test(memberIdRaw) ? Number(memberIdRaw) : null;
 
     if (!name || !event_date || !time_slot) {
       return NextResponse.json({ error: "Name, event date, and time slot are required" }, { status: 400 });
@@ -99,13 +101,17 @@ export async function POST(request: NextRequest) {
         photographer_requested,
         photographer_fee,
         deposit_amount,
+        member_id,
       })
       .select("id")
       .single();
 
     if (error) throw error;
 
-    // Auto-create a member page so the guest can receive photos and check-ins
+    // Only auto-create a guest member_registrations row when this booking is
+    // NOT linked to an existing member. Linked bookings attach to the family
+    // card directly via event_bookings.member_id, no duplicate guest record.
+    if (!member_id) {
     await admin.from("member_registrations").insert({
       name,
       phone: phone || null,
@@ -122,6 +128,7 @@ export async function POST(request: NextRequest) {
       sessions_remaining: null,
       event_booking_id: data.id,
     });
+    }
 
     // Send confirmation email (fire-and-forget)
     if (email) {

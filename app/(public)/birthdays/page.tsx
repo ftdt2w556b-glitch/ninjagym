@@ -8,6 +8,7 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
 import { compressImage, safeJson } from "@/lib/compress-image";
+import MemberPinLookup, { type LinkedMember } from "@/components/public/MemberPinLookup";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -63,6 +64,7 @@ export default function BirthdaysPage() {
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
   const [cashStaffName, setCashStaffName] = useState("");
+  const [linkedMember, setLinkedMember] = useState<LinkedMember | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -112,6 +114,7 @@ export default function BirthdaysPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(total));
+      if (linkedMember) body.append("member_id", String(linkedMember.id));
       if (form.payment_method === "cash" && cashStaffName) {
         const staffNote = form.notes ? `${form.notes} | Staff: ${cashStaffName}` : `Staff: ${cashStaffName}`;
         body.set("notes", staffNote);
@@ -265,30 +268,48 @@ export default function BirthdaysPage() {
           </p>
         </div>
 
-        {/* Your details */}
+        <MemberPinLookup
+          onLink={(m) => {
+            setLinkedMember(m);
+            setForm((f) => ({ ...f, name: m.name, phone: m.phone ?? "", email: m.email ?? "" }));
+          }}
+          onClear={() => {
+            setLinkedMember(null);
+            setForm((f) => ({ ...f, name: "", phone: "", email: "" }));
+          }}
+        />
+
+        {/* Your details. Fields lock to read-only when a member is linked
+            via PIN so the deposit / refund traces cleanly to the existing card. */}
         <div className="bg-white rounded-2xl p-5 shadow flex flex-col gap-3">
           <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.birthdayYourDetails}</h2>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.nameLabel} *</label>
             <input type="text" required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+              readOnly={!!linkedMember}
+              className={`w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${linkedMember ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""}`}
               placeholder={t.birthdayParentNamePlaceholder} />
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.phoneLabel}</label>
             <input type="tel" value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+              readOnly={!!linkedMember}
+              className={`w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${linkedMember ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""}`}
               placeholder="+66 80 000 0000" />
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.emailLabel}</label>
             <input type="email" value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+              readOnly={!!linkedMember}
+              className={`w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${linkedMember ? "bg-gray-100 text-gray-600 cursor-not-allowed" : ""}`}
               placeholder="you@example.com" />
           </div>
+          {linkedMember && (
+            <p className="text-xs text-gray-500">Linked to your member card. Unlink above to edit these fields.</p>
+          )}
         </div>
 
         {/* Birthday child */}

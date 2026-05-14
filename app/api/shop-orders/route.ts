@@ -14,6 +14,8 @@ export async function POST(request: NextRequest) {
     const total_amount = Number(formData.get("total_amount")) || null;
     const itemsRaw = formData.get("items") as string;
     const slipFile = formData.get("slip") as File | null;
+    const memberIdRaw = formData.get("member_id") as string | null;
+    const member_id = memberIdRaw && /^\d+$/.test(memberIdRaw) ? Number(memberIdRaw) : null;
 
     if (!name || !itemsRaw) {
       return NextResponse.json({ error: "Name and items are required" }, { status: 400 });
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
         slip_hash,
         slip_status,
         slip_uploaded_at,
+        member_id,
       })
       .select("id")
       .single();

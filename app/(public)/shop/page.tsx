@@ -9,6 +9,7 @@ import { translations, Lang } from "@/lib/i18n/translations";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 import { formatTHB } from "@/lib/pricing";
 import { compressImage, safeJson } from "@/lib/compress-image";
+import MemberPinLookup, { type LinkedMember } from "@/components/public/MemberPinLookup";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -45,6 +46,7 @@ export default function ShopPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [cashStaffName, setCashStaffName] = useState("");
+  const [linkedMember, setLinkedMember] = useState<LinkedMember | null>(null);
   // Stripe two-step state
   const [stripeStep, setStripeStep] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
@@ -118,6 +120,7 @@ export default function ShopPage() {
       body.append("email", form.email);
       body.append("payment_method", form.payment_method);
       body.append("total_amount", String(total));
+      if (linkedMember) body.append("member_id", String(linkedMember.id));
       body.append("items", JSON.stringify(
         cart.map((c) => ({ id: c.catalogId, name: c.name, qty: c.qty, size_or_flavor: c.option, unit_price: c.unit_price }))
       ));
@@ -296,6 +299,16 @@ export default function ShopPage() {
 
       {/* Checkout form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <MemberPinLookup
+          onLink={(m) => {
+            setLinkedMember(m);
+            setForm((f) => ({ ...f, name: m.name, phone: m.phone ?? "", email: m.email ?? "" }));
+          }}
+          onClear={() => {
+            setLinkedMember(null);
+            setForm((f) => ({ ...f, name: "", phone: "", email: "" }));
+          }}
+        />
         <div className="bg-white rounded-2xl p-4 shadow flex flex-col gap-3">
           <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Your Details</h2>
           <div>
