@@ -96,14 +96,14 @@ export default function BirthdaysPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!termsAccepted) {
-      setError("Please read and accept the Terms before submitting.");
+      setError(t.errPleaseAcceptTerms);
       return;
     }
     // Weekend events cannot start before 2:00pm (daytime is for training).
     if (form.time_slot === "weekend") {
       const startHour = parseStartHour(form.hours);
       if (startHour !== null && startHour < 14) {
-        setError("Weekend birthdays must start at 2:00pm or later. Earlier hours are reserved for daily training.");
+        setError(t.errWeekendStart2pm);
         return;
       }
     }
@@ -129,9 +129,9 @@ export default function BirthdaysPage() {
 
       if (!parsed.ok) {
         if (res.status === 409) {
-          setError("That date and time slot is already booked. Please choose a different slot.");
+          setError(t.errDateAlreadyBooked);
         } else {
-          throw new Error(parsed.error || "Submission failed");
+          throw new Error(parsed.error || t.errSubmissionFailed);
         }
         setSubmitting(false);
         return;
@@ -147,7 +147,7 @@ export default function BirthdaysPage() {
 
       router.push(`/birthdays/submitted`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t.errSomethingWentWrong);
       setSubmitting(false);
     }
   }
@@ -262,13 +262,14 @@ export default function BirthdaysPage() {
 
         {/* Top warning: every booker sees this before any input. */}
         <div className="bg-amber-100 border-2 border-amber-400 rounded-2xl px-5 py-3">
-          <p className="font-bold text-amber-900 text-sm mb-1">💡 Before you book</p>
+          <p className="font-bold text-amber-900 text-sm mb-1">{t.birthdayBeforeYouBookTitle}</p>
           <p className="text-xs text-amber-900 leading-relaxed">
-            Book at least <strong>2 weeks prior</strong> and your date is held only after payment is verified. <strong>Cash bookings must be done while at the centre.</strong>
+            {t.birthdayBeforeYouBookBody}
           </p>
         </div>
 
         <MemberPinLookup
+          lang={lang}
           onLink={(m) => {
             setLinkedMember(m);
             setForm((f) => ({ ...f, name: m.name, phone: m.phone ?? "", email: m.email ?? "" }));
@@ -308,7 +309,7 @@ export default function BirthdaysPage() {
               placeholder="you@example.com" />
           </div>
           {linkedMember && (
-            <p className="text-xs text-gray-500">Linked to your member card. Unlink above to edit these fields.</p>
+            <p className="text-xs text-gray-500">{t.birthdayLinkedReadOnly}</p>
           )}
         </div>
 
@@ -363,7 +364,7 @@ export default function BirthdaysPage() {
             {form.time_slot === "weekend" && (
               <div className="mt-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3">
                 <p className="text-xs text-amber-800 leading-relaxed">
-                  Saturday and Sunday mornings are reserved for regular training. Please set your start time to 2:00pm or later in the field below.
+                  {t.birthdayWeekendNote}
                 </p>
               </div>
             )}
@@ -437,17 +438,17 @@ export default function BirthdaysPage() {
             {selectedSlot.rate.toLocaleString()} THB/hr × {form.num_hours} hr{form.num_hours !== 1 ? "s" : ""}
             {form.num_kids > 5 ? " + extra kids" : " (first 5 included)"}
             {form.photographer_requested ? " + photos (1,000 THB)" : ""}
-            {" + ฿500 refundable deposit"}
+            {t.birthdayDepositTotalNote}
           </p>
         </div>
 
-        {/* Refundable deposit callout — every birthday includes a 500 THB
+        {/* Refundable deposit callout, every birthday includes a 500 THB
             deposit returned in cash after the event if no overtime, damage,
             or extra cleanup is needed. */}
         <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl px-5 py-3">
-          <p className="font-bold text-emerald-900 text-sm mb-1">💰 ฿500 Refundable Deposit (included)</p>
+          <p className="font-bold text-emerald-900 text-sm mb-1">{t.birthdayDepositTitle}</p>
           <p className="text-xs text-emerald-900 leading-relaxed">
-            Every booking includes a ฿500 deposit added to the total. It is{" "}<strong>returned in cash after the event</strong>{" "}if there is no overtime, damage to equipment, or extra cleanup needed.
+            {t.birthdayDepositBody}
           </p>
         </div>
 
@@ -475,7 +476,7 @@ export default function BirthdaysPage() {
                   checked={form.payment_method === "cash"}
                   onChange={() => setForm({ ...form, payment_method: "cash" })}
                   className="accent-green-500" />
-                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption} <span className="text-xs font-normal text-green-600">(at centre only)</span></span>
+                <span className="text-sm font-semibold text-green-700">💵 {t.cashOption} <span className="text-xs font-normal text-green-600">{t.birthdayCashAtCentreOnly}</span></span>
               </label>
             </div>
           </div>
@@ -483,9 +484,9 @@ export default function BirthdaysPage() {
           {form.payment_method === "cash" && (
             <div className="mt-3 bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3">
               <ul className="text-xs text-red-800 leading-relaxed list-disc pl-4 space-y-1.5">
-                <li>Must be done <strong>well in advance</strong>, not the day of the birthday. Submit this form while at NinjaGym.</li>
-                <li>Pay cash directly to staff. Staff will review your booking once payment is received.</li>
-                <li>Your date is <strong>NOT</strong> held until staff approves.</li>
+                <li>{t.birthdayCashBullet1}</li>
+                <li>{t.birthdayCashBullet2}</li>
+                <li>{t.birthdayCashBullet3}</li>
               </ul>
             </div>
           )}

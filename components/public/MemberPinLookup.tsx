@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { translations, Lang } from "@/lib/i18n/translations";
 
 export interface LinkedMember {
   id: number;
@@ -20,6 +21,8 @@ interface Props {
   onClear: () => void;
   /** Optional: render in dark theme (used on the shop page's dark form). */
   dark?: boolean;
+  /** Language code from the parent page (uses parent's LanguageSwitcher state). */
+  lang?: Lang;
 }
 
 /**
@@ -29,7 +32,8 @@ interface Props {
  * `/api/scanner/lookup`, which is rate-limited (8 wrong / 10 min → 30 min
  * lockout) so brute-forcing here is no easier than on /my-membership.
  */
-export default function MemberPinLookup({ onLink, onClear, dark = false }: Props) {
+export default function MemberPinLookup({ onLink, onClear, dark = false, lang = "en" }: Props) {
+  const t = translations[lang];
   const [open, setOpen]       = useState(false);
   const [pin, setPin]         = useState("");
   const [busy, setBusy]       = useState(false);
@@ -38,7 +42,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
 
   async function apply() {
     if (!/^\d{4}$/.test(pin)) {
-      setErr("Enter your 4-digit PIN.");
+      setErr(t.pinLookupEnter4);
       return;
     }
     setBusy(true);
@@ -48,11 +52,11 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
       const data = await res.json().catch(() => ({}));
       if (res.status === 429) {
         const mins = Number(data?.retry_after_minutes) || 30;
-        setErr(`Too many tries. Try again in ${mins} min.`);
+        setErr(t.pinLookupTooManyTries.replace("{n}", String(mins)));
         return;
       }
       if (!res.ok || !data?.id) {
-        setErr("PIN not found. Check the number on your card.");
+        setErr(t.pinLookupNotFound);
         return;
       }
       const m: LinkedMember = {
@@ -66,7 +70,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
       setOpen(false);
       onLink(m);
     } catch {
-      setErr("Connection problem. Please try again.");
+      setErr(t.pinLookupConnectionError);
     } finally {
       setBusy(false);
     }
@@ -87,7 +91,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
              : "bg-green-50 border-green-300 text-green-800"
       }`}>
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wide opacity-70">Linked member</p>
+          <p className="text-xs font-bold uppercase tracking-wide opacity-70">{t.pinLookupLinkedMember}</p>
           <p className="text-sm font-bold truncate">{linked.name}</p>
         </div>
         <button
@@ -97,7 +101,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
             dark ? "bg-white/10 hover:bg-white/20" : "bg-white text-green-700 hover:bg-green-100"
           }`}
         >
-          Unlink
+          {t.pinLookupUnlink}
         </button>
       </div>
     );
@@ -114,7 +118,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
                : "border-gray-300 text-gray-600 hover:bg-gray-50"
         }`}
       >
-        Already a member? <span className={dark ? "text-[#38bdf8]" : "text-[#1a56db]"}>Use my PIN</span>
+        {t.pinLookupAlreadyMember} <span className={dark ? "text-[#38bdf8]" : "text-[#1a56db]"}>{t.pinLookupUseMyPin}</span>
       </button>
     );
   }
@@ -125,7 +129,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
       dark ? "border-white/20 bg-white/5" : "border-gray-300 bg-white"
     }`}>
       <p className={`text-xs font-bold uppercase tracking-wide mb-2 ${dark ? "text-white/70" : "text-gray-600"}`}>
-        Member PIN (4 digits)
+        {t.pinLookupPinLabel}
       </p>
       <div className="flex gap-2">
         <input
@@ -146,7 +150,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
           disabled={busy || pin.length !== 4}
           className="bg-[#1a56db] hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-4 py-2.5 rounded-xl text-sm transition-colors"
         >
-          {busy ? "…" : "Apply"}
+          {busy ? "…" : t.pinLookupApply}
         </button>
         <button
           type="button"
@@ -155,7 +159,7 @@ export default function MemberPinLookup({ onLink, onClear, dark = false }: Props
             dark ? "text-white/60 hover:text-white" : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          Cancel
+          {t.pinLookupCancel}
         </button>
       </div>
       {err && (

@@ -109,7 +109,7 @@ export default function ShopPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (cart.length === 0) { setError("Add at least one item to your order."); return; }
+    if (cart.length === 0) { setError(t.shopErrAddOneItem); return; }
     setSubmitting(true);
     setError("");
 
@@ -132,7 +132,7 @@ export default function ShopPage() {
 
       const res = await fetch("/api/shop-orders", { method: "POST", body });
       const parsed = await safeJson(res);
-      if (!parsed.ok) throw new Error(parsed.error || "Submission failed");
+      if (!parsed.ok) throw new Error(parsed.error || t.errSubmissionFailed);
       const data = parsed.data ?? {};
 
       if (form.payment_method === "stripe") {
@@ -143,7 +143,7 @@ export default function ShopPage() {
         router.push("/shop/submitted");
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : t.errSomethingWentWrong);
       setSubmitting(false);
     }
   }
@@ -300,6 +300,7 @@ export default function ShopPage() {
       {/* Checkout form */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <MemberPinLookup
+          lang={lang}
           onLink={(m) => {
             setLinkedMember(m);
             setForm((f) => ({ ...f, name: m.name, phone: m.phone ?? "", email: m.email ?? "" }));
@@ -310,7 +311,7 @@ export default function ShopPage() {
           }}
         />
         <div className="bg-white rounded-2xl p-4 shadow flex flex-col gap-3">
-          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">Your Details</h2>
+          <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide">{t.shopYourDetails}</h2>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">{t.nameLabel} *</label>
             <input type="text" required value={form.name}
@@ -437,7 +438,7 @@ export default function ShopPage() {
           {submitting
             ? t.submitting
             : form.payment_method === "stripe"
-            ? "Order & Pay by Card →"
+            ? t.shopOrderAndPayByCard
             : t.checkout}
         </button>
       </form>
