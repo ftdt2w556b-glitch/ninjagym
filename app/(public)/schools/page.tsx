@@ -7,6 +7,7 @@ import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { formatTHB } from "@/lib/pricing";
+import { compressImage, safeJson } from "@/lib/compress-image";
 
 const SCHOOL_RATE = 2222;
 const PHOTOGRAPHER_FEE = 1000;
@@ -79,16 +80,19 @@ export default function EventSpacePage() {
         const staffNote = form.notes ? `${form.notes} | Staff: ${cashStaffName}` : `Staff: ${cashStaffName}`;
         body.set("notes", staffNote);
       }
-      if (slip) body.append("slip", slip);
+      if (slip) {
+        const compressed = await compressImage(slip);
+        body.append("slip", compressed);
+      }
 
       const res = await fetch("/api/event-bookings", { method: "POST", body });
-      const data = await res.json();
+      const parsed = await safeJson(res);
 
-      if (!res.ok) {
+      if (!parsed.ok) {
         if (res.status === 409) {
           setError("That date is already booked. Please choose a different date.");
         } else {
-          throw new Error(data.error || "Submission failed");
+          throw new Error(parsed.error || "Submission failed");
         }
         setSubmitting(false);
         return;

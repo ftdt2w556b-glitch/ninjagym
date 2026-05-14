@@ -8,6 +8,7 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { translations, Lang } from "@/lib/i18n/translations";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 import { formatTHB } from "@/lib/pricing";
+import { compressImage, safeJson } from "@/lib/compress-image";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -121,14 +122,18 @@ export default function ShopPage() {
         cart.map((c) => ({ id: c.catalogId, name: c.name, qty: c.qty, size_or_flavor: c.option, unit_price: c.unit_price }))
       ));
       if (form.payment_method === "cash" && cashStaffName) body.append("notes", `Staff: ${cashStaffName}`);
-      if (slip && form.payment_method === "promptpay") body.append("slip", slip);
+      if (slip && form.payment_method === "promptpay") {
+        const compressed = await compressImage(slip);
+        body.append("slip", compressed);
+      }
 
       const res = await fetch("/api/shop-orders", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Submission failed");
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.error || "Submission failed");
+      const data = parsed.data ?? {};
 
       if (form.payment_method === "stripe") {
-        setPendingOrderId(data.id);
+        setPendingOrderId(data.id as number);
         setStripeStep(true);
         setSubmitting(false);
       } else {

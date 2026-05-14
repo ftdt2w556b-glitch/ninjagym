@@ -7,6 +7,7 @@ import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import { Lang } from "@/lib/i18n/translations";
 import { formatTHB, getPriceForType } from "@/lib/pricing";
+import { compressImage, safeJson } from "@/lib/compress-image";
 
 const CAMP_PRICE_PER_KID = getPriceForType("day_camp", 1); // 555 THB per kid
 
@@ -43,11 +44,14 @@ export default function DayCampsPage() {
       const body = new FormData();
       Object.entries(form).forEach(([k, v]) => body.append(k, String(v)));
       body.append("amount_paid", String(total));
-      if (slip && form.payment_method === "promptpay") body.append("slip", slip);
+      if (slip && form.payment_method === "promptpay") {
+        const compressed = await compressImage(slip);
+        body.append("slip", compressed);
+      }
 
       const res = await fetch("/api/daycamps", { method: "POST", body });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Submission failed");
+      const parsed = await safeJson(res);
+      if (!parsed.ok) throw new Error(parsed.error || "Submission failed");
 
       router.push("/daycamps/submitted");
     } catch (err: unknown) {
