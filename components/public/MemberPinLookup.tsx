@@ -110,10 +110,10 @@ export default function MemberPinLookup({ onLink, onClear, dark = false, lang = 
   // Yellow card so members spot it instantly. Same #ffe033 the rest of the
   // app uses for the Total banner so it reads as a primary action.
   return (
-    <div className="rounded-2xl bg-[#ffe033] border-2 border-yellow-500 px-4 py-3 mb-4 shadow-lg shadow-yellow-500/20">
-      <p className="text-xs font-bold uppercase tracking-wide mb-2 text-gray-800">
-        🎫 {t.pinLookupAlreadyMember} <span className="font-bold">{t.pinLookupPinLabel}</span>
-      </p>
+    <div className="rounded-2xl bg-[#ffe033] border-2 border-yellow-500 px-5 py-4 mb-4 shadow-lg shadow-yellow-500/20">
+      <h2 className="font-bold text-gray-700 text-sm uppercase tracking-wide mb-2">
+        {t.pinLookupPinLabel}
+      </h2>
       <div className="flex gap-2">
         <input
           type="text"
