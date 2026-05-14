@@ -78,13 +78,24 @@ export default function PaymentActions({
     try {
       const endpoint =
         recordType === "member" ? `/api/members/${id}` :
-        recordType === "event"  ? `/api/events/${id}`  :
-        `/api/shop/orders/${id}`;
+        recordType === "event"  ? `/api/event-bookings/${id}` :
+        `/api/shop-orders/${id}`;
       const res = await fetch(endpoint, { method: "DELETE" });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        // Try to read JSON error first; fall back to a short, friendly message
+        // so a Next.js 404 HTML page doesn't dump a wall of markup on screen.
+        let msg = `Delete failed (${res.status})`;
+        try {
+          const data = await res.json();
+          if (data?.error) msg = `Delete failed: ${data.error}`;
+        } catch {
+          // not JSON, keep the short message
+        }
+        throw new Error(msg);
+      }
       setDeleted(true);
     } catch (e) {
-      setErr(`Delete failed: ${e instanceof Error ? e.message : "Please try again."}`);
+      setErr(e instanceof Error ? e.message : "Delete failed. Please try again.");
       setConfirmDelete(false);
     } finally {
       setBusy(null);
