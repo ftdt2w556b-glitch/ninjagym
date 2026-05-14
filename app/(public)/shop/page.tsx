@@ -5,8 +5,19 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
-import { translations, Lang } from "@/lib/i18n/translations";
+import { translations, Lang, TranslationKey } from "@/lib/i18n/translations";
 import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
+
+// Per-catalog-item translation key map. Catalog stays in /lib/shop as the
+// source of truth (ids, prices, option values); this just resolves the
+// user-visible name / description / option label into the active language.
+const SHOP_I18N: Record<string, { name: TranslationKey; desc?: TranslationKey; optionLabel: TranslationKey }> = {
+  tshirt_kids:  { name: "shopItemKidsTshirtName",  desc: "shopItemKidsTshirtDesc",  optionLabel: "shopOptionLabelDesignSize" },
+  tshirt_adult: { name: "shopItemAdultTshirtName",                                  optionLabel: "shopOptionLabelSize"       },
+  shake_bake:   { name: "shopItemShakeBakeName",   desc: "shopItemShakeBakeDesc",   optionLabel: "shopOptionLabelFlavor"     },
+  water:        { name: "shopItemWaterName",                                        optionLabel: "shopOptionLabelSize"       },
+  gift_card:    { name: "shopItemGiftCardName",    desc: "shopItemGiftCardDesc",    optionLabel: "shopOptionLabelProgram"    },
+};
 import { formatTHB } from "@/lib/pricing";
 import { compressImage, safeJson } from "@/lib/compress-image";
 import MemberPinLookup, { type LinkedMember } from "@/components/public/MemberPinLookup";
@@ -84,6 +95,27 @@ export default function ShopPage() {
     return item?.price ?? 0;
   }
 
+  // Resolve the user-facing label for a catalog item in the active language.
+  // Falls back to the English string from /lib/shop if a key is missing.
+  function itemName(catalogId: string): string {
+    const k = SHOP_I18N[catalogId]?.name;
+    return k ? t[k] : SHOP_CATALOG.find((i) => i.id === catalogId)?.name ?? "";
+  }
+  function itemDesc(catalogId: string): string | undefined {
+    const k = SHOP_I18N[catalogId]?.desc;
+    return k ? t[k] : SHOP_CATALOG.find((i) => i.id === catalogId)?.description;
+  }
+  function itemOptionLabel(catalogId: string): string {
+    const k = SHOP_I18N[catalogId]?.optionLabel;
+    return k ? t[k] : SHOP_CATALOG.find((i) => i.id === catalogId)?.options.label ?? "";
+  }
+  // Translate the few generic option *values* that warrant it. Brand names,
+  // sizes (S/M/L/XL), flavor names, and gift-card programs stay literal.
+  function optionValueLabel(value: string): string {
+    if (value === "Regular") return t.shopOptionRegular;
+    return value;
+  }
+
   function handleLang(l: Lang) { setLang(l); localStorage.setItem("ng_lang", l); }
 
   function addToCart(catalogId: string) {
@@ -97,6 +129,9 @@ export default function ShopPage() {
           c.catalogId === catalogId && c.option === option ? { ...c, qty: c.qty + 1 } : c
         );
       }
+      // Store the English catalog name so the POS / admin / staff side reads
+      // a stable identifier. The UI re-resolves the localized name via
+      // itemName(catalogId) when rendering the cart.
       return [...prev, { catalogId, name: item.name, option, qty: 1, unit_price }];
     });
   }
@@ -223,9 +258,9 @@ export default function ShopPage() {
             <div key={item.id} className="bg-white rounded-2xl p-4 shadow">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 pr-2">
-                  <h2 className="font-bold text-gray-800">{item.name}</h2>
-                  {item.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                  <h2 className="font-bold text-gray-800">{itemName(item.id)}</h2>
+                  {itemDesc(item.id) && (
+                    <p className="text-xs text-gray-500 mt-0.5">{itemDesc(item.id)}</p>
                   )}
                 </div>
                 <span className="font-fredoka text-lg text-[#1a56db] shrink-0">
@@ -234,7 +269,7 @@ export default function ShopPage() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">{item.options.label}</label>
+                  <label className="block text-xs text-gray-500 mb-1">{itemOptionLabel(item.id)}</label>
                   <select
                     value={currentOption}
                     onChange={(e) => setSelections({ ...selections, [item.id]: e.target.value })}
@@ -244,12 +279,12 @@ export default function ShopPage() {
                       ? item.options.groups!.map((group) => (
                           <optgroup key={group.label} label={group.label}>
                             {group.values.map((v) => (
-                              <option key={v} value={v}>{v}</option>
+                              <option key={v} value={v}>{optionValueLabel(v)}</option>
                             ))}
                           </optgroup>
                         ))
                       : item.options.values!.map((v) => (
-                          <option key={v} value={v}>{v}</option>
+                          <option key={v} value={v}>{optionValueLabel(v)}</option>
                         ))
                     }
                   </select>
@@ -275,13 +310,13 @@ export default function ShopPage() {
             {cart.map((item) => (
               <div key={`${item.catalogId}__${item.option}`} className="flex items-center justify-between text-sm">
                 <div>
-                  <span className="font-medium">{item.name}</span>
-                  <span className="text-gray-400 ml-1">({item.option}) x{item.qty}</span>
+                  <span className="font-medium">{itemName(item.catalogId)}</span>
+                  <span className="text-gray-400 ml-1">({optionValueLabel(item.option)}) x{item.qty}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-[#1a56db]">{formatTHB(item.unit_price * item.qty)}</span>
                   <button type="button" onClick={() => removeFromCart(item.catalogId, item.option)}
-                    className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                    className="text-red-400 hover:text-red-600 text-xs">{t.shopRemove}</button>
                 </div>
               </div>
             ))}
