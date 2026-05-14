@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 type SlipStatus = "pending_review" | "cash_pending" | "approved" | "rejected";
 
@@ -33,6 +34,7 @@ export default function PaymentActions({
   memberName?: string;
   userRole?: string;
 }) {
+  const router = useRouter();
   const canApprove = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
   const canManage  = ["admin", "manager"].includes(userRole ?? "");
   const canDelete  = ["admin", "owner"].includes(userRole ?? "");
@@ -94,6 +96,10 @@ export default function PaymentActions({
         throw new Error(msg);
       }
       setDeleted(true);
+      // Refetch the server component so the list updates cleanly and sibling
+      // PaymentActions instances reconcile against fresh data (otherwise the
+      // page stays half-stale until the user manually refreshes).
+      router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Delete failed. Please try again.");
       setConfirmDelete(false);
