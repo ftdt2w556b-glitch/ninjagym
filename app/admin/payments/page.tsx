@@ -549,6 +549,7 @@ export default async function PaymentsPage({
                         ? new Date(b.event_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
                         : ""}
                       {b.time_slot ? ` · ${b.time_slot}` : ""}
+                      {b.hours ? ` · ${b.hours}` : ""}
                       {b.num_hours ? ` · ${b.num_hours}h` : ""}
                       {b.num_kids ? ` · ${b.num_kids} kids` : ""}
                     </p>

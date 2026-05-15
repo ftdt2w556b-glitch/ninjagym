@@ -12,7 +12,10 @@ export async function POST(request: NextRequest) {
     const email = formData.get("email") as string;
     const event_date = formData.get("event_date") as string;
     const time_slot = formData.get("time_slot") as string;
-    const hours = formData.get("hours") as string;
+    // Start/end time string (e.g. "2:00pm - 4:00pm"). HTML `required` on the
+    // public form catches empty submits, but trimming + a server-side check
+    // closes the loophole if anyone posts directly to the API.
+    const hours = ((formData.get("hours") as string) ?? "").trim();
     const num_hours = Number(formData.get("num_hours")) || 2;
     const num_kids = Number(formData.get("num_kids")) || 1;
     const birthday_child_name = formData.get("birthday_child_name") as string;
@@ -26,8 +29,8 @@ export async function POST(request: NextRequest) {
     const memberIdRaw = formData.get("member_id") as string | null;
     const member_id = memberIdRaw && /^\d+$/.test(memberIdRaw) ? Number(memberIdRaw) : null;
 
-    if (!name || !event_date || !time_slot) {
-      return NextResponse.json({ error: "Name, event date, and time slot are required" }, { status: 400 });
+    if (!name || !event_date || !time_slot || !hours) {
+      return NextResponse.json({ error: "Name, event date, time slot, and start/end time are required" }, { status: 400 });
     }
 
     const admin = createAdminClient();

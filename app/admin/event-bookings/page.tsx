@@ -98,7 +98,7 @@ export default async function EventBookingsPage({
                     {new Date(b.event_date).toLocaleDateString("en-US", {
                       weekday: "long", year: "numeric", month: "long", day: "numeric",
                     })}
-                    {" "}&mdash; <span className="capitalize">{b.time_slot}</span>
+                    {" · "}<span className="capitalize">{b.time_slot}</span>
                     {b.hours ? ` (${b.hours})` : ""}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
