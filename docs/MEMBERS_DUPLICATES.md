@@ -53,6 +53,12 @@ got repointed at the survivor first.
 | Nicola Stapleford | 1289 | 1292 | 1 top-up → 1289 (1289 has all 3 kids) |
 | Leyla Mayko (Ryan, Jamie) | 1349 | 166 | 1 attendance + 2 loyalty → 1349 (1349 has correct spelling) |
 
+## Follow-up merges (post-flag review)
+
+| Group | Kept | Merged-then-deleted | Moved + extras |
+|---|---|---|---|
+| Chelsea Sweeney (Carter Hargreaves) | 117 (PIN 9846) | 26 (PIN 8836) | 3 top-ups + 1 attendance + 1 loyalty → 117. **Plus 5 session_group attendance entries (6/12/18/24/30 days ago) added to credit perk-rank progress** lost in the merge. All five carry `notes = "Perk credit from duplicate merge (#26 → #117)"` for audit. Net perk-day count went from 1 → 6. |
+
 ## NOT touched — flagged for human review
 
 These groups look like duplicates by phone or email, but the underlying data
