@@ -34,7 +34,7 @@ const SHOP_PRICE_KEY: Record<string, string> = {
   shake_bake:   "price_shop_shake_bake",
 };
 
-export default function PosScreen({ staff, inventory = [], pendingCash = [] }: { staff: StaffMember[]; inventory?: InventoryRow[]; pendingCash?: PendingReg[] }) {
+export default function PosScreen({ staff, inventory = [], pendingCash = [], walkinDisabled = false }: { staff: StaffMember[]; inventory?: InventoryRow[]; pendingCash?: PendingReg[]; walkinDisabled?: boolean }) {
   const [screen, setScreen] = useState<Screen>("select_staff");
   const [activeStaff, setActiveStaff] = useState<StaffMember | null>(null);
   const [pin, setPin] = useState("");
@@ -961,7 +961,21 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             </button>
           )}
 
-          {/* Sale type tabs */}
+          {/* Walk-in lock notice (replaces the entire sale builder when on) */}
+          {walkinDisabled && (
+            <div className="bg-[#0f1e3a] border border-white/10 rounded-2xl px-5 py-4 text-white/80 text-sm leading-relaxed">
+              <p className="font-bold text-yellow-300 mb-1">🔒 Walk-in cash sales disabled</p>
+              <p>
+                All cash is collected by approving a pending registration
+                that the parent created in the app. Use the Pending Cash
+                Payments queue above, or approve event &amp; shop orders on
+                the dashboard. Emergencies still go on the whiteboard.
+              </p>
+            </div>
+          )}
+
+          {/* Sale type tabs — only when walk-in is allowed */}
+          {!walkinDisabled && (
           <div className="bg-white rounded-2xl shadow p-1 flex gap-1">
             {(["walkin", "membership", "shop"] as const).map((t) => (
               <button key={t} onClick={() => setSaleType(t)}
@@ -972,9 +986,10 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
               </button>
             ))}
           </div>
+          )}
 
           {/* Membership selector */}
-          {saleType === "membership" && (() => {
+          {!walkinDisabled && saleType === "membership" && (() => {
             const mt = MEMBERSHIP_TYPES.find((m) => m.id === membershipType)!;
             return (
               <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
@@ -1066,7 +1081,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
           })()}
 
           {/* Shop selector */}
-          {saleType === "shop" && (() => {
+          {!walkinDisabled && saleType === "shop" && (() => {
             const catalogItem = SHOP_CATALOG.find((i) => i.id === shopItemId);
             const isGiftCard = shopItemId === "gift_card";
             const livePrice = getShopPrice(shopItemId, shopOption);
@@ -1132,7 +1147,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
           })()}
 
           {/* Walk-in / custom amount */}
-          {saleType === "walkin" && (
+          {!walkinDisabled && saleType === "walkin" && (
             <div className="bg-white rounded-2xl shadow p-4 flex flex-col gap-3">
               <h3 className="font-bold text-gray-800">Custom Amount</h3>
               <input type="text" value={customLabel} onChange={(e) => setCustomLabel(e.target.value)}
@@ -1148,26 +1163,31 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             </div>
           )}
 
-          {/* Notes */}
-          <div className="bg-white rounded-2xl shadow p-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
-            <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Member name, special note"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-          </div>
+          {/* Notes + B2B — only shown when staff is building a walk-in
+              cart manually. Pending-approval flow doesn't need them
+              because notes are already on the parent's pending row. */}
+          {!walkinDisabled && (
+            <>
+              <div className="bg-white rounded-2xl shadow p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
+                <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Member name, special note"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+              </div>
 
-          {/* B2B Customer, for tax invoices issued to a company */}
-          <div className="bg-white rounded-2xl shadow p-4">
-            <label className="block text-sm font-semibold text-gray-700 mb-0.5">B2B Customer (optional)</label>
-            <p className="text-xs text-gray-400 mb-3">Only needed when issuing a formal tax invoice to a company. Leave blank for walk-in / individual customers.</p>
-            <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Company name"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-            <input type="text" value={customerTaxId} onChange={(e) => setCustomerTaxId(e.target.value)}
-              placeholder="Tax ID (13 digits)"
-              maxLength={13}
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
-          </div>
+              <div className="bg-white rounded-2xl shadow p-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-0.5">B2B Customer (optional)</label>
+                <p className="text-xs text-gray-400 mb-3">Only needed when issuing a formal tax invoice to a company. Leave blank for walk-in / individual customers.</p>
+                <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Company name"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+                <input type="text" value={customerTaxId} onChange={(e) => setCustomerTaxId(e.target.value)}
+                  placeholder="Tax ID (13 digits)"
+                  maxLength={13}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]" />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right: Cart + checkout */}
@@ -1208,7 +1228,11 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
             </div>
           )}
 
-          {/* Cart */}
+          {/* Cart — hidden when walk-in is locked. Pending-approval flow
+              fills the cart programmatically and jumps straight to
+              change_calc, so the empty-cart panel would just be dead
+              space here. */}
+          {!walkinDisabled && (
           <div className="bg-white rounded-2xl shadow p-5 flex-1">
             <h3 className="font-bold text-gray-800 mb-3">Current Sale</h3>
             {cart.length === 0 ? (
@@ -1252,6 +1276,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [] }: {
               </>
             )}
           </div>
+          )}
 
         </div>
       </div>

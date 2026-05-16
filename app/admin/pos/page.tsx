@@ -97,6 +97,26 @@ async function clearDrawerExpected() {
   redirect("/admin/pos");
 }
 
+async function toggleWalkinDisabled(formData: FormData) {
+  "use server";
+  const next = (formData.get("next") as string)?.trim() === "true";
+
+  const { createAdminClient: makeAdmin, createSupabaseServerClient: makeClient } = await import("@/lib/supabase/server");
+  const supabase = await makeClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const admin = makeAdmin();
+  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+  if (!profile || !["admin", "owner"].includes(profile.role)) redirect("/admin/pos");
+
+  await admin.from("settings").upsert(
+    { key: "pos_walkin_disabled", value: next ? "true" : "false", label: "POS Walk-in Cash Sales Disabled" },
+    { onConflict: "key" }
+  );
+  redirect("/admin/pos?walkinsaved=1");
+}
+
 async function saveDrawerRemoved(formData: FormData) {
   "use server";
   const raw = (formData.get("removed") as string)?.trim();
@@ -129,7 +149,7 @@ async function saveDrawerRemoved(formData: FormData) {
 export default async function AdminPosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string; floatsaved?: string; floaterror?: string; removedsaved?: string; removederr?: string; expectedsaved?: string; expectederr?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; floatsaved?: string; floaterror?: string; removedsaved?: string; removederr?: string; expectedsaved?: string; expectederr?: string; walkinsaved?: string }>;
 }) {
   const params = await searchParams;
   const admin = createAdminClient();
@@ -143,6 +163,10 @@ export default async function AdminPosPage({
   // Current POS password (settings table → env var fallback)
   const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
   const currentPassword = pwSetting?.value ?? process.env.POS_PASSWORD ?? "(not set)";
+
+  // Walk-in cash sales toggle
+  const { data: walkinSetting } = await admin.from("settings").select("value").eq("key", "pos_walkin_disabled").maybeSingle();
+  const walkinDisabled = (walkinSetting?.value ?? "").toLowerCase() === "true";
 
   // Opening float + cash removed
   const { data: floatSetting } = await admin.from("settings").select("value").eq("key", "drawer_float").maybeSingle();
@@ -272,6 +296,53 @@ export default async function AdminPosPage({
         </form>
         <p className="text-xs text-gray-400 mt-2">
           After changing, the tablet will need to unlock again with the new password.
+        </p>
+      </div>
+
+      {/* Walk-in Cash Sales toggle. When ON, the tablet's POS Walk-in /
+          Membership / Shop builder is hidden; staff can only approve
+          cash transactions the parent already created in the app. Closes
+          the underring path where staff could ring up less than the
+          customer actually paid. */}
+      <div className="bg-white rounded-2xl shadow p-5">
+        <h2 className="font-bold text-gray-800 mb-1">Walk-in Cash Sales</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          When OFF (default), staff can ring up arbitrary cash sales at
+          the tablet POS. When ON, the POS catalog hides and the only way
+          to collect cash is to approve a pending registration / event /
+          shop order that the parent created in the app.
+        </p>
+
+        {params.walkinsaved === "1" && (
+          <div className="bg-green-50 text-green-700 text-sm rounded-xl px-4 py-3 mb-4 font-semibold">
+            ✓ Saved.
+          </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-700">
+              Current: {walkinDisabled
+                ? <span className="text-green-700">🔒 ON — POS catalog hidden, approvals only</span>
+                : <span className="text-amber-700">⚠️ OFF — staff can ring up arbitrary cash sales</span>}
+            </p>
+          </div>
+          <form action={toggleWalkinDisabled}>
+            <input type="hidden" name="next" value={walkinDisabled ? "false" : "true"} />
+            <button
+              type="submit"
+              className={`font-bold text-sm px-5 py-2.5 rounded-xl transition-colors whitespace-nowrap ${
+                walkinDisabled
+                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "bg-[#1a56db] text-white hover:bg-blue-700"
+              }`}
+            >
+              {walkinDisabled ? "Re-enable walk-in" : "Disable walk-in"}
+            </button>
+          </form>
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Admin / owner only. Emergencies stay on the whiteboard + 1K-note box.
         </p>
       </div>
 

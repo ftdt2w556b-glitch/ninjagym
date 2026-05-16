@@ -43,6 +43,17 @@ export default async function PosKioskPage() {
     .eq("slip_status", "cash_pending")
     .order("created_at", { ascending: true });
 
+  // Walk-in cash sales toggle. When true, the POS catalog (Walk-in /
+  // Membership / Shop tabs) is hidden so staff can only approve pending
+  // app-initiated cash transactions. Closes the underring path where
+  // staff takes more cash than they ring up.
+  const { data: walkinFlag } = await admin
+    .from("settings")
+    .select("value")
+    .eq("key", "pos_walkin_disabled")
+    .maybeSingle();
+  const walkinDisabled = (walkinFlag?.value ?? "").toLowerCase() === "true";
+
   const staff = [
     ...(profiles ?? []).map((p) => ({
       id: p.id as string,
@@ -65,6 +76,7 @@ export default async function PosKioskPage() {
       staff={staff}
       inventory={(inventory ?? []) as { item_id: string; variant: string; stock_qty: number }[]}
       pendingCash={(pendingCash ?? []) as { id: number; name: string; membership_type: string; amount_paid: number; notes: string | null }[]}
+      walkinDisabled={walkinDisabled}
     />
   );
 }
