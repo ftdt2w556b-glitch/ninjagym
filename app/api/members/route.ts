@@ -35,6 +35,58 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
+    // ── Duplicate hard-block ────────────────────────────────────────────
+    // If this is a brand-new top-level registration (no parent_member_id),
+    // and the phone or email matches an existing approved parent row,
+    // refuse the insert and bounce them at /my-membership. Closes the
+    // 'parent forgot they already have a card → registers again' path
+    // that produced ~25 dupes between April and May 2026.
+    //
+    // Top-ups (parent_member_id set) bypass this — they're meant to attach
+    // to an existing family.
+    if (!parent_member_id) {
+      const phoneDigits = (phone ?? "").replace(/[^0-9]/g, "");
+      const emailNorm   = (email ?? "").trim().toLowerCase();
+
+      if (phoneDigits.length >= 7 || (emailNorm.length >= 5 && emailNorm.includes("@"))) {
+        const { data: existing } = await admin
+          .from("member_registrations")
+          .select("id, name, phone, email, kids_names, pin")
+          .eq("slip_status", "approved")
+          .is("parent_member_id", null);
+
+        const match = (existing ?? []).find((row) => {
+          if (phoneDigits.length >= 7 && row.phone) {
+            const stored = String(row.phone).replace(/[^0-9]/g, "");
+            if (stored.length >= 6 && (
+              stored === phoneDigits
+              || stored.endsWith(phoneDigits)
+              || phoneDigits.endsWith(stored)
+            )) return true;
+          }
+          if (emailNorm.length >= 5 && row.email) {
+            if (String(row.email).trim().toLowerCase() === emailNorm) return true;
+          }
+          return false;
+        });
+
+        if (match) {
+          return NextResponse.json(
+            {
+              error: "An approved member already exists with this phone or email. Open My Membership to find your card.",
+              code:  "duplicate_member",
+              existing: {
+                id:         match.id,
+                name:       match.name,
+                kids_names: match.kids_names,
+              },
+            },
+            { status: 409 },
+          );
+        }
+      }
+    }
+
     // Generate unique 4-digit PIN
     let pin: number | null = null;
     for (let attempt = 0; attempt < 20; attempt++) {

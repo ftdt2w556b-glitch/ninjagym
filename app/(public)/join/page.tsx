@@ -105,6 +105,16 @@ export default function JoinPage() {
       const res = await fetch("/api/members", { method: "POST", body });
       const data = await res.json();
 
+      // Duplicate hard-block from the server. Surface their existing card
+      // as the existingMember banner so they get a one-tap path back to
+      // their PIN instead of a generic error message.
+      if (res.status === 409 && data?.code === "duplicate_member" && data?.existing?.id) {
+        setExistingMember({ id: data.existing.id, name: data.existing.name });
+        setError("");
+        setSubmitting(false);
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error || t.errSomethingWrong);
 
       router.push(`/qr/card/${data.id}?token=${data.token}`);
@@ -173,22 +183,35 @@ export default function JoinPage() {
                 {t.joinFoundAccountNote}
               </p>
               <a
-                href={`/qr/card/${existingMember.id}`}
+                href={`/my-membership`}
                 className="inline-block mt-2 bg-[#1a56db] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-blue-700 transition-colors"
               >
                 {t.joinGoToCard}
               </a>
+              <p className="text-amber-600 text-[11px] mt-2 leading-snug">
+                {t.joinAskStaffFallback}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Email */}
+        {/* Email — same duplicate check as phone, since a chunk of returning
+            parents type a new number but remember their email. */}
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-1">{t.emailLabel}</label>
           <input
             type="email"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) => { setForm({ ...form, email: e.target.value }); setExistingMember(null); }}
+            onBlur={async (e) => {
+              const em = e.target.value.trim();
+              if (em.length < 5 || !em.includes("@")) return;
+              try {
+                const res = await fetch(`/api/check-phone?email=${encodeURIComponent(em)}`);
+                const data = await res.json();
+                if (data.found) setExistingMember({ id: data.id, name: data.name });
+              } catch {}
+            }}
             className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
             placeholder="you@example.com"
           />
