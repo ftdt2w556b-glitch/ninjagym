@@ -273,7 +273,9 @@ export default async function PaymentsPage({
       {/* Source tabs */}
       <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
         {[
-          { id: "members", label: `Members${pendingMembers ? ` (${pendingMembers})` : ""}` },
+          // Labelled "Sessions" (not "Members") so it isn't confused with the
+          // top-nav Members link, which is the directory of all parents.
+          { id: "members", label: `Sessions${pendingMembers ? ` (${pendingMembers})` : ""}` },
           { id: "events",  label: `Events${pendingEvents ? ` (${pendingEvents})` : ""}` },
           { id: "shop",    label: `Shop Orders${pendingShop ? ` (${pendingShop})` : ""}` },
         ].map((t) => (
@@ -554,7 +556,7 @@ export default async function PaymentsPage({
 
           {(!members || members.length === 0) && (
             <div className="bg-white rounded-2xl shadow p-10 text-center text-gray-400">
-              No member payments to review.
+              No session payments to review.
             </div>
           )}
         </div>
