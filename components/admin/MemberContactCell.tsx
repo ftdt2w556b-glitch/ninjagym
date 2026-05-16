@@ -1,26 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useStaffPin } from "./StaffPinProvider";
 
 /**
- * The "Name / Contact" column of the Members table. Hides PIN, email,
- * phone, and kids names behind a tap-to-reveal so the centre device
- * can't be casually shoulder-surfed for 500+ rows of parent contact
- * info.
+ * The "Name / Contact" column of the Members table. PIN, email, phone,
+ * and kids names sit behind the PIN gate so a busy centre browser can't
+ * be shoulder-surfed for 500+ rows of parent contact info at a glance.
  *
- * Reveal flow:
- *  1. Staff taps the eye button.
- *  2. fetchWithPin GETs /api/staff-pin/check-write. If the write cookie
- *     is missing/expired, the PIN modal opens; on success the request
- *     retries and resolves 200.
- *  3. Sensitive fields render for AUTO_HIDE_MS, then auto-collapse so
- *     a row left open on screen doesn't keep leaking.
- *  4. Admin/owner sessions skip the modal but still have to tap
- *     reveal — same UX, no accidental disclosure from a stray hover.
+ * Behaviour:
+ * - If a PIN write window is currently active (writeStatus from
+ *   StaffPinProvider — set by any approve / reveal / edit in the last
+ *   15 min), all sensitive fields render automatically. No per-row tap.
+ * - Otherwise, a 'Reveal' button calls fetchWithPin against
+ *   /api/staff-pin/check-write, which triggers the PIN modal on a 401 +
+ *   pin_required and sets writeStatus on success. Once it's set, every
+ *   cell on the page unmasks at the same time.
+ * - When the write cookie expires (countdown ticks to zero) writeStatus
+ *   clears via the provider's setTimeout and the entire table re-masks.
+ *
+ * Admin / owner sessions bypass the modal but still need to trigger a
+ * reveal once to populate writeStatus, since their session never carries
+ * a write cookie. (Future improvement: provider could synthesise a
+ * permanent 'admin' writeStatus on mount.)
  */
-const AUTO_HIDE_MS = 30_000;
-
 export default function MemberContactCell({
   name,
   pin,
@@ -36,30 +39,21 @@ export default function MemberContactCell({
   kidsNames:        string | null;
   loyaltyDiscount?: number | null;
 }) {
-  const { fetchWithPin } = useStaffPin();
-  const [revealed, setRevealed] = useState(false);
-  const [busy, setBusy]         = useState(false);
-  const [err, setErr]           = useState<string | null>(null);
-
-  // Auto-collapse so an unattended browser doesn't keep broadcasting.
-  useEffect(() => {
-    if (!revealed) return;
-    const t = setTimeout(() => setRevealed(false), AUTO_HIDE_MS);
-    return () => clearTimeout(t);
-  }, [revealed]);
+  const { fetchWithPin, writeStatus } = useStaffPin();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState<string | null>(null);
 
   const hasSensitive = !!(pin || email || phone || kidsNames);
+  const revealed     = !!writeStatus;       // page-wide unlock, not per-row
 
-  async function reveal() {
+  async function unlock() {
     setBusy(true);
     setErr(null);
     try {
       const res = await fetchWithPin("/api/staff-pin/check-write", { method: "GET" });
-      if (res.ok) {
-        setRevealed(true);
-      } else {
-        setErr("PIN required");
-      }
+      if (!res.ok) setErr("PIN required");
+      // Success path: provider catches the response, updates writeStatus,
+      // every cell re-renders unmasked. Nothing else to do here.
     } catch {
       setErr("Connection problem");
     } finally {
@@ -87,30 +81,20 @@ export default function MemberContactCell({
         {!revealed && hasSensitive && (
           <button
             type="button"
-            onClick={reveal}
+            onClick={unlock}
             disabled={busy}
             className="text-xs text-[#1a56db] hover:underline disabled:opacity-50"
+            title="Unlock contact details for the whole page"
           >
             {busy ? "…" : "👁 Reveal"}
-          </button>
-        )}
-
-        {revealed && (
-          <button
-            type="button"
-            onClick={() => setRevealed(false)}
-            className="text-xs text-gray-400 hover:text-gray-600"
-            aria-label="Hide contact"
-          >
-            ✕
           </button>
         )}
       </div>
 
       {revealed && (
         <>
-          {email && <p className="text-xs text-gray-400">{email}</p>}
-          {phone && <p className="text-xs text-gray-400">{phone}</p>}
+          {email     && <p className="text-xs text-gray-400">{email}</p>}
+          {phone     && <p className="text-xs text-gray-400">{phone}</p>}
           {kidsNames && (
             <p className="text-xs text-blue-600 mt-0.5 font-bold">{kidsNames}</p>
           )}

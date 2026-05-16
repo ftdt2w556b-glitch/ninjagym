@@ -8,6 +8,7 @@ import EditCheckInButton from "@/components/admin/EditCheckInButton";
 import PeriodPicker from "@/components/admin/PeriodPicker";
 import TimersTab from "@/components/admin/TimersTab";
 import MemberContactCell from "@/components/admin/MemberContactCell";
+import MembersSearchBox from "@/components/admin/MembersSearchBox";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -365,37 +366,10 @@ export default async function MembersPage({
             </span>
           </div>
 
-          {/* Search + filter */}
-          <form method="GET" className="flex gap-2 mb-6 flex-wrap">
-            <input type="hidden" name="tab" value="members" />
-            <input
-              type="text"
-              name="q"
-              defaultValue={q}
-              placeholder="Search name, phone, email, PIN, kids..."
-              className="flex-1 min-w-[200px] border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-            />
-            <select
-              name="status"
-              defaultValue={status}
-              className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
-            >
-              {statusOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="bg-[#1a56db] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
-            >
-              Search
-            </button>
-            {(q || status) && (
-              <Link href="/admin/members?tab=members" className="px-4 py-2 rounded-xl text-sm text-gray-500 hover:bg-gray-100 transition-colors">
-                Clear
-              </Link>
-            )}
-          </form>
+          {/* Debounced as-you-type search — replaces the old form-submit
+              + page-reload flow so staff can find a parent live while a
+              queue is forming at the desk. */}
+          <MembersSearchBox initialQ={q ?? ""} initialStatus={status ?? ""} />
 
           <div className="bg-white rounded-2xl shadow overflow-hidden">
             <div className="overflow-x-auto">
