@@ -1,10 +1,20 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { useLanguage } from "@/lib/i18n/useLanguage";
 
-export default function ShopSubmittedPage() {
+function ShopSubmittedInner() {
   const { t } = useLanguage();
+  // Carried over by /shop on submit so the right confirmation copy renders.
+  // 'cash' → "Pay at the centre"; 'promptpay' → "Upload your slip"; anything
+  // else (or missing) → the generic success message only.
+  const pm = useSearchParams()?.get("pm") ?? "";
+
+  const isCash      = pm === "cash";
+  const isPromptpay = pm === "promptpay";
+
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-4 py-10 text-white text-center">
       <div className="mb-5">
@@ -17,12 +27,21 @@ export default function ShopSubmittedPage() {
           {t.successMsg}
         </p>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-left mb-6">
-          <p className="text-xs font-bold text-yellow-800 mb-1">{t.paymentPending}</p>
-          <p className="text-xs text-yellow-700 leading-relaxed">
-            {t.slipInstructions}
-          </p>
-        </div>
+        {isCash ? (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-left mb-6">
+            <p className="text-xs font-bold text-green-800 mb-1">💵 {t.payAtCentreTitle}</p>
+            <p className="text-xs text-green-700 leading-relaxed">
+              {t.payAtCentreNote}
+            </p>
+          </div>
+        ) : isPromptpay ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 text-left mb-6">
+            <p className="text-xs font-bold text-yellow-800 mb-1">{t.paymentPending}</p>
+            <p className="text-xs text-yellow-700 leading-relaxed">
+              {t.slipInstructions}
+            </p>
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-3">
           <Link
@@ -42,5 +61,14 @@ export default function ShopSubmittedPage() {
 
       <p className="text-white/50 text-xs">Questions? Visit us at Big C Bophut, Koh Samui</p>
     </div>
+  );
+}
+
+export default function ShopSubmittedPage() {
+  // useSearchParams must be wrapped in Suspense for static prerendering.
+  return (
+    <Suspense fallback={<div className="min-h-dvh" />}>
+      <ShopSubmittedInner />
+    </Suspense>
   );
 }

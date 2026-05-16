@@ -157,6 +157,29 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Approve a pending cash shop order if referenced. Same shape as
+      // the membership approval above: flip slip_status, write a
+      // staff_actions audit row keyed to shop_orders so the dashboard's
+      // Approved tab renders 'Naing · time' on this order too.
+      if (referenceId && saleType === "shop") {
+        await admin
+          .from("shop_orders")
+          .update({ slip_status: "approved", slip_reviewed_at: new Date().toISOString() })
+          .eq("id", referenceId)
+          .eq("slip_status", "cash_pending");
+
+        const actor = posActor(staffType, staffId, staffName);
+        if (actor) {
+          await logStaffAction({
+            actor,
+            actionType:    "approve",
+            targetTable:   "shop_orders",
+            targetId:      referenceId,
+            ip:            clientIp(request),
+          });
+        }
+      }
+
       // Decrement inventory for physical shop items
       if (saleType === "shop" && Array.isArray(items)) {
         for (const item of items) {

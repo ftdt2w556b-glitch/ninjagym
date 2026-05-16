@@ -7,7 +7,18 @@ import { SHOP_CATALOG, GIFT_CARD_PRICES } from "@/lib/shop";
 
 type StaffMember = { id: string; name: string; role: string; hasPin: boolean; staffType: "profile" | "pos" };
 type InventoryRow = { item_id: string; variant: string; stock_qty: number };
-type PendingReg = { id: number; name: string; membership_type: string; amount_paid: number; kids_names?: string | null; notes: string | null };
+type PendingReg = {
+  id:              number;
+  name:            string;
+  membership_type: string;            // 'shop' for shop orders, else the program id
+  amount_paid:     number;
+  kids_names?:     string | null;
+  notes:           string | null;
+  // Discriminator: 'member' = pending member_registrations cash payment,
+  // 'shop' = pending shop_orders cash payment. Routes the approval flow.
+  source?:         "member" | "shop";
+  items?:          unknown;            // shop_orders.items (JSONB) when source='shop'
+};
 
 type Screen =
   | "select_staff"
@@ -785,12 +796,43 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [], wal
           ) : (
             <div className="flex flex-col gap-3">
               {pendingList.map((reg) => {
-                const memberLabel = MEMBERSHIP_TYPES.find((m) => m.id === reg.membership_type)?.label ?? reg.membership_type;
+                const isShop = reg.source === "shop";
+                const memberLabel = isShop
+                  ? "🛒 Shop order"
+                  : (MEMBERSHIP_TYPES.find((m) => m.id === reg.membership_type)?.label ?? reg.membership_type);
+                // Build a readable summary of the shop items for the row
+                const shopItemSummary = isShop && Array.isArray(reg.items)
+                  ? (reg.items as Array<{ name?: string; qty?: number }>).map((it) => `${it.qty ?? 1}× ${it.name ?? "item"}`).join(", ")
+                  : null;
                 return (
-                  <div key={reg.id} className="bg-gray-800 rounded-2xl p-5 flex items-center justify-between gap-4">
+                  <div key={`${reg.source ?? "member"}-${reg.id}`} className="bg-gray-800 rounded-2xl p-5 flex items-center justify-between gap-4">
                     <button
                       className="flex-1 text-left flex items-center justify-between gap-4"
                       onClick={() => {
+                        if (isShop && Array.isArray(reg.items)) {
+                          // Build the cart from the shop order's items so each
+                          // line decrements its own inventory row on
+                          // /api/pos/action. saleType='shop' tells the route
+                          // to also flip shop_orders.slip_status → approved.
+                          type ShopItem = { id?: string; name?: string; qty?: number; unit_price?: number; size_or_flavor?: string };
+                          const lines = (reg.items as ShopItem[]).map((it) => ({
+                            label:   it.name ?? "Item",
+                            qty:     it.qty ?? 1,
+                            unit:    Number(it.unit_price ?? 0),
+                            item_id: it.id,
+                            variant: it.size_or_flavor ?? "",
+                          }));
+                          setCart(lines);
+                          setSaleType("shop");
+                          setReferenceId(reg.id);
+                          setNotes(`Shop order #${reg.id} · ${reg.name}`);
+                          setPendingMemberName(reg.name);
+                          setShowCorrect(false);
+                          setCashInput("");
+                          setNotes1k(0);
+                          setScreen("change_calc");
+                          return;
+                        }
                         setCart([{ label: `${reg.name}: ${memberLabel}`, qty: 1, unit: Number(reg.amount_paid) }]);
                         setSaleType("membership");
                         setReferenceId(reg.id);
@@ -807,6 +849,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [], wal
                       <div>
                         <p className="font-bold text-white text-lg">{reg.name}</p>
                         <p className="text-gray-400 text-sm mt-0.5">{memberLabel}</p>
+                        {shopItemSummary && <p className="text-blue-300 text-xs mt-0.5">{shopItemSummary}</p>}
                         {reg.kids_names && <p className="text-[#22c55e] text-sm font-semibold mt-0.5">👦 {reg.kids_names}</p>}
                         {reg.notes && <p className="text-gray-500 text-xs mt-1 italic">{reg.notes}</p>}
                       </div>

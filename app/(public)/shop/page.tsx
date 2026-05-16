@@ -175,7 +175,7 @@ export default function ShopPage() {
         setStripeStep(true);
         setSubmitting(false);
       } else {
-        router.push("/shop/submitted");
+        router.push(`/shop/submitted?pm=${encodeURIComponent(form.payment_method)}`);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : t.errSomethingWentWrong);
