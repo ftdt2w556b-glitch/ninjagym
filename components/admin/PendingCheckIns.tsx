@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useStaffPin } from "@/components/admin/StaffPinProvider";
 
 interface PendingCheckin {
   id: number;
@@ -29,6 +30,7 @@ interface Props {
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 export default function PendingCheckIns({ staffName }: Props) {
+  const { fetchWithPin } = useStaffPin();
   const [items, setItems] = useState<PendingCheckin[]>([]);
   const [handling, setHandling] = useState<Record<number, boolean>>({});
   const [rejectState, setRejectState] = useState<Record<number, { active: boolean; reason: string }>>({});
@@ -112,11 +114,19 @@ export default function PendingCheckIns({ staffName }: Props) {
   async function handle(id: number, action: "approve" | "reject", reason?: string) {
     setHandling((h) => ({ ...h, [id]: true }));
     try {
-      await fetch("/api/checkin/handle", {
+      // fetchWithPin pops the PIN modal if the server returns
+      // 401 + code:pin_required, then retries with the write cookie set.
+      // The server overrides staff_name with the resolved actor name,
+      // so the body value here is just a POS-flow fallback.
+      const res = await fetchWithPin("/api/checkin/handle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, action, staff_name: staffName, reason }),
       });
+      if (!res.ok) {
+        // Modal cancelled or server error — leave the row in place.
+        return;
+      }
       setItems((prev) => prev.filter((p) => p.id !== id));
       setRejectState((s) => { const n = { ...s }; delete n[id]; return n; });
       setApproveConfirm((s) => { const n = { ...s }; delete n[id]; return n; });

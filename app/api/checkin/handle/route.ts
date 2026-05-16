@@ -2,18 +2,40 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { resolveMembershipType } from "@/lib/pricing";
+import { requireWritePin } from "@/lib/staff-pin-server";
+import { logStaffAction } from "@/lib/staff-actions";
+import type { StaffActor } from "@/lib/staff-pin";
 
 export async function POST(req: NextRequest) {
-  // Verify POS auth cookie
+  // Two authorized paths:
+  //   1. POS kiosk: pos_auth cookie matches the shared kiosk password.
+  //      staff_name comes from the request body (POS UI asks for it).
+  //   2. Dashboard: ng_pin_write cookie is valid OR session is admin/owner.
+  //      Actor name comes from requireWritePin, ignoring whatever the body
+  //      sent. This is how we kill "by NinjaGym" in check-in audit notes.
   const cookieStore = await cookies();
   const posAuth = cookieStore.get("pos_auth")?.value;
   const admin = createAdminClient();
   const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
   const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
-  const isUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
-  if (!isUnlocked) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const posUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
 
-  const { id, action, staff_name, reason } = await req.json();
+  let actor: StaffActor | null = null;
+  let sessionUserId: string | null = null;
+  let ip: string | null = null;
+
+  if (!posUnlocked) {
+    const auth = await requireWritePin(req);
+    if ("response" in auth) return auth.response;
+    actor         = auth.actor;
+    sessionUserId = auth.sessionUserId;
+    ip            = auth.ip;
+  }
+
+  const { id, action, staff_name: bodyStaffName, reason } = await req.json();
+  // Dashboard path: use the resolved actor's name in audit notes, ignoring
+  // whatever the client sent. POS path: trust the kiosk's staff_name choice.
+  const staff_name = actor ? actor.name : bodyStaffName;
 
   const { data: pending } = await admin
     .from("pending_checkins")
@@ -171,5 +193,17 @@ export async function POST(req: NextRequest) {
       .eq("id", id);
   }
 
-  return NextResponse.json({ success: true });
+  // Audit log — dashboard path only (POS has its own audit via cash_sales).
+  if (actor) {
+    await logStaffAction({
+      actor,
+      actionType:    action === "approve" ? "approve" : "reject",
+      targetTable:   "pending_checkins",
+      targetId:      id,
+      ip,
+      sessionUserId,
+    });
+  }
+
+  return NextResponse.json({ success: true, actor_name: staff_name });
 }
