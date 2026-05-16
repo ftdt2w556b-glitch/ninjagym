@@ -62,6 +62,31 @@ got repointed at the survivor first.
 | adam weiss (Blu, nami) | 626 (full kids list, 4 top-ups) | 234 (older "Blu weiss" only, 2 top-ups) | 2 top-ups → 626 |
 | Almira Borrel (Daniel + Nastia) | 1203 | 1201 | 1 top-up → 1203 + kids_names rewritten to "Daniel, Nastia" (kids_count = 2) per the centre's per-session model |
 
+## Placeholder claims (Replace name / Replaced name)
+
+Six "Replace name" placeholders cross-referenced positively against active
+parent cards via overlapping kid names (≥2 distinct kid tokens matching).
+Five of them carried live sessions that would have been lost if we just
+deleted the row.
+
+| Placeholder | Kids on placeholder | Sessions on it | Active card it matched | Action |
+|---|---|---|---|---|
+| #1055 | Henri, Hailey, Ella, Nele, Lotte | 2 | #157 Franzi Heuschkel | Transferred 2 sessions as new top-up under 157, placeholder deleted |
+| #1060 | Yair, Gali, Eitan | 2 | #136 Barak | Transferred 2 sessions, placeholder deleted |
+| #1083 | Niel, Robin | 2 | #963 Ran Nagar | Transferred 2 sessions, placeholder deleted |
+| #1086 | Liel, Yanai, Lenni | 5 | #600 Tan Shiran | Transferred 5 sessions, placeholder deleted |
+| #1089 | Ronn, Railey, Oliver | 13 | #105 Karine Vaknin | Transferred 13 sessions, placeholder deleted |
+| #1112 | Lavi, Mika | 0 | #137 Shani Rabinovich | Placeholder deleted (no sessions to transfer) |
+
+Each transferred-session top-up carries a `notes` field reading "Sessions
+transferred from placeholder #N during May 2026 duplicate-cleanup. Kids on
+placeholder: <names>" so any future refund / audit can trace the family's
+session balance back to its origin.
+
+The other ~34 Replace/Replaced placeholders had only single-kid-name
+overlaps with common names like Mia, Leo, Max, Mila — too noisy to act on
+automatically. Left in place as a worklist for the centre.
+
 ## NOT touched — flagged for human review
 
 These groups look like duplicates by phone or email, but the underlying data
