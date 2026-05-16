@@ -10,8 +10,12 @@
  *      pin_required hint, the client should re-login).
  *   2. If the session user is admin or owner → bypass: actor is synthesized
  *      from their profile row. They never see a PIN modal.
- *   3. Else read the ng_pin_write cookie. If valid → actor from cookie.
- *   4. Else 401 { code: "pin_required" } so the client opens the PIN modal.
+ *   3. If a valid ng_pin_write cookie is present → actor from cookie.
+ *   4. If a valid pos_auth cookie is present → POS context, bypass with a
+ *      synthetic 'POS kiosk' actor. POS already runs its own PIN flow plus
+ *      cash_sales.staff_name attribution, so a second PIN here would be
+ *      redundant and would break programmatic POS → /api/payments calls.
+ *   5. Else 401 { code: "pin_required" } so the client opens the PIN modal.
  *
  * Best-effort logging is *not* done here — that's the caller's job after
  * the action succeeds, via lib/staff-actions.logStaffAction().
@@ -51,19 +55,55 @@ export async function requireWritePin(request: NextRequest): Promise<WriteAuth> 
     };
   }
 
-  // Everyone else needs a valid write cookie.
   const cookieStore = await cookies();
+
+  // Fresh dashboard write cookie wins.
   const actor = readWriteCookie(cookieStore.get(WRITE_COOKIE)?.value);
-  if (!actor) {
-    return {
-      response: NextResponse.json(
-        { error: "Staff PIN required", code: "pin_required" },
-        { status: 401 },
-      ),
-    };
+  if (actor) {
+    return { actor, sessionUserId: user.id, ip };
   }
 
-  return { actor, sessionUserId: user.id, ip };
+  // POS bypass: only honored when the request actually originates from the
+  // /pos kiosk page. The centre browser also carries pos_auth from earlier
+  // POS use, so we can't trust the cookie alone — without the Referer check
+  // a dashboard click would silently fall through here and get attributed
+  // to a generic 'POS' actor instead of opening the PIN modal.
+  const referer = request.headers.get("referer") ?? "";
+  const fromPos = (() => {
+    try {
+      const u = new URL(referer);
+      return u.pathname.startsWith("/pos");
+    } catch {
+      return false;
+    }
+  })();
+  if (fromPos) {
+    const posAuth = cookieStore.get("pos_auth")?.value;
+    if (posAuth) {
+      const { data: pwSetting } = await admin
+        .from("settings")
+        .select("value")
+        .eq("key", "pos_password")
+        .maybeSingle();
+      const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
+      const posOk = expected ? posAuth === expected : posAuth === "unlocked";
+      if (posOk) {
+        return {
+          actor: { kind: "pos_staff", id: "kiosk", name: "POS" },
+          sessionUserId: user.id,
+          ip,
+        };
+      }
+    }
+  }
+
+  // No path matched → ask the dashboard client to open the PIN modal.
+  return {
+    response: NextResponse.json(
+      { error: "Staff PIN required", code: "pin_required" },
+      { status: 401 },
+    ),
+  };
 }
 
 function clientIp(request: NextRequest): string {
