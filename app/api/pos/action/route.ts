@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { logStaffAction } from "@/lib/staff-actions";
+import type { StaffActor } from "@/lib/staff-pin";
+
+/** Build the StaffActor that staff_actions expects from POS's identity payload. */
+function posActor(staffType: string | undefined, staffId: string | undefined, staffName: string | undefined): StaffActor | null {
+  if (!staffId || !staffName) return null;
+  if (staffType === "pos") {
+    const numeric = String(staffId).replace(/^pos:/, "");
+    return { kind: "pos_staff", id: numeric, name: staffName };
+  }
+  if (staffType === "profile") {
+    return { kind: "profile", id: String(staffId), name: staffName };
+  }
+  return null;
+}
+
+function clientIp(request: NextRequest): string {
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return request.headers.get("x-real-ip")?.trim() || "unknown";
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,6 +119,21 @@ export async function POST(request: NextRequest) {
         }
         await admin.from("member_registrations").update(regUpdate).eq("id", referenceId);
 
+        // Audit log for the dashboard's Approved tab. cash_sales already
+        // carries the staff_name for accounting purposes; this row is
+        // what AuditAttribution reads to render 'Naing · time' beside
+        // the member card on /admin/payments. Best-effort, never blocks.
+        const actor = posActor(staffType, staffId, staffName);
+        if (actor) {
+          await logStaffAction({
+            actor,
+            actionType:    "approve",
+            targetTable:   "member_registrations",
+            targetId:      referenceId,
+            ip:            clientIp(request),
+          });
+        }
+
         // Auto check-in: parent is physically here paying cash for today's session.
         // Bulk purchases are payment-only, sessions are used later via UseSessionButton.
         const isBulkPurchase = finalType.endsWith("_bulk");
@@ -151,6 +187,18 @@ export async function POST(request: NextRequest) {
         .update({ slip_status: "approved", slip_reviewed_at: new Date().toISOString() })
         .eq("id", referenceId)
         .eq("slip_status", "cash_pending"); // only dismiss if still pending (safety check)
+
+      const actor = posActor(staffType, staffId, staffName);
+      if (actor) {
+        await logStaffAction({
+          actor,
+          actionType:    "approve",
+          targetTable:   "member_registrations",
+          targetId:      referenceId,
+          ip:            clientIp(request),
+        });
+      }
+
       return NextResponse.json({ ok: true });
     }
 
