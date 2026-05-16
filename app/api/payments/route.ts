@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireWritePin } from "@/lib/staff-pin-server";
+import { logStaffAction, type ActionType } from "@/lib/staff-actions";
 
 /** Points = floor(amount / 100), minimum 1. Bonus for events. */
 function calcPoints(amount: number, sourceType: string): number {
@@ -33,6 +35,12 @@ export async function POST(request: NextRequest) {
   if (action === "restore" && !["admin", "manager"].includes(callerRole)) {
     return NextResponse.json({ error: "Forbidden, only admin or manager can undo an approval" }, { status: 403 });
   }
+
+  // PIN gate: admin/owner bypass; everyone else needs a fresh ng_pin_write
+  // cookie (or surfaces a 401 + code:pin_required so the client modal opens).
+  const auth = await requireWritePin(request);
+  if ("response" in auth) return auth.response;
+
   const slip_status =
     action === "approve"  ? "approved"       :
     action === "restore"  ? "pending_review" :
@@ -217,10 +225,25 @@ export async function POST(request: NextRequest) {
   }
   // ──────────────────────────────────────────────────────────────
 
+  // Audit log: stamp who actually performed the action. Actor comes from
+  // the PIN (or admin/owner session). Best-effort, never blocks the response.
+  const actionType: ActionType =
+    action === "approve" ? "approve" :
+    action === "restore" ? "restore" :
+    "reject";
+  await logStaffAction({
+    actor:         auth.actor,
+    actionType,
+    targetTable:   table,
+    targetId:      id,
+    ip:            auth.ip,
+    sessionUserId: auth.sessionUserId,
+  });
+
   // Return JSON for fetch/XHR callers; redirect for plain form POSTs
   const acceptsJson = request.headers.get("accept")?.includes("application/json");
   if (acceptsJson) {
-    return NextResponse.json({ success: true, slip_status });
+    return NextResponse.json({ success: true, slip_status, actor_name: auth.actor.name });
   }
 
   const referer = request.headers.get("referer") ?? "/admin/payments";

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useStaffPin } from "@/components/admin/StaffPinProvider";
 
 /**
  * Delete button for an event booking. Used on the edit page, admin/owner only.
@@ -9,6 +10,7 @@ import { useRouter } from "next/navigation";
  */
 export default function DeleteEventButton({ bookingId }: { bookingId: number }) {
   const router = useRouter();
+  const { fetchWithPin } = useStaffPin();
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export default function DeleteEventButton({ bookingId }: { bookingId: number }) 
     setBusy(true);
     setErr(null);
     try {
-      const res = await fetch(`/api/event-bookings/${bookingId}`, { method: "DELETE" });
+      const res = await fetchWithPin(`/api/event-bookings/${bookingId}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? "Delete failed");

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   verifyStaffPin,
-  signEntry, signWrite,
+  signEntry, signWriteWithActor,
   ENTRY_COOKIE, WRITE_COOKIE,
   ENTRY_TTL_MS, WRITE_TTL_MS,
 } from "@/lib/staff-pin";
@@ -68,7 +68,12 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Success: issue the cookie matching the requested purpose ──────────────
-  const { value, expiresAt } = purpose === "entry" ? signEntry() : signWrite();
+  // Entry cookie carries only an expiry (any PIN unlocks the device).
+  // Write cookie bakes the actor in so each protected API call can stamp
+  // staff_actions without re-running the bcrypt scan.
+  const { value, expiresAt } = purpose === "entry"
+    ? signEntry()
+    : signWriteWithActor(result.actor);
   const cookieName = purpose === "entry" ? ENTRY_COOKIE : WRITE_COOKIE;
   const cookieTtl  = purpose === "entry" ? ENTRY_TTL_MS : WRITE_TTL_MS;
 

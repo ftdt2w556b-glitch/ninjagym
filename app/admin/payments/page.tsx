@@ -4,6 +4,7 @@ import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import { ShopOrderItem } from "@/types";
 import PaymentActions from "@/components/admin/PaymentActions";
 import SlipUploadButton from "@/components/admin/SlipUploadButton";
+import AuditAttribution from "@/components/admin/AuditAttribution";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import PendingCheckIns from "@/components/admin/PendingCheckIns";
 
@@ -159,6 +160,39 @@ export default async function PaymentsPage({
     showPerks            ? perksQuery     : Promise.resolve({ data: [] }),
     showCheckIns         ? checkInsQuery  : Promise.resolve({ data: [] }),
   ]);
+
+  // ── Audit attribution per visible row ────────────────────────────────────
+  // For each row on this page, look up the most recent staff_actions entry so
+  // we can render "Approved by Naing · May 14" beside the status badge. One
+  // query per table keeps the page snappy regardless of list size.
+  const targetTable =
+    source === "events" ? "event_bookings" :
+    source === "shop"   ? "shop_orders"    :
+    "member_registrations";
+  const visibleIds: string[] = [
+    ...((members    ?? []).map((m) => String(m.id))),
+    ...((events     ?? []).map((e) => String(e.id))),
+    ...((shopOrders ?? []).map((o) => String(o.id))),
+  ];
+
+  const actionByTargetId = new Map<string, { actorName: string | null; createdAt: string }>();
+  if (visibleIds.length > 0) {
+    const { data: actions } = await admin
+      .from("staff_actions")
+      .select("target_id, actor_name, action_type, created_at")
+      .eq("target_table", targetTable)
+      .in("target_id", visibleIds)
+      .order("created_at", { ascending: false });
+    for (const row of actions ?? []) {
+      // First hit per target_id wins (descending order = most recent).
+      if (!actionByTargetId.has(row.target_id as string)) {
+        actionByTargetId.set(row.target_id as string, {
+          actorName: row.actor_name as string | null,
+          createdAt: row.created_at as string,
+        });
+      }
+    }
+  }
 
   // ── Duplicate-slip detection ─────────────────────────────────────
   // Count every slip_hash across all three tables. Anything seen more than once
@@ -513,6 +547,7 @@ export default async function PaymentsPage({
                   memberName={m.name}
                   userRole={userRole}
                 />
+                <AuditAttribution audit={actionByTargetId.get(String(m.id))} />
               </div>
             );
           })}
@@ -608,6 +643,7 @@ export default async function PaymentsPage({
                   initialStatus={b.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
                   userRole={userRole}
                 />
+                <AuditAttribution audit={actionByTargetId.get(String(b.id))} />
               </div>
             );
           })}
@@ -696,6 +732,7 @@ export default async function PaymentsPage({
                   initialStatus={o.slip_status as "pending_review" | "cash_pending" | "approved" | "rejected"}
                   userRole={userRole}
                 />
+                <AuditAttribution audit={actionByTargetId.get(String(o.id))} />
               </div>
             );
           })}

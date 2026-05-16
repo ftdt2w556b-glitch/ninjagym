@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/admin/LogoutButton";
 import PinEntryGate from "@/components/admin/PinEntryGate";
+import StaffPinProvider from "@/components/admin/StaffPinProvider";
 import { ENTRY_COOKIE, readSignedCookie } from "@/lib/staff-pin";
 
 /**
@@ -110,8 +111,11 @@ export default async function AdminLayout({
         </div>
       </nav>
 
-      {/* Page content */}
-      <main className="mx-auto max-w-[900px] px-4 py-6">{children}</main>
+      {/* Page content (wrapped in PIN provider so any client component can
+          call useStaffPin().fetchWithPin to trigger the modal on demand). */}
+      <main className="mx-auto max-w-[900px] px-4 py-6">
+        <StaffPinProvider>{children}</StaffPinProvider>
+      </main>
     </div>
   );
 }

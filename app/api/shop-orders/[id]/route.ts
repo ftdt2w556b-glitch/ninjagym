@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireWritePin } from "@/lib/staff-pin-server";
+import { logStaffAction } from "@/lib/staff-actions";
 
 /**
  * DELETE /api/shop-orders/[id]
@@ -9,7 +11,7 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
  * actions (PaymentActions uses canDelete = admin/owner).
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -35,6 +37,9 @@ export async function DELETE(
     );
   }
 
+  const auth = await requireWritePin(request);
+  if ("response" in auth) return auth.response;
+
   // Any linked cash_sales row first.
   await admin
     .from("cash_sales")
@@ -48,5 +53,15 @@ export async function DELETE(
     .eq("id", orderId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  await logStaffAction({
+    actor:         auth.actor,
+    actionType:    "delete",
+    targetTable:   "shop_orders",
+    targetId:      orderId,
+    ip:            auth.ip,
+    sessionUserId: auth.sessionUserId,
+  });
+
+  return NextResponse.json({ ok: true, actor_name: auth.actor.name });
 }

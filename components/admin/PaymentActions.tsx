@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useStaffPin } from "@/components/admin/StaffPinProvider";
 
 type SlipStatus = "pending_review" | "cash_pending" | "approved" | "rejected";
 
@@ -35,6 +36,7 @@ export default function PaymentActions({
   userRole?: string;
 }) {
   const router = useRouter();
+  const { fetchWithPin } = useStaffPin();
   const canApprove = ["admin", "manager", "staff", "owner"].includes(userRole ?? "");
   const canManage  = ["admin", "manager"].includes(userRole ?? "");
   const canDelete  = ["admin", "owner"].includes(userRole ?? "");
@@ -60,12 +62,14 @@ export default function PaymentActions({
       fd.set("action", action);
       fd.set("type", recordType);
       if (notes) fd.set("notes", notes);
-      const res = await fetch("/api/payments", {
+      const res = await fetchWithPin("/api/payments", {
         method: "POST",
         headers: { accept: "application/json" },
         body: fd,
       });
       if (!res.ok) throw new Error(await res.text());
+      // Refresh so audit attribution ("Approved by Naing") shows immediately.
+      router.refresh();
     } catch {
       setStatus(prev);
       setErr("Action failed. Please try again.");
@@ -82,7 +86,7 @@ export default function PaymentActions({
         recordType === "member" ? `/api/members/${id}` :
         recordType === "event"  ? `/api/event-bookings/${id}` :
         `/api/shop-orders/${id}`;
-      const res = await fetch(endpoint, { method: "DELETE" });
+      const res = await fetchWithPin(endpoint, { method: "DELETE" });
       if (!res.ok) {
         // Try to read JSON error first; fall back to a short, friendly message
         // so a Next.js 404 HTML page doesn't dump a wall of markup on screen.

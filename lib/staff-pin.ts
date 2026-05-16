@@ -176,11 +176,10 @@ function signCookie(ttlMs: number): { value: string; expiresAt: Date } {
 }
 
 export function signEntry() { return signCookie(ENTRY_TTL_MS); }
-export function signWrite() { return signCookie(WRITE_TTL_MS); }
 
 /**
- * Returns true if the cookie value is well-formed, signed correctly, and
- * not yet expired. No identity is carried — that's intentional.
+ * Returns true if the entry cookie is well-formed, signed, and not yet
+ * expired. Identity isn't carried — entry just means 'device unlocked'.
  */
 export function readSignedCookie(raw: string | undefined): boolean {
   if (!raw) return false;
@@ -195,4 +194,55 @@ export function readSignedCookie(raw: string | undefined): boolean {
   const b = Buffer.from(expected, "hex");
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
+}
+
+// ── Write cookie: carries the actor (kind / id / name) so the server can
+// stamp the audit log without re-verifying. Format:
+//   <base64url(JSON {kind,id,name,exp})>.<hex-sig>
+// Sig = HMAC(payload-b64).slice(0, 32).
+
+function b64u(buf: Buffer): string {
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64uDecode(s: string): Buffer {
+  const pad = (4 - (s.length % 4)) % 4;
+  return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(pad), "base64");
+}
+function signPayload(payloadB64: string): string {
+  return createHmac("sha256", SECRET).update(payloadB64).digest("hex").slice(0, 32);
+}
+
+export function signWriteWithActor(actor: StaffActor): { value: string; expiresAt: Date } {
+  const exp = Date.now() + WRITE_TTL_MS;
+  const payload    = JSON.stringify({ kind: actor.kind, id: actor.id, name: actor.name, exp });
+  const payloadB64 = b64u(Buffer.from(payload, "utf8"));
+  const sig        = signPayload(payloadB64);
+  return { value: `${payloadB64}.${sig}`, expiresAt: new Date(exp) };
+}
+
+/**
+ * Parse + verify a write cookie. Returns the actor on success, null on
+ * any error (missing, malformed, bad sig, expired).
+ */
+export function readWriteCookie(raw: string | undefined): StaffActor | null {
+  if (!raw) return null;
+  const parts = raw.split(".");
+  if (parts.length !== 2) return null;
+  const [payloadB64, sig] = parts;
+
+  const expected = signPayload(payloadB64);
+  const a = Buffer.from(sig, "hex");
+  const b = Buffer.from(expected, "hex");
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+  try {
+    const json = JSON.parse(b64uDecode(payloadB64).toString("utf8")) as
+      { kind: unknown; id: unknown; name: unknown; exp: unknown };
+    if (typeof json.exp !== "number" || json.exp < Date.now()) return null;
+    if (json.kind !== "pos_staff" && json.kind !== "profile") return null;
+    if (typeof json.id !== "string" || typeof json.name !== "string") return null;
+    return { kind: json.kind, id: json.id, name: json.name };
+  } catch {
+    return null;
+  }
 }

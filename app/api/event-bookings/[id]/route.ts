@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireWritePin } from "@/lib/staff-pin-server";
+import { logStaffAction } from "@/lib/staff-actions";
 
 /**
  * DELETE /api/event-bookings/[id]
@@ -13,7 +15,7 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
  * delete because deletion is irreversible and removes the financial trail.
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -39,6 +41,11 @@ export async function DELETE(
     );
   }
 
+  // requireWritePin still runs (admin/owner just bypass the modal) so the
+  // delete still produces a staff_actions row attributing to the caller.
+  const auth = await requireWritePin(request);
+  if ("response" in auth) return auth.response;
+
   // Linked cash_sales row (if any), then linked member_registrations row, then the booking.
   await admin
     .from("cash_sales")
@@ -57,5 +64,15 @@ export async function DELETE(
     .eq("id", bookingId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+
+  await logStaffAction({
+    actor:         auth.actor,
+    actionType:    "delete",
+    targetTable:   "event_bookings",
+    targetId:      bookingId,
+    ip:            auth.ip,
+    sessionUserId: auth.sessionUserId,
+  });
+
+  return NextResponse.json({ ok: true, actor_name: auth.actor.name });
 }
