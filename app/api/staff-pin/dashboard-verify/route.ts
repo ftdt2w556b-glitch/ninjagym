@@ -11,15 +11,28 @@ import {
  * POST /api/staff-pin/dashboard-verify
  * Body: { pin: string, purpose: "entry" | "write" }
  *
- * Step-up auth for the dashboard. Caller must already be authenticated
- * (Supabase login session) — this endpoint just verifies their PIN against
- * profiles.pin and issues the corresponding signed cookie:
+ * Step-up auth for the dashboard. The centre device runs on one shared
+ * NinjaGym login, so the PIN typed here identifies the real staff member
+ * (Naing / Win / Rick) and decides:
  *
- *   purpose=entry  →  ng_pin_entry  (4-hour TTL, gates /admin/*)
- *   purpose=write  →  ng_pin_write  (15-min TTL, gates protected writes)
+ *   purpose=entry  →  ng_pin_entry  (4h device cookie, unlocks /admin/*)
+ *   purpose=write  →  ng_pin_write  (15min soft cookie, used for write attribution)
  *
- * Rate-limited at 5 wrong / 10 min → 30 min lockout per user.
+ * Rate-limited at 5 wrong / 10 min  →  30 min lockout per IP. Successful
+ * entry clears the IP counter.
+ *
+ * Caller must still be in some logged-in Supabase session (defence in depth
+ * against random internet hits — the dashboard requires it everywhere else).
+ *
+ * Response on success includes the resolved actor so the client can render
+ * "Verified as Naing" inline before submitting the actual write.
  */
+function clientIp(request: NextRequest): string {
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return request.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -38,12 +51,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid purpose" }, { status: 400 });
   }
 
-  const result = await verifyStaffPin(user.id, pin);
+  const ip = clientIp(request);
+  const result = await verifyStaffPin(pin, ip);
 
   if (!result.ok) {
-    if (result.reason === "no_pin") {
-      return NextResponse.json({ error: "No PIN set. Ask admin to set one." }, { status: 400 });
-    }
     if (result.reason === "locked" || result.reason === "wrong_locked") {
       return NextResponse.json(
         { error: "Too many wrong PINs. Please try again later.", retry_after_minutes: result.retryAfterMinutes },
@@ -57,18 +68,23 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Success: issue the cookie matching the requested purpose ──────────────
-  const { value, expiresAt } =
-    purpose === "entry" ? signEntry(user.id) : signWrite(user.id);
+  const { value, expiresAt } = purpose === "entry" ? signEntry() : signWrite();
+  const cookieName = purpose === "entry" ? ENTRY_COOKIE : WRITE_COOKIE;
+  const cookieTtl  = purpose === "entry" ? ENTRY_TTL_MS : WRITE_TTL_MS;
 
-  const res = NextResponse.json({ ok: true, expires_at: expiresAt.toISOString() });
+  const res = NextResponse.json({
+    ok: true,
+    actor: result.actor,           // { kind, id, name } — caller renders "Verified as Naing"
+    expires_at: expiresAt.toISOString(),
+  });
   res.cookies.set({
-    name:     purpose === "entry" ? ENTRY_COOKIE : WRITE_COOKIE,
+    name:     cookieName,
     value,
     httpOnly: true,
     sameSite: "lax",
     secure:   process.env.NODE_ENV === "production",
     path:     "/",
-    maxAge:   Math.floor((purpose === "entry" ? ENTRY_TTL_MS : WRITE_TTL_MS) / 1000),
+    maxAge:   Math.floor(cookieTtl / 1000),
   });
   return res;
 }
