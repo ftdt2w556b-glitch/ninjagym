@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useStaffPin } from "@/components/admin/StaffPinProvider";
 
 type Step = "idle" | "checking" | "pending_warn" | "today_warn" | "confirm";
 
@@ -22,6 +23,7 @@ export default function CheckInButton({
   kidsCount?: number;
 }) {
   const router = useRouter();
+  const { fetchWithPin } = useStaffPin();
   const [step, setStep]           = useState<Step>("idle");
   const [kidsToday, setKidsToday] = useState(kidsCount);
   const [loading, setLoading]     = useState(false);
@@ -57,7 +59,7 @@ export default function CheckInButton({
     if (!pending) return;
     setLoading(true);
     try {
-      await fetch("/api/checkin/handle", {
+      await fetchWithPin("/api/checkin/handle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: pending.id, action: "approve", staff_name: staffName ?? "Staff" }),
@@ -73,7 +75,7 @@ export default function CheckInButton({
   async function handleConfirm() {
     setLoading(true);
     setErrorMsg(null);
-    const res = await fetch("/api/checkin", {
+    const res = await fetchWithPin("/api/checkin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

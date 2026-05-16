@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { resolveMembershipType } from "@/lib/pricing";
 import { requireWritePin } from "@/lib/staff-pin-server";
@@ -7,34 +7,54 @@ import { logStaffAction } from "@/lib/staff-actions";
 import type { StaffActor } from "@/lib/staff-pin";
 
 export async function POST(req: NextRequest) {
-  // Two authorized paths:
-  //   1. POS kiosk: pos_auth cookie matches the shared kiosk password.
-  //      staff_name comes from the request body (POS UI asks for it).
-  //   2. Dashboard: ng_pin_write cookie is valid OR session is admin/owner.
-  //      Actor name comes from requireWritePin, ignoring whatever the body
-  //      sent. This is how we kill "by NinjaGym" in check-in audit notes.
-  const cookieStore = await cookies();
-  const posAuth = cookieStore.get("pos_auth")?.value;
+  // Path resolution: prefer dashboard auth whenever there's a Supabase
+  // session. The centre browser keeps a long-lived pos_auth cookie from
+  // POS use, and if we let that short-circuit the PIN gate the dashboard
+  // would silently fall back to attributing every approval to the shared
+  // NinjaGym account. So:
+  //
+  //   - logged-in user            → dashboard path, requireWritePin()
+  //   - no session + pos_auth ok  → POS kiosk path, trust body.staff_name
+  //   - neither                   → 401
+  //
+  // Admin/owner sessions still bypass the modal via requireWritePin's
+  // internal role check; everyone else must present a fresh PIN.
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   const admin = createAdminClient();
-  const { data: pwSetting } = await admin.from("settings").select("value").eq("key", "pos_password").maybeSingle();
-  const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
-  const posUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
 
   let actor: StaffActor | null = null;
   let sessionUserId: string | null = null;
   let ip: string | null = null;
+  let posUnlocked = false;
 
-  if (!posUnlocked) {
+  if (user) {
+    // Dashboard path
     const auth = await requireWritePin(req);
     if ("response" in auth) return auth.response;
     actor         = auth.actor;
     sessionUserId = auth.sessionUserId;
     ip            = auth.ip;
+  } else {
+    // Kiosk path
+    const cookieStore = await cookies();
+    const posAuth = cookieStore.get("pos_auth")?.value;
+    const { data: pwSetting } = await admin
+      .from("settings")
+      .select("value")
+      .eq("key", "pos_password")
+      .maybeSingle();
+    const expected = pwSetting?.value ?? process.env.POS_PASSWORD ?? null;
+    posUnlocked = expected ? posAuth === expected : posAuth === "unlocked";
+    if (!posUnlocked) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const { id, action, staff_name: bodyStaffName, reason } = await req.json();
   // Dashboard path: use the resolved actor's name in audit notes, ignoring
-  // whatever the client sent. POS path: trust the kiosk's staff_name choice.
+  // whatever the client sent. POS kiosk path: trust the kiosk's staff_name.
   const staff_name = actor ? actor.name : bodyStaffName;
 
   const { data: pending } = await admin

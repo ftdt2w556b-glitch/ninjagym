@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
-
-const STAFF_ROLES = ["admin", "manager", "staff", "owner"];
-
-async function requireStaff() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  const admin = createAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  return !!profile && STAFF_ROLES.includes(profile.role);
-}
+import { createAdminClient } from "@/lib/supabase/server";
+import { requireWritePin } from "@/lib/staff-pin-server";
+import { logStaffAction } from "@/lib/staff-actions";
 
 /**
  * POST /api/checkin
@@ -30,13 +17,20 @@ async function requireStaff() {
  * Parent-driven check-in goes through /api/checkin/request → /api/checkin/handle instead.
  */
 export async function POST(request: NextRequest) {
-  if (!(await requireStaff())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // PIN-gated: requireWritePin resolves the actor from the ng_pin_write
+  // cookie (or admin/owner session bypass) and returns 401 + pin_required
+  // for staff who haven't typed their PIN yet so the client modal opens.
+  const auth = await requireWritePin(request);
+  if ("response" in auth) return auth.response;
+  const { actor, sessionUserId, ip } = auth;
+
   try {
     const body = await request.json();
     const member_id = Number(body.member_id);
-    const note = (body.note as string | undefined) ?? null;
+    // Ignore body.note's staff portion — we rebuild it from the resolved
+    // actor so "Check-in by NinjaGym" becomes "Check-in by Naing".
+    const _ignoredClientNote = (body.note as string | undefined) ?? null;
+    void _ignoredClientNote;
     const kids_count_override = body.kids_count_override != null ? Math.max(1, Number(body.kids_count_override)) : null;
 
     if (!member_id) {
@@ -70,7 +64,10 @@ export async function POST(request: NextRequest) {
     // Kids count, use override from staff (e.g. mom has 2 kids but only brought 1 today)
     const kidsCount = kids_count_override !== null ? kids_count_override : Math.max(1, member.kids_count ?? 1);
     const kidsSuffix = kidsCount > 1 ? ` | ${kidsCount} kids` : "";
-    const fullNote = note ? `${note}${kidsSuffix}` : kidsSuffix || null;
+    // Rebuild the note from the resolved actor name so attendance logs read
+    // "Check-in by Naing" / "Win" instead of "Check-in by NinjaGym".
+    const staffNote = `Check-in by ${actor.name}`;
+    const fullNote  = `${staffNote}${kidsSuffix}`;
 
     // Kids names, for top-ups, look up from parent registration
     let kidsNames: string | null = member.kids_names ?? null;
@@ -133,12 +130,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Audit log: who checked this member in.
+    await logStaffAction({
+      actor,
+      actionType:    "other",
+      targetTable:   "attendance_logs",
+      targetId:      log.id,
+      ip,
+      sessionUserId,
+    });
+
     return NextResponse.json({
       success: true,
       attendance_id: log.id,
       sessions_remaining: newSessions,
       warned,
       outOfSessions,
+      actor_name: actor.name,
     });
   } catch (err: unknown) {
     console.error("POST /api/checkin error:", err);
