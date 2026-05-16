@@ -1,29 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStaffPin } from "./StaffPinProvider";
 
 /**
- * The "Name / Contact" column of the Members table. PIN, email, phone,
- * and kids names sit behind the PIN gate so a busy centre browser can't
- * be shoulder-surfed for 500+ rows of parent contact info at a glance.
+ * The "Name / Contact" column of the Members table. Sensitive fields
+ * (PIN / email / phone / kids names) stay hidden per row by default to
+ * avoid over-the-shoulder leakage on the centre browser, where the rest
+ * of the dashboard often has an active PIN write window from a recent
+ * approval.
  *
- * Behaviour:
- * - If a PIN write window is currently active (writeStatus from
- *   StaffPinProvider — set by any approve / reveal / edit in the last
- *   15 min), all sensitive fields render automatically. No per-row tap.
- * - Otherwise, a 'Reveal' button calls fetchWithPin against
- *   /api/staff-pin/check-write, which triggers the PIN modal on a 401 +
- *   pin_required and sets writeStatus on success. Once it's set, every
- *   cell on the page unmasks at the same time.
- * - When the write cookie expires (countdown ticks to zero) writeStatus
- *   clears via the provider's setTimeout and the entire table re-masks.
- *
- * Admin / owner sessions bypass the modal but still need to trigger a
- * reveal once to populate writeStatus, since their session never carries
- * a write cookie. (Future improvement: provider could synthesise a
- * permanent 'admin' writeStatus on mount.)
+ * Reveal behaviour:
+ * - Tap '👁 Reveal' on the row you actually want to read.
+ * - If no PIN cookie is active, the PIN modal opens once; on success the
+ *   server unmasks that row and starts a 30-second auto-hide timer.
+ * - If a PIN cookie IS already active (writeStatus is non-null), the
+ *   call to /api/staff-pin/check-write returns 200 instantly with no
+ *   modal — staff gets immediate reveal on the row, but every other row
+ *   on the page stays masked. That's the trade-off: fast for the row
+ *   you want, no broadcasting to anyone glancing at the screen.
  */
+const AUTO_HIDE_MS = 30_000;
+
 export default function MemberContactCell({
   name,
   pin,
@@ -39,21 +37,31 @@ export default function MemberContactCell({
   kidsNames:        string | null;
   loyaltyDiscount?: number | null;
 }) {
-  const { fetchWithPin, writeStatus } = useStaffPin();
-  const [busy, setBusy] = useState(false);
-  const [err, setErr]   = useState<string | null>(null);
+  const { fetchWithPin } = useStaffPin();
+  const [revealed, setRevealed] = useState(false);
+  const [busy, setBusy]         = useState(false);
+  const [err, setErr]           = useState<string | null>(null);
+
+  // Auto-collapse this row 30 seconds after a successful reveal so an
+  // unattended browser doesn't keep broadcasting one parent's contact.
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setRevealed(false), AUTO_HIDE_MS);
+    return () => clearTimeout(t);
+  }, [revealed]);
 
   const hasSensitive = !!(pin || email || phone || kidsNames);
-  const revealed     = !!writeStatus;       // page-wide unlock, not per-row
 
-  async function unlock() {
+  async function reveal() {
     setBusy(true);
     setErr(null);
     try {
       const res = await fetchWithPin("/api/staff-pin/check-write", { method: "GET" });
-      if (!res.ok) setErr("PIN required");
-      // Success path: provider catches the response, updates writeStatus,
-      // every cell re-renders unmasked. Nothing else to do here.
+      if (res.ok) {
+        setRevealed(true);
+      } else {
+        setErr("PIN required");
+      }
     } catch {
       setErr("Connection problem");
     } finally {
@@ -81,12 +89,22 @@ export default function MemberContactCell({
         {!revealed && hasSensitive && (
           <button
             type="button"
-            onClick={unlock}
+            onClick={reveal}
             disabled={busy}
             className="text-xs text-[#1a56db] hover:underline disabled:opacity-50"
-            title="Unlock contact details for the whole page"
           >
             {busy ? "…" : "👁 Reveal"}
+          </button>
+        )}
+
+        {revealed && (
+          <button
+            type="button"
+            onClick={() => setRevealed(false)}
+            className="text-xs text-gray-400 hover:text-gray-600"
+            aria-label="Hide contact"
+          >
+            ✕
           </button>
         )}
       </div>

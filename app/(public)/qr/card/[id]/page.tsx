@@ -1,8 +1,11 @@
 import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { MEMBERSHIP_TYPES } from "@/lib/pricing";
 import QrCardClient from "@/components/public/QrCardClient";
 import { verifyMemberToken, signMemberId } from "@/lib/member-token";
+import { readSignedCookie, WRITE_COOKIE, readWriteCookieFull } from "@/lib/staff-pin";
+import MemberCardPinWall from "@/components/admin/MemberCardPinWall";
 
 export default async function QrCardPage({
   params,
@@ -16,28 +19,49 @@ export default async function QrCardPage({
   const memberId = Number(id);
 
   // ── Access control ───────────────────────────────────────────────
-  // Allow: valid signed token  OR  logged-in admin/staff
-  const hasValidToken = verifyMemberToken(memberId, token);
+  // Allow:
+  //   • valid signed parent token, or
+  //   • logged-in admin/owner (PIN bypass — same as every other write surface), or
+  //   • logged-in staff/manager WITH a valid ng_pin_write cookie.
+  //
+  // Staff without a fresh PIN window get a wall page that bounces them
+  // back to /admin/members. Without this check, anyone who knows the
+  // URL pattern /qr/card/[id]?from=admin could side-step the Members
+  // reveal gate entirely with one click on the table row.
+  const fromAdmin       = from === "admin";
+  const hasValidToken   = verifyMemberToken(memberId, token);
 
   if (!hasValidToken) {
-    // Check if a logged-in admin/staff is accessing
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const adminClient = createAdminClient();
-      const { data: profile } = await adminClient
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      const isStaff = profile && ["admin", "owner", "manager", "staff"].includes(profile.role);
-      if (!isStaff) redirect("/my-membership");
-    } else {
+    if (!user) {
       redirect("/my-membership");
+    }
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const role = profile?.role ?? "";
+    const isStaffLike = ["admin", "owner", "manager", "staff"].includes(role);
+    if (!isStaffLike) redirect("/my-membership");
+
+    // Manager / staff hitting this from the admin link must have a
+    // fresh PIN window. Admin / owner always pass through.
+    const needsPin = fromAdmin && role !== "admin" && role !== "owner";
+    if (needsPin) {
+      const cookieStore = await cookies();
+      const writeOk = !!readWriteCookieFull(cookieStore.get(WRITE_COOKIE)?.value);
+      if (!writeOk) {
+        // Avoid an unused-import warning while keeping the helper around
+        // for any future entry-cookie reuse.
+        void readSignedCookie;
+        return <MemberCardPinWall />;
+      }
     }
   }
 
-  const fromAdmin = from === "admin";
   const admin = createAdminClient();
 
   const { data: member } = await admin
