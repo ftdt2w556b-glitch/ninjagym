@@ -1,24 +1,9 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/admin/LogoutButton";
-import PinEntryGate from "@/components/admin/PinEntryGate";
 import StaffPinProvider from "@/components/admin/StaffPinProvider";
-import { ENTRY_COOKIE, readSignedCookie } from "@/lib/staff-pin";
-
-/**
- * Server action passed into PinEntryGate so the "Sign out" button on the
- * gate can drop the Supabase session and bounce back to /login. Living
- * here (not in the client component) keeps the auth call server-side.
- */
-async function signOutFromGate() {
-  "use server";
-  const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
-  redirect("/login");
-}
 
 export default async function AdminLayout({
   children,
@@ -47,19 +32,12 @@ export default async function AdminLayout({
 
   const role = profile.role as string;
 
-  // ── Staff PIN entry gate ────────────────────────────────────────────────
-  // Admin / owner sessions bypass — they're already a real, individual
-  // account so a second factor is friction without a real security gain.
-  // Everyone else (the shared NinjaGym staff login at the centre) must
-  // present a valid PIN cookie to see any dashboard data.
-  const bypassPin = role === "admin" || role === "owner";
-  if (!bypassPin) {
-    const cookieStore = await cookies();
-    const entryValid = readSignedCookie(cookieStore.get(ENTRY_COOKIE)?.value);
-    if (!entryValid) {
-      return <PinEntryGate signOutAction={signOutFromGate} />;
-    }
-  }
+  // No entry-PIN gate: the shared NinjaGym login on the centre device is
+  // the access point, and staff rotate through it freely. PIN attribution
+  // happens per write action via <StaffPinProvider> below, so every
+  // approve / reject / delete is correctly tied to the staff member who
+  // performed it without forcing a 4-hour "session" concept that doesn't
+  // match how the centre actually works.
 
   const navLinks = [
     { href: "/admin/dashboard",         label: "Dash",       roles: ["admin", "manager", "staff", "owner"] },
