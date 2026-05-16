@@ -232,26 +232,50 @@ export default function PendingCheckIns({ staffName }: Props) {
 
             {/* Payment info */}
             {isPayment && (
-              <div className="mb-3 flex items-center gap-2 flex-wrap">
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-bold ${
-                  isCash
-                    ? "bg-green-100 text-green-800 border border-green-300"
-                    : "bg-blue-100 text-blue-800 border border-blue-300"
-                }`}>
-                  {isCash ? "💵" : "📱"} ฿{(item.amount_paid ?? 0).toLocaleString()} {isCash ? "cash" : "PromptPay"}
-                </span>
+              <div className="mb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-bold ${
+                    isCash
+                      ? "bg-green-100 text-green-800 border border-green-300"
+                      : "bg-blue-100 text-blue-800 border border-blue-300"
+                  }`}>
+                    {isCash ? "💵" : "📱"} ฿{(item.amount_paid ?? 0).toLocaleString()} {isCash ? "cash" : "PromptPay"}
+                  </span>
+                  {isPromptPay && slipUrl && (
+                    <a
+                      href={slipUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold bg-white/70 hover:bg-white border border-amber-300 transition-colors"
+                    >
+                      🧾 Open full size
+                    </a>
+                  )}
+                  {isPromptPay && !slipUrl && (
+                    <span className="text-xs text-amber-800 italic">no slip uploaded</span>
+                  )}
+                </div>
+
+                {/* Inline slip thumbnail. loading="eager" forces the image to
+                    fetch the moment the banner renders, so staff verifying a
+                    PromptPay slip don't have to wait on a new-tab spin-up.
+                    Click expands to full size in a new tab. */}
                 {isPromptPay && slipUrl && (
                   <a
                     href={slipUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm font-semibold bg-white/70 hover:bg-white border border-amber-300 transition-colors"
+                    className="mt-2 block w-fit rounded-xl overflow-hidden border-2 border-amber-300 bg-white/60 shadow-inner hover:border-amber-500 transition-colors"
+                    aria-label="Open payment slip in a new tab"
                   >
-                    🧾 View Slip
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={slipUrl}
+                      alt="Payment slip"
+                      loading="eager"
+                      className="max-h-40 object-contain bg-white"
+                    />
                   </a>
-                )}
-                {isPromptPay && !slipUrl && (
-                  <span className="text-xs text-amber-800 italic">no slip uploaded</span>
                 )}
               </div>
             )}
