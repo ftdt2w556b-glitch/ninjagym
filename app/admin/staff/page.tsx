@@ -317,10 +317,12 @@ export default async function StaffPage({
         </form>
       </div>
 
-      {/* POS Staff (PIN Only) */}
-      <h2 className="text-lg font-bold text-gray-900 mb-4">POS Staff (PIN Only)</h2>
+      {/* PIN-only staff roster — works on both POS and the dashboard */}
+      <h2 className="text-lg font-bold text-gray-900 mb-4">Staff Roster (PIN Only)</h2>
       <p className="text-sm text-gray-500 mb-4">
-        These staff members can use the POS with a PIN but do not have dashboard accounts.
+        These staff members use the centre&apos;s shared login plus their own PIN. The PIN unlocks
+        the dashboard and POS, and stamps everything they approve, edit, or delete with their name.
+        Add or remove freely as staff rotate.
       </p>
 
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-6">
