@@ -144,12 +144,6 @@ export default async function MembersPage({
   const { data: profile } = await admin.from("profiles").select("role, name").eq("id", user!.id).single();
   const isAdminOrOwner = ["admin", "manager", "owner"].includes(profile?.role ?? "");
 
-  const tabs = [
-    { id: "members",  label: "Members" },
-    { id: "checkins", label: "Check-ins" },
-    { id: "timers",   label: "Timers" },
-  ];
-
   type MemberRow = {
     id: number; name: string; phone: string | null; email: string | null;
     membership_type: string; kids_count: number | null; kids_names: string | null;
@@ -353,22 +347,9 @@ export default async function MembersPage({
 
   return (
     <div>
-      {/* Tab switcher */}
-      <div className="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
-        {tabs.map((t) => (
-          <a
-            key={t.id}
-            href={`/admin/members?tab=${t.id}`}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              tab === t.id
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </a>
-        ))}
-      </div>
+      {/* Sub-tab switcher removed — Members / Check-ins / Timers are now
+          top-level links in the main admin nav, so the inner pill row was
+          duplicating the same controls one click away. */}
 
       {/* ── Members Tab ── */}
       {tab === "members" && (
