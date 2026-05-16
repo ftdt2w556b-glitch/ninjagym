@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/admin/LogoutButton";
 import StaffPinProvider from "@/components/admin/StaffPinProvider";
+import StaffPinStatus from "@/components/admin/StaffPinStatus";
 
 export default async function AdminLayout({
   children,
@@ -62,44 +63,46 @@ export default async function AdminLayout({
   ].filter((link) => link.roles.includes(role));
 
   return (
-    <div className="min-h-dvh bg-gray-50">
-      {/* Top nav */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="mx-auto max-w-[900px] px-4 h-14 flex items-center justify-between">
-          <Link href="/admin/dashboard" className="font-bold text-[#1a56db] text-lg">
-            NinjaGym
-          </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500 hidden sm:block">
-              {profile.name ?? user.email} ({role})
-            </span>
-            <LogoutButton />
+    // PIN provider wraps the entire layout so the header chip + page
+    // content share one write-cookie state. Without this the chip would
+    // need its own polling loop.
+    <StaffPinProvider>
+      <div className="min-h-dvh bg-gray-50">
+        {/* Top nav */}
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="mx-auto max-w-[900px] px-4 h-14 flex items-center justify-between">
+            <Link href="/admin/dashboard" className="font-bold text-[#1a56db] text-lg">
+              NinjaGym
+            </Link>
+            <div className="flex items-center gap-3">
+              <StaffPinStatus />
+              <span className="text-sm text-gray-500 hidden sm:block">
+                {profile.name ?? user.email} ({role})
+              </span>
+              <LogoutButton />
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Sub-nav */}
-      <nav className="bg-white border-b border-gray-100">
-        <div className="mx-auto max-w-[900px] px-4">
-          <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+        {/* Sub-nav */}
+        <nav className="bg-white border-b border-gray-100">
+          <div className="mx-auto max-w-[900px] px-4">
+            <div className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-[#1a56db] transition-colors"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Page content (wrapped in PIN provider so any client component can
-          call useStaffPin().fetchWithPin to trigger the modal on demand). */}
-      <main className="mx-auto max-w-[900px] px-4 py-6">
-        <StaffPinProvider>{children}</StaffPinProvider>
-      </main>
-    </div>
+        <main className="mx-auto max-w-[900px] px-4 py-6">{children}</main>
+      </div>
+    </StaffPinProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
  * Mounted once at /admin/layout.tsx. Owns the PIN modal and exposes
@@ -20,8 +20,19 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
  * If the user cancels the modal, fetchWithPin returns the original 401
  * response so callers can show their own error.
  */
+/**
+ * writeStatus describes the current ng_pin_write cookie. The header chip
+ * reads this to render '🔐 Naing · 12 min left'. null = no active cookie
+ * (admin/owner sessions bypass and never carry one — chip stays hidden).
+ */
+export interface StaffPinWriteStatus {
+  actorName: string;
+  expiresAt: Date;
+}
+
 interface StaffPinContextValue {
   fetchWithPin: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+  writeStatus:  StaffPinWriteStatus | null;
 }
 
 const StaffPinContext = createContext<StaffPinContextValue | null>(null);
@@ -39,7 +50,39 @@ export default function StaffPinProvider({ children }: { children: ReactNode }) 
   const [pin, setPin]     = useState("");
   const [busy, setBusy]   = useState(false);
   const [err, setErr]     = useState<string | null>(null);
+  const [writeStatus, setWriteStatus] = useState<StaffPinWriteStatus | null>(null);
   const resolverRef       = useRef<ModalResolver | null>(null);
+
+  // On mount, rehydrate the write status from the server in case the cookie
+  // is still alive after a page reload. Admin/owner sessions get a 200 with
+  // expires_at=null (bypass), staff get either expires_at=<iso> or 401.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/staff-pin/check-write", { method: "GET" });
+        if (cancelled || !res.ok) return;
+        const data = await res.json().catch(() => null);
+        const exp  = data?.expires_at ? new Date(data.expires_at) : null;
+        if (data?.actor_name && exp && exp.getTime() > Date.now()) {
+          setWriteStatus({ actorName: data.actor_name, expiresAt: exp });
+        }
+      } catch {
+        /* network blip is fine, chip stays hidden */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Auto-clear writeStatus when the cookie expires so the chip vanishes
+  // exactly when the next write would re-prompt the PIN modal.
+  useEffect(() => {
+    if (!writeStatus) return;
+    const ms = writeStatus.expiresAt.getTime() - Date.now();
+    if (ms <= 0) { setWriteStatus(null); return; }
+    const t = setTimeout(() => setWriteStatus(null), ms);
+    return () => clearTimeout(t);
+  }, [writeStatus]);
 
   const closeModal = useCallback((value: Parameters<ModalResolver>[0]) => {
     if (resolverRef.current) {
@@ -107,6 +150,12 @@ export default function StaffPinProvider({ children }: { children: ReactNode }) 
         setBusy(false);
         return;
       }
+      // Capture the freshly-issued write window so the header chip can
+      // start counting down without a second round-trip.
+      const exp = data?.expires_at ? new Date(data.expires_at) : null;
+      if (data?.actor?.name && exp && exp.getTime() > Date.now()) {
+        setWriteStatus({ actorName: data.actor.name, expiresAt: exp });
+      }
       closeModal({ ok: true, actor: data?.actor });
     } catch {
       setErr("Connection problem. Please try again.");
@@ -115,7 +164,7 @@ export default function StaffPinProvider({ children }: { children: ReactNode }) 
   }
 
   return (
-    <StaffPinContext.Provider value={{ fetchWithPin }}>
+    <StaffPinContext.Provider value={{ fetchWithPin, writeStatus }}>
       {children}
 
       {/* PIN modal portal */}

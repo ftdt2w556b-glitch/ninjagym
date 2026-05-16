@@ -225,6 +225,16 @@ export function signWriteWithActor(actor: StaffActor): { value: string; expiresA
  * any error (missing, malformed, bad sig, expired).
  */
 export function readWriteCookie(raw: string | undefined): StaffActor | null {
+  return readWriteCookieFull(raw)?.actor ?? null;
+}
+
+/**
+ * Same as readWriteCookie but also surfaces the expiry timestamp so the
+ * UI can render a countdown ("Naing · 12 min left") in the dashboard header.
+ */
+export function readWriteCookieFull(
+  raw: string | undefined,
+): { actor: StaffActor; expiresAt: Date } | null {
   if (!raw) return null;
   const parts = raw.split(".");
   if (parts.length !== 2) return null;
@@ -241,7 +251,10 @@ export function readWriteCookie(raw: string | undefined): StaffActor | null {
     if (typeof json.exp !== "number" || json.exp < Date.now()) return null;
     if (json.kind !== "pos_staff" && json.kind !== "profile") return null;
     if (typeof json.id !== "string" || typeof json.name !== "string") return null;
-    return { kind: json.kind, id: json.id, name: json.name };
+    return {
+      actor:     { kind: json.kind, id: json.id, name: json.name },
+      expiresAt: new Date(json.exp),
+    };
   } catch {
     return null;
   }
