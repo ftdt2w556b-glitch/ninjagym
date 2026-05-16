@@ -58,6 +58,9 @@ got repointed at the survivor first.
 | Group | Kept | Merged-then-deleted | Moved + extras |
 |---|---|---|---|
 | Chelsea Sweeney (Carter Hargreaves) | 117 (PIN 9846) | 26 (PIN 8836) | 3 top-ups + 1 attendance + 1 loyalty → 117. **Plus 5 session_group attendance entries (6/12/18/24/30 days ago) added to credit perk-rank progress** lost in the merge. All five carry `notes = "Perk credit from duplicate merge (#26 → #117)"` for audit. Net perk-day count went from 1 → 6. |
+| Jana Ludwig-Martyushev (Yuriy) | 1324 (correct phone 004915157878475) | 1358 (typo phone 004915157878479) | 1 top-up → 1324 |
+| adam weiss (Blu, nami) | 626 (full kids list, 4 top-ups) | 234 (older "Blu weiss" only, 2 top-ups) | 2 top-ups → 626 |
+| Almira Borrel (Daniel + Nastia) | 1203 | 1201 | 1 top-up → 1203 + kids_names rewritten to "Daniel, Nastia" (kids_count = 2) per the centre's per-session model |
 
 ## NOT touched — flagged for human review
 
