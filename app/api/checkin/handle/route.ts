@@ -214,6 +214,13 @@ export async function POST(req: NextRequest) {
   }
 
   // Audit log — dashboard path only (POS has its own audit via cash_sales).
+  // When the approval/rejection also touched member_registrations (i.e. the
+  // pending_checkin was a real payment slip review, not a session-use tap
+  // against an already-approved package), stamp a paired row keyed on the
+  // member_registration so /admin/payments shows the attribution on the
+  // member card too. Without this, 'PromptPay Payment + Check-in' approvals
+  // would show 'by Naing' on the check-in side but blank on the registration
+  // card in the Approved sub-tab.
   if (actor) {
     await logStaffAction({
       actor,
@@ -223,6 +230,19 @@ export async function POST(req: NextRequest) {
       ip,
       sessionUserId,
     });
+
+    const touchedRegistration =
+      !isFreeSessionLoyalty && !isPerkRedemption && !!pending.payment_method && !!pending.member_id;
+    if (touchedRegistration) {
+      await logStaffAction({
+        actor,
+        actionType:    action === "approve" ? "approve" : "reject",
+        targetTable:   "member_registrations",
+        targetId:      pending.member_id,
+        ip,
+        sessionUserId,
+      });
+    }
   }
 
   return NextResponse.json({ success: true, actor_name: staff_name });
