@@ -39,20 +39,26 @@ export default async function AdminLayout({
   // performed it without forcing a 4-hour "session" concept that doesn't
   // match how the centre actually works.
 
+  // Top-level nav ordered by daily-flow priority: Pending → Check-ins →
+  // Timers are the three surfaces staff touch every shift, so they sit
+  // together near the front. Members drops to the back as a lookup tool
+  // (used only when a parent forgets their PIN).
   const navLinks = [
-    { href: "/admin/dashboard",         label: "Dash",       roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/members",           label: "Members",    roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/payments",          label: "Pending",    roles: ["admin", "manager", "staff"] },
-    { href: "/admin/event-bookings",    label: "Events",     roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/shop",              label: "Shop",       roles: ["admin", "manager"] },
-    { href: "/admin/pos",               label: "POS",        roles: ["admin", "manager"] },
-    { href: "/admin/reports/cash",      label: "Sales",      roles: ["admin", "manager", "owner", "tax"] },
-    { href: "/admin/tax",              label: "Tax",        roles: ["admin", "owner", "tax"] },
-    { href: "/admin/staff",             label: "Users",     roles: ["admin"] },
-    { href: "/admin/photos",            label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/techniques",        label: "Skills",    roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/work-instructions", label: "Guide",     roles: ["admin", "manager", "staff", "owner"] },
-    { href: "/admin/settings",          label: "Prices",    roles: ["admin"] },
+    { href: "/admin/dashboard",            label: "Dash",      roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/payments",             label: "Pending",   roles: ["admin", "manager", "staff"] },
+    { href: "/admin/members?tab=checkins", label: "Check-ins", roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/members?tab=timers",   label: "Timers",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/event-bookings",       label: "Events",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/shop",                 label: "Shop",      roles: ["admin", "manager"] },
+    { href: "/admin/pos",                  label: "POS",       roles: ["admin", "manager"] },
+    { href: "/admin/reports/cash",         label: "Sales",     roles: ["admin", "manager", "owner", "tax"] },
+    { href: "/admin/tax",                  label: "Tax",       roles: ["admin", "owner", "tax"] },
+    { href: "/admin/members",              label: "Members",   roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/staff",                label: "Users",     roles: ["admin"] },
+    { href: "/admin/photos",               label: "Photos",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/techniques",           label: "Skills",    roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/work-instructions",    label: "Guide",     roles: ["admin", "manager", "staff", "owner"] },
+    { href: "/admin/settings",             label: "Prices",    roles: ["admin"] },
   ].filter((link) => link.roles.includes(role));
 
   return (
