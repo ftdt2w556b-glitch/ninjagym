@@ -7,38 +7,59 @@ import { useStaffPin } from "@/components/admin/StaffPinProvider";
  * Header chip showing whose PIN is currently authorising dashboard writes
  * and how much time is left before the next write re-prompts the modal.
  *
- *   🔐 Naing · 12 min left
+ *   🔐 Naing · 12 min       (active window — click to renew or swap)
+ *   🔒 Sign in PIN          (no active window — click to start one)
  *
- * Hidden when no write cookie is active — admin/owner sessions bypass the
- * modal entirely so nothing renders for them. Updates the minute counter
- * once a minute so it ticks down without re-rendering the whole tree.
+ * Hidden on tiny screens (sm:) to keep mobile header tight. Admin/owner
+ * sessions bypass PIN entirely and so writeStatus stays null for them —
+ * for them the chip shows 'Sign in PIN' but tapping it just opens the
+ * modal which their session can still use to act as a non-admin staff
+ * actor (useful when admin is at the centre and wants attribution to
+ * Naing/Win on a particular action).
+ *
+ * Click flows:
+ *   • Active chip + same staff retypes → window resets to 15 min
+ *   • Active chip + different staff PIN → cookie swaps to new actor
+ *     (clean handover, next write attributes to the new staff)
+ *   • Inactive chip + any PIN → window starts fresh
  */
 export default function StaffPinStatus() {
-  const { writeStatus } = useStaffPin();
-  const [now, setNow]   = useState(() => Date.now());
+  const { writeStatus, openPinModal } = useStaffPin();
+  const [now, setNow] = useState(() => Date.now());
 
-  // Tick once per minute so the displayed countdown stays fresh.
   useEffect(() => {
     if (!writeStatus) return;
-    const tick = () => setNow(Date.now());
-    const id = setInterval(tick, 60_000);
+    const id = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(id);
   }, [writeStatus]);
 
-  if (!writeStatus) return null;
-
-  const msLeft  = writeStatus.expiresAt.getTime() - now;
-  if (msLeft <= 0) return null;
-  const minLeft = Math.max(1, Math.ceil(msLeft / 60_000));
+  const msLeft  = writeStatus ? writeStatus.expiresAt.getTime() - now : 0;
+  const minLeft = writeStatus ? Math.max(1, Math.ceil(msLeft / 60_000)) : 0;
+  const isActive = !!writeStatus && msLeft > 0;
 
   return (
-    <span
-      className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-[#1a56db] border border-blue-200"
-      title={`PIN authorisation expires at ${writeStatus.expiresAt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })}`}
+    <button
+      type="button"
+      onClick={() => { void openPinModal(); }}
+      title={isActive
+        ? `PIN authorisation expires at ${writeStatus!.expiresAt.toLocaleTimeString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })}. Click to renew or swap staff.`
+        : "No active PIN. Click to sign in."
+      }
+      className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+        isActive
+          ? "bg-blue-50 text-[#1a56db] border-blue-200 hover:bg-blue-100"
+          : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+      }`}
     >
-      🔐 {writeStatus.actorName}
-      <span className="text-blue-400">·</span>
-      <span>{minLeft} min</span>
-    </span>
+      {isActive ? (
+        <>
+          🔐 {writeStatus!.actorName}
+          <span className="text-blue-400">·</span>
+          <span>{minLeft} min</span>
+        </>
+      ) : (
+        <>🔒 Sign in PIN</>
+      )}
+    </button>
   );
 }

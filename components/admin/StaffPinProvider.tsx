@@ -33,6 +33,12 @@ export interface StaffPinWriteStatus {
 interface StaffPinContextValue {
   fetchWithPin: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   writeStatus:  StaffPinWriteStatus | null;
+  /**
+   * Manually open the PIN modal — used by the header chip so any staff can
+   * renew the 15-minute window or swap the active actor (e.g. Win taking
+   * over from Naing mid-shift). Resolves true on success, false on cancel.
+   */
+  openPinModal: () => Promise<boolean>;
 }
 
 const StaffPinContext = createContext<StaffPinContextValue | null>(null);
@@ -163,8 +169,14 @@ export default function StaffPinProvider({ children }: { children: ReactNode }) 
     }
   }
 
+  /** Public helper for the header chip + any other "renew/swap now" trigger. */
+  const openPinModal = useCallback(async () => {
+    const outcome = await askForPin();
+    return !!outcome.ok;
+  }, [askForPin]);
+
   return (
-    <StaffPinContext.Provider value={{ fetchWithPin, writeStatus }}>
+    <StaffPinContext.Provider value={{ fetchWithPin, writeStatus, openPinModal }}>
       {children}
 
       {/* PIN modal portal */}
