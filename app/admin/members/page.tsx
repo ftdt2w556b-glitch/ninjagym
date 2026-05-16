@@ -7,6 +7,7 @@ import DeleteCheckInButton from "@/components/admin/DeleteCheckInButton";
 import EditCheckInButton from "@/components/admin/EditCheckInButton";
 import PeriodPicker from "@/components/admin/PeriodPicker";
 import TimersTab from "@/components/admin/TimersTab";
+import MemberContactCell from "@/components/admin/MemberContactCell";
 import {
   bangkokToday,
   bangkokStartOfDay,
@@ -418,24 +419,17 @@ export default async function MembersPage({
                       <tr key={m.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 text-gray-400 font-mono text-xs">#{m.id}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-semibold text-gray-900">{m.name}</p>
-                            {m.pin && (
-                              <span className="text-xs text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 font-mono">
-                                PIN: {m.pin}
-                              </span>
-                            )}
-                            {m.loyalty_discount ? (
-                              <span className="text-xs bg-yellow-100 text-yellow-700 font-bold rounded px-1.5 py-0.5">
-                                ⭐ ฿{m.loyalty_discount} off
-                              </span>
-                            ) : null}
-                          </div>
-                          {m.email && <p className="text-xs text-gray-400">{m.email}</p>}
-                          {m.phone && <p className="text-xs text-gray-400">{m.phone}</p>}
-                          {m.kids_names && (
-                            <p className="text-xs text-blue-600 mt-0.5 font-bold">{m.kids_names}</p>
-                          )}
+                          {/* PII (PIN / email / phone / kids names) hidden behind
+                              a PIN-confirmed tap so a logged-in centre browser
+                              doesn't broadcast 500+ parent contacts at a glance. */}
+                          <MemberContactCell
+                            name={m.name}
+                            pin={m.pin}
+                            email={m.email}
+                            phone={m.phone}
+                            kidsNames={m.kids_names}
+                            loyaltyDiscount={m.loyalty_discount}
+                          />
                         </td>
 
                         <td className="px-4 py-3 hidden sm:table-cell">
