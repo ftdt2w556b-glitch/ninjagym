@@ -5,6 +5,7 @@ import { ShopOrderItem } from "@/types";
 import PaymentActions from "@/components/admin/PaymentActions";
 import SlipUploadButton from "@/components/admin/SlipUploadButton";
 import AuditAttribution from "@/components/admin/AuditAttribution";
+import Link from "next/link";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import PendingCheckIns from "@/components/admin/PendingCheckIns";
 
@@ -160,6 +161,34 @@ export default async function PaymentsPage({
     showPerks            ? perksQuery     : Promise.resolve({ data: [] }),
     showCheckIns         ? checkInsQuery  : Promise.resolve({ data: [] }),
   ]);
+
+  // Enrich each approved check-in with the family PIN + a clickable
+  // member-card link so admin can spot mistakes and jump to edit (e.g.
+  // parent picked combo but only paid group-session — Lena 2026-05-17).
+  // For top-ups the family PIN lives on the parent row; we walk one level.
+  const checkInMemberIds = (approvedCheckIns ?? []).map((c) => Number(c.member_id)).filter(Boolean);
+  const checkInPinMap = new Map<number, { pin: number | null; familyId: number }>();
+  if (checkInMemberIds.length > 0) {
+    const { data: regs } = await admin
+      .from("member_registrations")
+      .select("id, pin, parent_member_id")
+      .in("id", checkInMemberIds);
+    const parentIds = (regs ?? [])
+      .map((r) => r.parent_member_id as number | null)
+      .filter((x): x is number => x !== null);
+    const { data: parents } = parentIds.length > 0
+      ? await admin.from("member_registrations").select("id, pin").in("id", parentIds)
+      : { data: [] };
+    const parentPin = new Map<number, number | null>();
+    for (const p of parents ?? []) parentPin.set(p.id as number, p.pin as number | null);
+    for (const r of regs ?? []) {
+      const fid = (r.parent_member_id as number | null) ?? (r.id as number);
+      const pin = (r.parent_member_id as number | null)
+        ? parentPin.get(r.parent_member_id as number) ?? null
+        : (r.pin as number | null);
+      checkInPinMap.set(r.id as number, { pin, familyId: fid });
+    }
+  }
 
   // ── Audit attribution per visible row ────────────────────────────────────
   // For each row on this page, look up the most recent staff_actions entry so
@@ -430,10 +459,19 @@ export default async function PaymentsPage({
                     ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
                     : "-";
                   const isPayment = !!c.payment_method;
+                  const pinInfo   = checkInPinMap.get(Number(c.member_id));
+                  const canEdit   = ["admin", "owner", "manager"].includes(userRole);
                   return (
                     <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
                       <div className="min-w-0">
-                        <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
+                          {pinInfo?.pin != null && (
+                            <span className="text-[10px] font-mono bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
+                              PIN {pinInfo.pin}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-emerald-800 font-semibold mt-0.5">
                           {(c.membership_label as string | null) ?? (c.membership_type as string)}
                           {c.kids_count ? ` · ${c.kids_count} kid${c.kids_count !== 1 ? "s" : ""}` : ""}
@@ -449,6 +487,14 @@ export default async function PaymentsPage({
                         <p className="text-xs text-gray-500">{handledStr}</p>
                         {c.handled_by && (
                           <p className="text-xs text-gray-400">by {c.handled_by as string}</p>
+                        )}
+                        {canEdit && pinInfo && (
+                          <Link
+                            href={`/admin/members/${pinInfo.familyId}`}
+                            className="text-[11px] text-[#1a56db] hover:underline mt-1 inline-block"
+                          >
+                            Edit ↗
+                          </Link>
                         )}
                       </div>
                     </div>

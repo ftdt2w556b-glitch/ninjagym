@@ -68,10 +68,17 @@ export default function EditMemberPage() {
     setPackageSaving((s) => ({ ...s, [pkg.id]: true }));
     setPackageError((e) => { const n = { ...e }; delete n[pkg.id]; return n; });
     try {
+      // Now also persists membership_type + amount_paid so admin can correct
+      // "parent selected combo, only paid group session" mistakes without
+      // dropping into SQL. /api/members/[id] PATCH whitelists these.
       const res = await fetch(`/api/members/${pkg.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessions_remaining: pkg.sessions_remaining }),
+        body: JSON.stringify({
+          sessions_remaining: pkg.sessions_remaining,
+          membership_type:    pkg.membership_type,
+          amount_paid:        pkg.amount_paid,
+        }),
       });
       const data = await res.json();
       if (!res.ok) setPackageError((e) => ({ ...e, [pkg.id]: data.error ?? "Save failed" }));
@@ -281,7 +288,47 @@ export default function EditMemberPage() {
                       {pkg.amount_paid != null ? `฿${pkg.amount_paid.toLocaleString()}` : ""}
                     </span>
                   </div>
-                  {!isExhausted && (
+                  {/* Editable program, amount, and sessions. Available for
+                      any not-rejected top-up regardless of exhausted state
+                      so admin can correct mis-priced approvals after the
+                      fact. */}
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Program</label>
+                        <select
+                          value={pkg.membership_type}
+                          onChange={(e) =>
+                            setPackages((prev) =>
+                              prev.map((p) => p.id === pkg.id ? { ...p, membership_type: e.target.value } : p)
+                            )
+                          }
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                        >
+                          {MEMBERSHIP_TYPES.filter((m) => m.id !== "birthday_event").map((m) => (
+                            <option key={m.id} value={m.id}>{m.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount paid (฿)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={pkg.amount_paid ?? ""}
+                          onChange={(e) =>
+                            setPackages((prev) =>
+                              prev.map((p) => p.id === pkg.id
+                                ? { ...p, amount_paid: e.target.value === "" ? null : Number(e.target.value) }
+                                : p
+                              )
+                            )
+                          }
+                          placeholder="-"
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-right font-mono focus:outline-none focus:ring-2 focus:ring-[#1a56db]"
+                        />
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <label className="text-xs font-semibold text-gray-500 shrink-0">Sessions remaining</label>
                       <input
@@ -304,12 +351,12 @@ export default function EditMemberPage() {
                         type="button"
                         disabled={packageSaving[pkg.id]}
                         onClick={() => savePackage(pkg)}
-                        className="text-xs bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        className="text-xs bg-[#1a56db] text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 ml-auto"
                       >
                         {packageSaving[pkg.id] ? "…" : "Save"}
                       </button>
                     </div>
-                  )}
+                  </div>
                   {packageError[pkg.id] && (
                     <p className="text-xs text-red-500 mt-1">{packageError[pkg.id]}</p>
                   )}
