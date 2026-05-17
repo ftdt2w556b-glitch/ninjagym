@@ -2,6 +2,7 @@ import { createAdminClient, createSupabaseServerClient } from "@/lib/supabase/se
 import { redirect } from "next/navigation";
 import Badge, { slipStatusVariant, slipStatusLabel } from "@/components/ui/Badge";
 import Link from "next/link";
+import { bangkokToday } from "@/lib/timezone";
 
 export default async function EventBookingsPage({
   searchParams,
@@ -29,7 +30,38 @@ export default async function EventBookingsPage({
 
   if (status) query = query.eq("slip_status", status);
 
-  const { data: bookings } = await query;
+  const { data: rawBookings } = await query;
+
+  // Partition into upcoming (today + future) vs past so the soonest event
+  // sits at the top and yesterday's expired bookings settle to the bottom.
+  // Sort upcoming ascending (next event first) and past descending (most
+  // recently expired first) since older history rarely matters at a glance.
+  const today = bangkokToday();
+  const upcoming: typeof rawBookings = [];
+  const past:     typeof rawBookings = [];
+  for (const b of (rawBookings ?? [])) {
+    const d = (b.event_date as string | null) ?? "";
+    if (d >= today) upcoming.push(b); else past.push(b);
+  }
+  upcoming?.sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)));
+  past    ?.sort((a, b) => String(b.event_date).localeCompare(String(a.event_date)));
+  const bookings = [...(upcoming ?? []), ...(past ?? [])];
+
+  // Only approved + cash-pending future bookings deserve the "Next event"
+  // banner — a rejected or unreviewed pending shouldn't be advertised as
+  // confirmed prep work. Filter accordingly.
+  const upcomingConfirmed = (upcoming ?? []).filter(
+    (b) => b.slip_status === "approved" || b.slip_status === "cash_pending",
+  );
+  const next = upcomingConfirmed[0] ?? null;
+
+  function daysUntil(dateStr: string): number {
+    const todayParts = today.split("-").map(Number);
+    const eventParts = dateStr.split("-").map(Number);
+    const t = new Date(Date.UTC(todayParts[0], todayParts[1] - 1, todayParts[2]));
+    const e = new Date(Date.UTC(eventParts[0], eventParts[1] - 1, eventParts[2]));
+    return Math.round((e.getTime() - t.getTime()) / 86_400_000);
+  }
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -50,6 +82,47 @@ export default async function EventBookingsPage({
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-900">
         Use{" "}<strong>+ New Birthday Booking</strong>{" "}when a parent is at the centre without their phone. Cash bookings submitted by parents on their phones show up in the{" "}<strong>Cash</strong>{" "}tab below for your approval. Approving a cash booking records the payment in today&apos;s POS sales.
       </div>
+
+      {/* Next confirmed birthday at a glance so staff can prep without
+          scanning the list. Only shown when there's a future approved or
+          cash-pending booking. */}
+      {next && (() => {
+        const d = next.event_date as string;
+        const days = daysUntil(d);
+        const dayLabel = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+        const dateStr = new Date(d).toLocaleDateString("en-US", {
+          weekday: "long", month: "long", day: "numeric",
+        });
+        return (
+          <div className="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-5">
+            <div className="flex items-start justify-between flex-wrap gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-pink-700">
+                  🎂 Next Birthday {dayLabel}
+                </p>
+                <p className="font-bold text-gray-900 text-base mt-1">
+                  {next.birthday_child_name ?? next.name}
+                  {next.birthday_child_age ? ` (age ${next.birthday_child_age})` : ""}
+                </p>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  {dateStr}
+                  {next.hours ? ` · ${next.hours}` : ""}
+                  {next.time_slot ? ` (${String(next.time_slot)})` : ""}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {next.num_kids} kids · {next.num_hours} hrs · booked by {next.name}
+                  {next.phone ? ` · ${next.phone}` : ""}
+                </p>
+              </div>
+              {(upcoming?.length ?? 0) > 1 && (
+                <span className="text-xs font-semibold text-pink-700 bg-pink-100 rounded-full px-3 py-1 shrink-0">
+                  +{(upcoming?.length ?? 0) - 1} more upcoming
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="flex items-center justify-end mb-6">
         <div className="flex gap-2 text-sm flex-wrap">
@@ -79,9 +152,11 @@ export default async function EventBookingsPage({
           const slipUrl = b.slip_image
             ? `${SUPABASE_URL}/storage/v1/object/public/slips/${b.slip_image}`
             : null;
+          // Dim historical bookings so staff focuses on what's still ahead.
+          const isPast = (b.event_date as string) < today;
 
           return (
-            <div key={b.id} className="bg-white rounded-2xl shadow p-5">
+            <div key={b.id} className={`bg-white rounded-2xl shadow p-5 ${isPast ? "opacity-60" : ""}`}>
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
