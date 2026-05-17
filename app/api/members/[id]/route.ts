@@ -91,12 +91,27 @@ export async function PATCH(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Sync name / email changes back to historical attendance_log snapshots
+  // Sync name / email / membership_type changes back to historical
+  // attendance_log + pending_checkin snapshots so the Check-ins tab and
+  // audit trail match the corrected registration. Without this, an admin
+  // who fixes a wrong-program approval still sees the old program label
+  // on the kid's check-in row.
   const logSync: Record<string, unknown> = {};
-  if ("name" in updates) logSync.member_name = updates.name;
-  if ("email" in updates) logSync.member_email = updates.email;
+  if ("name" in updates)            logSync.member_name     = updates.name;
+  if ("email" in updates)           logSync.member_email    = updates.email;
+  if ("membership_type" in updates) logSync.membership_type = updates.membership_type;
   if (Object.keys(logSync).length > 0) {
     await admin.from("attendance_logs").update(logSync).eq("member_id", Number(id));
+  }
+
+  if ("membership_type" in updates) {
+    // Best-effort label refresh on pending_checkins. Display label comes
+    // from the type when it's a known membership, otherwise leave alone.
+    const newType = String(updates.membership_type ?? "");
+    await admin
+      .from("pending_checkins")
+      .update({ membership_type: newType })
+      .eq("member_id", Number(id));
   }
 
   return NextResponse.json({ success: true });
