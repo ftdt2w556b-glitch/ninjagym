@@ -8,21 +8,6 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import LegalFooter from "@/components/public/LegalFooter";
 import { translations, Lang } from "@/lib/i18n/translations";
 
-const WAIVER_RULES = [
-  { icon: "⚠️", text: "Participation is at **your own risk**. Areas of the center are dangerous and similar to a public playground." },
-  { icon: "👧", text: "**Only Kids** (no parents or guardians) on the mat." },
-  { icon: "🚫", text: "Kids only enter after a **NinjaGym Guide** has brought them into the center." },
-  { icon: "📢", text: "No **Yelling**, fighting, disruptive behavior, or ignoring a Guide. Kids must behave or be asked to sit out." },
-  { icon: "👥", text: "**Parents are responsible** for ensuring their kids follow the rules and Guides. We want to focus on our program." },
-  { icon: "⏱️", text: "Each session is **55 minutes** long." },
-  { icon: "🚧", text: "Inform your kids to **NOT MOVE** or disrupt our equipment." },
-  { icon: "🚪", text: "Please **depart shortly after** a session. No children playing in entry areas." },
-  { icon: "🍔", text: "If you bring in food or drinks, clean up after yourself." },
-  { icon: "🎓", text: "Sessions are **\"learn by doing\"** with a relaxed, fun environment. Not a strict martial arts class." },
-  { icon: "📷", text: "By registering, you **consent to photos/video** being taken during sessions for marketing use." },
-  { icon: "💰", text: "**No Refunds**. All sales are final once the session has begun." },
-];
-
 export default function JoinPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("en");
@@ -66,7 +51,6 @@ export default function JoinPage() {
     setFieldErrors((e) => ({ ...e, [field]: msg }));
   }
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
-  const [showWaiver, setShowWaiver] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("ng_lang") as Lang | null;
@@ -249,7 +233,12 @@ export default function JoinPage() {
           <div className="bg-red-100 text-red-700 rounded-xl px-4 py-3 text-sm">{error}</div>
         )}
 
-        {/* Policy agreement */}
+        {/* Terms + Privacy consent.
+            Two explicit links so PDPA's 'inform-and-consent' obligation is
+            met for both: parents can open the full Terms page (waiver,
+            conduct, refunds) and the Privacy page (data handling, retention,
+            rights) in new tabs without losing the form. One bundled checkbox
+            is acceptable since both items are clearly identified. */}
         <div className="bg-white rounded-2xl px-4 py-3 shadow flex items-start gap-3">
           <input
             type="checkbox"
@@ -261,14 +250,25 @@ export default function JoinPage() {
           />
           <label htmlFor="policy-check" className="text-sm text-gray-700 leading-snug">
             {t.policyBefore}{" "}
-            <button
-              type="button"
-              onClick={() => setShowWaiver(true)}
+            <Link
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-[#1a56db] font-semibold underline underline-offset-2"
             >
               {t.policyLink}
-            </button>{" "}
-            {t.policyAfter}
+            </Link>{" "}
+            {t.policyAnd}{" "}
+            <Link
+              href="/policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1a56db] font-semibold underline underline-offset-2"
+            >
+              {t.policyLinkPrivacy}
+            </Link>
+            {". "}
+            <span className="font-bold text-red-600">{t.policyAfter}</span>
           </label>
         </div>
 
@@ -280,44 +280,6 @@ export default function JoinPage() {
           {submitting ? t.joinCreatingCard : t.joinGetCard}
         </button>
       </form>
-
-      {/* Waiver Modal */}
-      {showWaiver && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85dvh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-[#1a56db] to-[#2563eb] rounded-t-2xl">
-              <h2 className="font-fredoka text-lg text-white">🥷 {t.waiverTitle}</h2>
-              <button
-                onClick={() => setShowWaiver(false)}
-                className="text-white/70 hover:text-white text-2xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-3">
-              {WAIVER_RULES.map((rule, i) => (
-                <div key={i} className="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0">
-                  <span className="text-xl shrink-0">{rule.icon}</span>
-                  <p
-                    className="text-sm text-gray-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{
-                      __html: rule.text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"),
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="px-5 pb-5 pt-2">
-              <button
-                onClick={() => { setAgreedToPolicy(true); setShowWaiver(false); }}
-                className="w-full bg-[#1a56db] text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                {t.waiverClose}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <LegalFooter />
     </div>
