@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
       .eq("id", id);
   }
 
-  // Audit log — dashboard path only (POS has its own audit via cash_sales).
+  // Audit log, dashboard path only (POS has its own audit via cash_sales).
   // When the approval/rejection also touched member_registrations (i.e. the
   // pending_checkin was a real payment slip review, not a session-use tap
   // against an already-approved package), stamp a paired row keyed on the

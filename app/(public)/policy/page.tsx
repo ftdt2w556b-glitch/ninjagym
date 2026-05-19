@@ -6,10 +6,10 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import type { Lang } from "@/lib/i18n/translations";
 
 /**
- * /policy — Privacy Policy
+ * /policy. Privacy Policy.
  *
  * English + Thai for v1 (PDPA-relevant audiences). Other 4 languages
- * follow once the English copy is reviewed. Static content — no DB,
+ * follow once the English copy is reviewed. Static content, no DB,
  * no auth, public.
  *
  * NOTE: This is reasonable boilerplate, not legal advice. A Thai lawyer
@@ -56,7 +56,7 @@ function PrivacyEn() {
       <p className="text-xs text-gray-400 mb-6">Last updated: {LAST_UPDATED}</p>
 
       <p className="mb-4">
-        NinjaGym Samui (&quot;NinjaGym&quot;, &quot;we&quot;) values your privacy. This policy explains
+        Rick Tew&apos;s NinjaGym (&quot;NinjaGym&quot;, &quot;we&quot;) values your privacy. This policy explains
         what information we collect through our app and at the centre, why we collect
         it, who has access, and how to exercise your rights.
       </p>
@@ -67,7 +67,7 @@ function PrivacyEn() {
 
       <H2>Who we are</H2>
       <P>
-        NinjaGym Samui, located at Big C Mall, Bophut, Koh Samui, Thailand.<br />
+        Rick Tew&apos;s NinjaGym, operated by <strong>Rick Tew Co., Ltd.</strong>, located at Big C Mall, Bophut, Koh Samui, Thailand.<br />
         Contact for data inquiries: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>
       </P>
 
@@ -111,11 +111,11 @@ function PrivacyEn() {
 
       <H2>Your rights under PDPA</H2>
       <Ul>
-        <li>Access — request a copy of the data we hold about you</li>
-        <li>Correction — ask us to fix inaccurate data</li>
-        <li>Deletion — ask us to delete your account and associated data</li>
-        <li>Withdrawal — withdraw consent for photo / video use</li>
-        <li>Complaint — lodge a complaint with the Thai Personal Data Protection Committee</li>
+        <li>Access: request a copy of the data we hold about you</li>
+        <li>Correction: ask us to fix inaccurate data</li>
+        <li>Deletion: ask us to delete your account and associated data</li>
+        <li>Withdrawal: withdraw consent for photo / video use</li>
+        <li>Complaint: lodge a complaint with the Thai Personal Data Protection Committee</li>
       </Ul>
       <P>
         To exercise any of these rights, email{" "}
@@ -125,7 +125,7 @@ function PrivacyEn() {
 
       <H2>Children&apos;s data</H2>
       <P>
-        We collect minimal data about children — first name and age only. Parents
+        We collect minimal data about children: first name and age only. Parents
         register and consent on the child&apos;s behalf. We do not market directly
         to children.
       </P>
@@ -139,7 +139,7 @@ function PrivacyEn() {
       </P>
 
       <H2>Cookies and tracking</H2>
-      <P>The app uses essential session cookies only — authentication, staff PIN session, and language preference. No third-party analytics, advertising trackers, or social-media pixels.</P>
+      <P>The app uses essential session cookies only: authentication, staff PIN session, and language preference. No third-party analytics, advertising trackers, or social-media pixels.</P>
 
       <H2>Security</H2>
       <Ul>
@@ -157,9 +157,9 @@ function PrivacyEn() {
 
       <H2>Contact</H2>
       <P>
-        NinjaGym Samui<br />
+        Rick Tew&apos;s NinjaGym<br />
         Email: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        Phone: 086-294-4374
+        Phone: 082-626-5991
       </P>
     </>
   );
@@ -172,7 +172,7 @@ function PrivacyTh() {
       <p className="text-xs text-gray-400 mb-6">อัปเดตล่าสุด: 17 พฤษภาคม 2569</p>
 
       <p className="mb-4">
-        NinjaGym Samui (&quot;เรา&quot;) ให้ความสำคัญกับความเป็นส่วนตัวของคุณ
+        Rick Tew&apos;s NinjaGym (&quot;เรา&quot;) ให้ความสำคัญกับความเป็นส่วนตัวของคุณ
         นโยบายฉบับนี้อธิบายว่าเราเก็บข้อมูลอะไรผ่านแอปและที่ศูนย์
         เก็บไปทำอะไร ใครเข้าถึงได้ และคุณจะใช้สิทธิของคุณอย่างไร
       </p>
@@ -182,7 +182,7 @@ function PrivacyTh() {
 
       <H2>เกี่ยวกับเรา</H2>
       <P>
-        NinjaGym Samui ตั้งอยู่ที่ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
+        Rick Tew&apos;s NinjaGym ดำเนินงานโดย <strong>บริษัท ริค ทิว จำกัด (Rick Tew Co., Ltd.)</strong> ตั้งอยู่ที่ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
         ติดต่อเรื่องข้อมูลส่วนบุคคล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>
       </P>
 
@@ -260,9 +260,9 @@ function PrivacyTh() {
 
       <H2>ติดต่อ</H2>
       <P>
-        NinjaGym Samui<br />
+        Rick Tew&apos;s NinjaGym<br />
         อีเมล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        โทรศัพท์: 086-294-4374
+        โทรศัพท์: 082-626-5991
       </P>
     </>
   );

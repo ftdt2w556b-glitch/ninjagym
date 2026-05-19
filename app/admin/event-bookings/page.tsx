@@ -48,7 +48,7 @@ export default async function EventBookingsPage({
   const bookings = [...(upcoming ?? []), ...(past ?? [])];
 
   // Only approved + cash-pending future bookings deserve the "Next event"
-  // banner — a rejected or unreviewed pending shouldn't be advertised as
+  // banner, a rejected or unreviewed pending shouldn't be advertised as
   // confirmed prep work. Filter accordingly.
   const upcomingConfirmed = (upcoming ?? []).filter(
     (b) => b.slip_status === "approved" || b.slip_status === "cash_pending",
@@ -198,7 +198,7 @@ export default async function EventBookingsPage({
                 </div>
               )}
 
-              {/* Refundable deposit reminder — shows ONLY when the booking
+              {/* Refundable deposit reminder, shows ONLY when the booking
                   actually carries a deposit (older bookings have deposit=0). */}
               {((b as { deposit_amount?: number | null }).deposit_amount ?? 0) > 0 && (
                 <div className="bg-emerald-50 border border-emerald-300 rounded-xl px-3 py-2 mb-3 text-xs text-emerald-900">

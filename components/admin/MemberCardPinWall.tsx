@@ -9,7 +9,7 @@ import Link from "next/link";
  *
  * On mount, it triggers a GET /api/staff-pin/check-write. The dashboard
  * StaffPinProvider's fetchWithPin would normally handle this, but this
- * page is rendered on the public /qr route OUTSIDE the admin layout —
+ * page is rendered on the public /qr route OUTSIDE the admin layout ,
  * so we hit the endpoint directly and reload on success.
  *
  * The endpoint returns 401 + code:pin_required when there's no valid
@@ -28,7 +28,7 @@ export default function MemberCardPinWall() {
         const res = await fetch("/api/staff-pin/check-write", { method: "GET" });
         if (res.ok) window.location.reload();
       } catch {
-        /* network blip — user can hit Try Again */
+        /* network blip, user can hit Try Again */
       }
     })();
   }, []);

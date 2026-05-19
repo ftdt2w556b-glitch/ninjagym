@@ -3,7 +3,7 @@
  *
  * Attribution comes from the PIN typed at action time (actor_kind/id/name)
  * NOT from the shared Supabase session. user_id is recorded as a secondary
- * forensic field — usually the centre's shared "NinjaGym" login.
+ * forensic field, usually the centre's shared "NinjaGym" login.
  *
  * Writes are best-effort: a logging failure must never block the action.
  */

@@ -323,8 +323,8 @@ export default async function AdminPosPage({
           <div className="flex-1">
             <p className="text-sm font-bold text-gray-700">
               Current: {walkinDisabled
-                ? <span className="text-green-700">🔒 ON — POS catalog hidden, approvals only</span>
-                : <span className="text-amber-700">⚠️ OFF — staff can ring up arbitrary cash sales</span>}
+                ? <span className="text-green-700">🔒 ON, POS catalog hidden, approvals only</span>
+                : <span className="text-amber-700">⚠️ OFF, staff can ring up arbitrary cash sales</span>}
             </p>
           </div>
           <form action={toggleWalkinDisabled}>

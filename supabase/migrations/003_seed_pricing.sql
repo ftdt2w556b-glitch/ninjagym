@@ -10,8 +10,8 @@ INSERT INTO settings (key, value, label) VALUES
   ('price_combo_game_train',  '550',   'Combo Game & Train (2 hrs)'),
   ('price_all_day',           '1000',  'All Day (max 8 hrs)'),
   -- Monthly
-  ('price_monthly_2hr',       '9500',  'Monthly Flex — 2 Hrs Any Day'),
-  ('price_monthly_5hr',       '17500', 'Monthly Flex — 5 Hrs Any Day'),
+  ('price_monthly_2hr',       '9500',  'Monthly Flex, 2 Hrs Any Day'),
+  ('price_monthly_5hr',       '17500', 'Monthly Flex, 5 Hrs Any Day'),
   -- Group session cards
   ('price_sessions_4',        '1350',  'Group 4-Card'),
   ('price_sessions_8',        '2700',  'Group 8-Card'),

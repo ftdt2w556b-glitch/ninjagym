@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 009: Work Guide — Behind The Counter (BTC) content
+-- Migration 009: Work Guide, Behind The Counter (BTC) content
 -- Source: BTC Rick Tew's NinjaGym.pdf + BTC Reminder Lists.pdf
 -- Run in Supabase SQL Editor
 -- ============================================================
@@ -168,9 +168,9 @@ UPDATE work_instructions SET instructions = $$
 • Ensure the safety and well-being of all students and staff during emergencies.
 
 KEY RULES:
-• No Threats — maintain a safe, calm environment at all times.
-• Safety First — always prioritize safety over any other task.
-• 360 Watch — continuously scan the room and floor for hazards or incidents.
+• No Threats, maintain a safe, calm environment at all times.
+• Safety First, always prioritize safety over any other task.
+• 360 Watch, continuously scan the room and floor for hazards or incidents.
 • Notify Staff immediately of any emergency situation.
 • Never leave the floor unsupervised during an active class or open play session.
 $$ WHERE topic_name = 'BTC – Emergency Procedures';
@@ -183,9 +183,9 @@ UPDATE work_instructions SET instructions = $$
 GUIDELINES:
 • Stay calm and professional at all times.
 • Listen fully before responding.
-• Never argue — acknowledge and redirect.
+• Never argue, acknowledge and redirect.
 • Escalate to admin/owner for any unresolved issues or complaints.
-• No Threats — zero tolerance for threatening behaviour from anyone.
+• No Threats, zero tolerance for threatening behaviour from anyone.
 $$ WHERE topic_name = 'BTC – Conflict Resolution';
 
 
@@ -197,20 +197,20 @@ DAILY REMINDER CHECKLIST:
 • Check schedule at start of shift.
 • Notify Staff of any changes or special bookings.
 • Record any session adjustments in Google Sheets.
-• Intro Prep — prepare for all scheduled sessions before they begin.
+• Intro Prep, prepare for all scheduled sessions before they begin.
 $$ WHERE topic_name = 'BTC – Scheduling';
 
 
 UPDATE work_instructions SET instructions = $$
 All BTC staff must learn and be competent in the following:
 
-• Google Sheets — Learn data entry and management.
-• Canva Pro — Create marketing materials and shorts.
-• Drip Coffee — Master V60 coffee preparation.
-• Facebook Groups — Manage and market through FB groups.
-• Food Prep Techniques — Learn proper food preparation and hygiene.
-• Cleanliness — Maintain high cleanliness standards at all times.
-• Shakes and Flavors — Prepare a variety of frozen shakes.
+• Google Sheets, Learn data entry and management.
+• Canva Pro, Create marketing materials and shorts.
+• Drip Coffee, Master V60 coffee preparation.
+• Facebook Groups, Manage and market through FB groups.
+• Food Prep Techniques, Learn proper food preparation and hygiene.
+• Cleanliness, Maintain high cleanliness standards at all times.
+• Shakes and Flavors, Prepare a variety of frozen shakes.
 $$ WHERE topic_name = 'BTC – Minimum Training Requirements';
 
 
@@ -225,7 +225,7 @@ EQUIPMENT AT THE COUNTER:
 • Display materials for photo wall and product display
 
 DAILY SETUP CHECKLIST:
-• Organize — ensure all equipment is in place and ready.
-• Check Stock — verify supplies are stocked before opening.
-• Display — arrange food and merchandise displays neatly.
+• Organize, ensure all equipment is in place and ready.
+• Check Stock, verify supplies are stocked before opening.
+• Display, arrange food and merchandise displays neatly.
 $$ WHERE topic_name = 'BTC – Tools And Equipment';

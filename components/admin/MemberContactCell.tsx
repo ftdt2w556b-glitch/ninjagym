@@ -16,7 +16,7 @@ import { useStaffPin } from "./StaffPinProvider";
  *   server unmasks that row and starts a 30-second auto-hide timer.
  * - If a PIN cookie IS already active (writeStatus is non-null), the
  *   call to /api/staff-pin/check-write returns 200 instantly with no
- *   modal — staff gets immediate reveal on the row, but every other row
+ *   modal, staff gets immediate reveal on the row, but every other row
  *   on the page stays masked. That's the trade-off: fast for the row
  *   you want, no broadcasting to anyone glancing at the screen.
  */

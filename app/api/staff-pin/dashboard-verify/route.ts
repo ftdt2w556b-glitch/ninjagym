@@ -22,7 +22,7 @@ import {
  * entry clears the IP counter.
  *
  * Caller must still be in some logged-in Supabase session (defence in depth
- * against random internet hits — the dashboard requires it everywhere else).
+ * against random internet hits, the dashboard requires it everywhere else).
  *
  * Response on success includes the resolved actor so the client can render
  * "Verified as Naing" inline before submitting the actual write.
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
   const res = NextResponse.json({
     ok: true,
-    actor: result.actor,           // { kind, id, name } — caller renders "Verified as Naing"
+    actor: result.actor,           // { kind, id, name }, caller renders "Verified as Naing"
     expires_at: expiresAt.toISOString(),
   });
   res.cookies.set({

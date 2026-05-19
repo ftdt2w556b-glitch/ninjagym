@@ -17,7 +17,7 @@
  *      redundant and would break programmatic POS → /api/payments calls.
  *   5. Else 401 { code: "pin_required" } so the client opens the PIN modal.
  *
- * Best-effort logging is *not* done here — that's the caller's job after
+ * Best-effort logging is *not* done here, that's the caller's job after
  * the action succeeds, via lib/staff-actions.logStaffAction().
  */
 
@@ -39,7 +39,7 @@ export async function requireWritePin(request: NextRequest): Promise<WriteAuth> 
 
   const ip = clientIp(request);
 
-  // Admin / owner bypass — their session user_id IS their identity.
+  // Admin / owner bypass, their session user_id IS their identity.
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -65,7 +65,7 @@ export async function requireWritePin(request: NextRequest): Promise<WriteAuth> 
 
   // POS bypass: only honored when the request actually originates from the
   // /pos kiosk page. The centre browser also carries pos_auth from earlier
-  // POS use, so we can't trust the cookie alone — without the Referer check
+  // POS use, so we can't trust the cookie alone, without the Referer check
   // a dashboard click would silently fall through here and get attributed
   // to a generic 'POS' actor instead of opening the PIN modal.
   const referer = request.headers.get("referer") ?? "";

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-// Anti-spam heuristics — combined they cut roughly 95% of bot submissions
+// Anti-spam heuristics, combined they cut roughly 95% of bot submissions
 // with no UX friction for real users. We deliberately return 200 OK on a
 // rejected submission so bots can not learn what tripped them.
 function looksLikeGibberish(s: string): boolean {

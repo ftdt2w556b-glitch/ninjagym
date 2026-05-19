@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 007: Work Guide — seed topics from dojo.ninjagym.com/work
+-- Migration 007: Work Guide, seed topics from dojo.ninjagym.com/work
 -- Run in Supabase SQL Editor
 -- Topic names from the old site; instructions to be filled via admin panel
 -- ============================================================
@@ -9,7 +9,7 @@ DELETE FROM work_instructions WHERE instructions IS NULL OR instructions = '';
 
 INSERT INTO work_instructions (topic_name, instructions) VALUES
 
--- ── Behind The Counter (BTC) — Daily Operations ──────────────
+-- ── Behind The Counter (BTC), Daily Operations ──────────────
 ('BTC – Prepare Beverages',           NULL),
 ('BTC – Food Preparation',            NULL),
 ('BTC – Customer Interaction',        NULL),
@@ -27,7 +27,7 @@ INSERT INTO work_instructions (topic_name, instructions) VALUES
 ('BTC – Minimum Training Requirements', NULL),
 ('BTC – Tools And Equipment',         NULL),
 
--- ── Running a Class — Coaches Guide ─────────────────────────
+-- ── Running a Class, Coaches Guide ─────────────────────────
 ('Class – Be Professional (TIC TOC)',       NULL),
 ('Class – Class Order',                     NULL),
 ('Class – Starting Class: MBS Position',    NULL),

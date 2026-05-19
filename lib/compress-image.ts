@@ -47,7 +47,7 @@ export async function safeJson(res: Response): Promise<{ ok: boolean; data: Reco
     }
     return { ok: true, data, error: null };
   } catch {
-    // Body isn't JSON — usually a Vercel error page (413, 504, etc.)
+    // Body isn't JSON, usually a Vercel error page (413, 504, etc.)
     const friendly =
       res.status === 413 ? "File is too large. Please use a smaller image (under 4 MB)."
       : res.status === 504 ? "Server timeout. Please try again."

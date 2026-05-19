@@ -5,9 +5,9 @@
 -- profiles.pin already exists (bcrypt). This migration adds the two new
 -- supporting tables the dashboard gate needs:
 --
--- (a) staff_pin_attempts — per-user rate limiter so a leaked login can't
+-- (a) staff_pin_attempts, per-user rate limiter so a leaked login can't
 --     brute-force the 4-digit PIN. 5 wrong / 10 min → 30 min lockout.
--- (b) staff_actions      — audit log. Every write that goes through the
+-- (b) staff_actions     , audit log. Every write that goes through the
 --     dashboard PIN gate stamps a row here, so we can show who approved /
 --     rejected / edited / deleted each booking.
 --

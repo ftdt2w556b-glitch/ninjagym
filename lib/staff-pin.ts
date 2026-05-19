@@ -7,10 +7,10 @@
  * the actor for that action.
  *
  * Public surface:
- *  • verifyStaffPin(pin, ip)  — IP-rate-limited, scans pos_staff + profiles
+ *  • verifyStaffPin(pin, ip) , IP-rate-limited, scans pos_staff + profiles
  *                                 with bcrypt.compare, returns the actor.
- *  • signEntry / signWrite    — HMAC-signed cookie values (device-bound).
- *  • readSignedCookie         — parse + verify a cookie value (just expiry).
+ *  • signEntry / signWrite   , HMAC-signed cookie values (device-bound).
+ *  • readSignedCookie        , parse + verify a cookie value (just expiry).
  *
  * Rate limit:  5 wrong / 10 min  →  30 min lockout, per IP.
  *   Per-user makes no sense here since the auth session is shared.
@@ -25,7 +25,7 @@ const SECRET =
   process.env.MEMBER_TOKEN_SECRET ?? "ng-dev-secret-replace-in-prod";
 
 export const ENTRY_TTL_MS = 4 * 60 * 60 * 1000;   // 4 hours
-export const WRITE_TTL_MS = 15 * 60 * 1000;       //  15 min — soft "I just verified" memory
+export const WRITE_TTL_MS = 15 * 60 * 1000;       //  15 min, soft "I just verified" memory
 
 const MAX_FAILS  = 5;
 const WINDOW_MS  = 10 * 60_000;
@@ -120,13 +120,13 @@ export async function verifyStaffPin(pin: string, ip: string): Promise<VerifyRes
 
 /**
  * Bcrypt-compare the PIN against every active hash in pos_staff and
- * profiles. Linear scan is fine — a centre has a handful of staff, never
+ * profiles. Linear scan is fine, a centre has a handful of staff, never
  * thousands.
  */
 async function scanForPin(pin: string): Promise<StaffActor | null> {
   const admin = createAdminClient();
 
-  // pos_staff (PIN-only workers — the common path)
+  // pos_staff (PIN-only workers, the common path)
   const { data: posRows } = await admin
     .from("pos_staff")
     .select("id, name, pin_hash, active")
@@ -139,7 +139,7 @@ async function scanForPin(pin: string): Promise<StaffActor | null> {
     }
   }
 
-  // profiles (dashboard accounts with a PIN set — admins / managers / owners)
+  // profiles (dashboard accounts with a PIN set, admins / managers / owners)
   const { data: profileRows } = await admin
     .from("profiles")
     .select("id, name, pin")
@@ -158,7 +158,7 @@ async function scanForPin(pin: string): Promise<StaffActor | null> {
 // Format: "<expiresAtMs>.<hex-sig>"
 // Sig = HMAC-SHA256(expiresAtMs).slice(0, 32)
 //
-// Device-bound cookies don't carry the actor — entry just means "this device
+// Device-bound cookies don't carry the actor, entry just means "this device
 // is unlocked until X". Every protected write must re-verify with a fresh
 // PIN that names the actor. The optional write cookie is a 15-min soft hint
 // the UI can use to skip the modal during a burst of approvals.
@@ -179,7 +179,7 @@ export function signEntry() { return signCookie(ENTRY_TTL_MS); }
 
 /**
  * Returns true if the entry cookie is well-formed, signed, and not yet
- * expired. Identity isn't carried — entry just means 'device unlocked'.
+ * expired. Identity isn't carried, entry just means 'device unlocked'.
  */
 export function readSignedCookie(raw: string | undefined): boolean {
   if (!raw) return false;

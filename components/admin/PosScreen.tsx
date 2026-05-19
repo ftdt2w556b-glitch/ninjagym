@@ -1017,7 +1017,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [], wal
             </div>
           )}
 
-          {/* Sale type tabs — only when walk-in is allowed */}
+          {/* Sale type tabs, only when walk-in is allowed */}
           {!walkinDisabled && (
           <div className="bg-white rounded-2xl shadow p-1 flex gap-1">
             {(["walkin", "membership", "shop"] as const).map((t) => (
@@ -1206,7 +1206,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [], wal
             </div>
           )}
 
-          {/* Notes + B2B — only shown when staff is building a walk-in
+          {/* Notes + B2B, only shown when staff is building a walk-in
               cart manually. Pending-approval flow doesn't need them
               because notes are already on the parent's pending row. */}
           {!walkinDisabled && (
@@ -1271,7 +1271,7 @@ export default function PosScreen({ staff, inventory = [], pendingCash = [], wal
             </div>
           )}
 
-          {/* Cart — hidden when walk-in is locked. Pending-approval flow
+          {/* Cart, hidden when walk-in is locked. Pending-approval flow
               fills the cart programmatically and jumps straight to
               change_calc, so the empty-cart panel would just be dead
               space here. */}

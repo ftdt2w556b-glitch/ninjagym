@@ -8,10 +8,10 @@ import { createAdminClient } from "@/lib/supabase/server";
  * parent to /my-membership instead of letting them register a 2nd card.
  *
  * Matching:
- *  - phone — digits-only suffix in either direction (handles +66 vs 0
+ *  - phone, digits-only suffix in either direction (handles +66 vs 0
  *    prefixes, spaces, dashes, parens). Scans all approved parent rows;
  *    the old version's LIMIT 50 was the bug that let most dupes slip past.
- *  - email — exact case-insensitive trimmed match.
+ *  - email, exact case-insensitive trimmed match.
  *
  * Top-ups excluded (parent_member_id IS NULL). Either param works alone
  * or together; phone wins when both match different members (rare).

@@ -7,7 +7,7 @@
 ALTER TABLE member_registrations
   ADD COLUMN IF NOT EXISTS loyalty_points_awarded INT DEFAULT 0;
 
--- Loyalty transaction log — one row per earn event
+-- Loyalty transaction log, one row per earn event
 CREATE TABLE IF NOT EXISTS loyalty_transactions (
   id            BIGSERIAL PRIMARY KEY,
   email         TEXT NOT NULL,                        -- match by email (works for non-registered users too)
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS loyalty_transactions (
 CREATE INDEX IF NOT EXISTS idx_loyalty_email ON loyalty_transactions(email);
 CREATE INDEX IF NOT EXISTS idx_loyalty_profile ON loyalty_transactions(profile_id);
 
--- Loyalty summary view — total points per email
+-- Loyalty summary view, total points per email
 CREATE OR REPLACE VIEW loyalty_summary AS
 SELECT
   email,

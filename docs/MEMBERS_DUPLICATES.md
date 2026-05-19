@@ -1,4 +1,4 @@
-# Member duplicate cleanup — May 2026
+# Member duplicate cleanup, May 2026
 
 Reference of the duplicate scan run on `member_registrations` (parent rows only,
 top-ups excluded). Captured the state right before cleanup so we have a record
@@ -6,15 +6,15 @@ of what was merged into what.
 
 ## Rules applied
 
-1. **Never delete a row with `sessions_remaining > 0`** — those sessions are
+1. **Never delete a row with `sessions_remaining > 0`**, those sessions are
    already paid for and belong to a real member's card.
 2. **Never delete a row that has rows referencing it** (top-ups, attendance,
    tax invoices, perks, loyalty, pending check-ins) without repointing those
    references to the survivor first.
-3. **Default survivor is the LATEST (largest) ID** — that's the one the parent
+3. **Default survivor is the LATEST (largest) ID**, that's the one the parent
    most recently used and likely has on file.
 4. **Override default when the OLDER row has clearly more data** (many
-   top-ups, attendance, perks) — that row is the live family card.
+   top-ups, attendance, perks), that row is the live family card.
 
 ## Operations performed
 
@@ -84,32 +84,32 @@ placeholder: <names>" so any future refund / audit can trace the family's
 session balance back to its origin.
 
 The other ~34 Replace/Replaced placeholders had only single-kid-name
-overlaps with common names like Mia, Leo, Max, Mila — too noisy to act on
+overlaps with common names like Mia, Leo, Max, Mila, too noisy to act on
 automatically. Left in place as a worklist for the centre.
 
-## NOT touched — flagged for human review
+## NOT touched, flagged for human review
 
 These groups look like duplicates by phone or email, but the underlying data
 suggests they're legitimately separate or need a family decision:
 
 | Group | IDs | Why flagged |
 |---|---|---|
-| Sasiphan Setthawaisayaphong | 1249 (Tonmai), 1260 (Airak) | Different kids, same parent — should probably be parent + top-up structure, but each kid has separate registration. Owner call: merge into one family card with both kids, or leave separate? |
-| Olga | 763 (Robert, session), 1348 (Robert + Ruby, birthday) | NOT a duplicate — 1348 is a birthday booking, 763 is the regular session card. Leave both. |
+| Sasiphan Setthawaisayaphong | 1249 (Tonmai), 1260 (Airak) | Different kids, same parent, should probably be parent + top-up structure, but each kid has separate registration. Owner call: merge into one family card with both kids, or leave separate? |
+| Olga | 763 (Robert, session), 1348 (Robert + Ruby, birthday) | NOT a duplicate, 1348 is a birthday booking, 763 is the regular session card. Leave both. |
 | Anupama | 530 (Ohm), 542 (Bhanu) | Same parent, two kids registered separately. Could merge into family card. |
 | zegnay | 563 (Isaac), 598 (Adam) | Same family email, two kids. Same merge question. |
-| Ekaterina / Kate | 49 (Alisa, Aaron, Lipa — 10-pack bulk + tax invoice), 555 (Alisa, Eugene) | Different program packages, different kid lists, 49 has a tax invoice and 5 attendance. Likely intentional. |
+| Ekaterina / Kate | 49 (Alisa, Aaron, Lipa, 10-pack bulk + tax invoice), 555 (Alisa, Eugene) | Different program packages, different kid lists, 49 has a tax invoice and 5 attendance. Likely intentional. |
 | Chelsea Sweeney | 26 (session, 3 top-ups, attended), 117 (day_camp, attended) | Different programs (sessions vs day camp), both have attendance history. Leave both. |
 | Artjom / Thomas Kart | 438 (Jom), 1284 (Nikita) | Same email but completely different parent names and kids. Could be 2 parents sharing one email account, or one parent registering 2 kids with name variants. Confirm with the family. |
-| Berty / Halim / Guerabis | 504, 505, 507 (phone 0991295801) | 3 distinct surnames sharing one phone — probably staff registered 3 different families on a borrowed phone. Leave alone. |
-| Sumittee / Kim Kim | 1087, 1353 (phone 0951380838) | 2 different families/kids on same phone — likely a typed-wrong-phone collision, not a real duplicate. Leave alone. |
+| Berty / Halim / Guerabis | 504, 505, 507 (phone 0991295801) | 3 distinct surnames sharing one phone, probably staff registered 3 different families on a borrowed phone. Leave alone. |
+| Sumittee / Kim Kim | 1087, 1353 (phone 0951380838) | 2 different families/kids on same phone, likely a typed-wrong-phone collision, not a real duplicate. Leave alone. |
 
 ## Prevention (next step)
 
 To stop this from happening again, the `/join` form should soft-check by
 phone/email as the parent types and warn them:
 
-> *"We already have a member with this email — open My Membership instead."*
+> *"We already have a member with this email, open My Membership instead."*
 
 Plus a hard block on POST `/api/members` when phone + kids match an existing
 approved row.

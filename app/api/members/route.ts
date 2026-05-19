@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // 'parent forgot they already have a card → registers again' path
     // that produced ~25 dupes between April and May 2026.
     //
-    // Top-ups (parent_member_id set) bypass this — they're meant to attach
+    // Top-ups (parent_member_id set) bypass this, they're meant to attach
     // to an existing family.
     if (!parent_member_id) {
       const phoneDigits = (phone ?? "").replace(/[^0-9]/g, "");

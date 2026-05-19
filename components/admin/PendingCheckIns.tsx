@@ -124,7 +124,7 @@ export default function PendingCheckIns({ staffName }: Props) {
         body: JSON.stringify({ id, action, staff_name: staffName, reason }),
       });
       if (!res.ok) {
-        // Modal cancelled or server error — leave the row in place.
+        // Modal cancelled or server error, leave the row in place.
         return;
       }
       setItems((prev) => prev.filter((p) => p.id !== id));

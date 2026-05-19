@@ -44,5 +44,5 @@ CREATE INDEX IF NOT EXISTS idx_staff_actions_actor
   ON public.staff_actions (actor_kind, actor_id);
 
 COMMENT ON COLUMN public.staff_actions.user_id    IS 'Supabase session user (the shared NinjaGym login on centre devices, or a real admin on their phone). Audit forensics, not display.';
-COMMENT ON COLUMN public.staff_actions.actor_kind IS 'pos_staff or profile — which table actor_id refers to. Resolved from the PIN typed at action time.';
+COMMENT ON COLUMN public.staff_actions.actor_kind IS 'pos_staff or profile, which table actor_id refers to. Resolved from the PIN typed at action time.';
 COMMENT ON COLUMN public.staff_actions.actor_name IS 'Display name shown beside the row in the admin UI (Approved by ...).';

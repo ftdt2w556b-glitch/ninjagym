@@ -21,7 +21,7 @@ export default async function QrCardPage({
   // ── Access control ───────────────────────────────────────────────
   // Allow:
   //   • valid signed parent token, or
-  //   • logged-in admin/owner (PIN bypass — same as every other write surface), or
+  //   • logged-in admin/owner (PIN bypass, same as every other write surface), or
   //   • logged-in staff/manager WITH a valid ng_pin_write cookie.
   //
   // Staff without a fresh PIN window get a wall page that bounces them

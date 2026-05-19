@@ -23,7 +23,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 /**
  * writeStatus describes the current ng_pin_write cookie. The header chip
  * reads this to render '🔐 Naing · 12 min left'. null = no active cookie
- * (admin/owner sessions bypass and never carry one — chip stays hidden).
+ * (admin/owner sessions bypass and never carry one, chip stays hidden).
  */
 export interface StaffPinWriteStatus {
   actorName: string;
@@ -34,7 +34,7 @@ interface StaffPinContextValue {
   fetchWithPin: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   writeStatus:  StaffPinWriteStatus | null;
   /**
-   * Manually open the PIN modal — used by the header chip so any staff can
+   * Manually open the PIN modal, used by the header chip so any staff can
    * renew the 15-minute window or swap the active actor (e.g. Win taking
    * over from Naing mid-shift). Resolves true on success, false on cancel.
    */
@@ -121,7 +121,7 @@ export default function StaffPinProvider({ children }: { children: ReactNode }) 
     const outcome = await askForPin();
     if (!outcome.ok) return res; // user cancelled, surface original 401
 
-    // Retry the request — write cookie is now set.
+    // Retry the request, write cookie is now set.
     return fetch(input, init);
   }, [askForPin]);
 

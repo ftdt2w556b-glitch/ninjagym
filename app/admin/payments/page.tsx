@@ -164,7 +164,7 @@ export default async function PaymentsPage({
 
   // Enrich each approved check-in with the family PIN + a clickable
   // member-card link so admin can spot mistakes and jump to edit (e.g.
-  // parent picked combo but only paid group-session — Lena 2026-05-17).
+  // parent picked combo but only paid group-session, Lena 2026-05-17).
   // For top-ups the family PIN lives on the parent row; we walk one level.
   const checkInMemberIds = (approvedCheckIns ?? []).map((c) => Number(c.member_id)).filter(Boolean);
   const checkInPinMap = new Map<number, { pin: number | null; familyId: number }>();

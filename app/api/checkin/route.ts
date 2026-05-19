@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const member_id = Number(body.member_id);
-    // Ignore body.note's staff portion — we rebuild it from the resolved
+    // Ignore body.note's staff portion, we rebuild it from the resolved
     // actor so "Check-in by NinjaGym" becomes "Check-in by Naing".
     const _ignoredClientNote = (body.note as string | undefined) ?? null;
     void _ignoredClientNote;

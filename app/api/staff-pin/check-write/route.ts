@@ -17,7 +17,7 @@ import { readWriteCookieFull, WRITE_COOKIE } from "@/lib/staff-pin";
  *    expires_at (when present in the cookie) so the chip can render a
  *    live countdown without needing to remember state across reloads.
  *
- * Admin/owner sessions hit the bypass path in requireWritePin — they don't
+ * Admin/owner sessions hit the bypass path in requireWritePin, they don't
  * carry a write cookie, so the response omits expires_at. The UI treats
  * a missing expires_at as 'bypass, no countdown needed'.
  */

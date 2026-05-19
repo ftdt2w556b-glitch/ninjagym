@@ -6,7 +6,7 @@ import LanguageSwitcher from "@/components/public/LanguageSwitcher";
 import type { Lang } from "@/lib/i18n/translations";
 
 /**
- * /terms — Terms of Service + House Rules + Refunds (combined)
+ * /terms. Terms of Service + House Rules + Refunds (combined).
  *
  * Keeps the existing WAIVER_RULES content from the /join modal in
  * sync with a permanently linkable page. The modal can stay where it
@@ -73,7 +73,7 @@ function TermsEn() {
       <P>Participation in NinjaGym activities involves the same physical risks as any climbing wall, obstacle course, or active playground. By registering, you accept that:</P>
       <Ul>
         <li><strong>Participation is at your own risk.</strong> Areas of the centre are challenging and similar to a public playground.</li>
-        <li><strong>Only kids on the mat</strong> — no parents or guardians on the training surface.</li>
+        <li><strong>Only kids on the mat:</strong> no parents or guardians on the training surface.</li>
         <li>Kids only enter after a <strong>NinjaGym Guide</strong> has brought them in.</li>
         <li><strong>No yelling, fighting, or disruptive behavior.</strong> Kids must follow Guides or sit out.</li>
         <li><strong>Parents are responsible</strong> for ensuring their kids follow rules and Guides.</li>
@@ -126,9 +126,10 @@ function TermsEn() {
 
       <H2>Contact</H2>
       <P>
-        NinjaGym Samui<br />
+        Rick Tew&apos;s NinjaGym, operated by <strong>Rick Tew Co., Ltd.</strong><br />
+        Big C Mall, Bophut, Koh Samui, Thailand<br />
         Email: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        Phone: 086-294-4374
+        Phone: 082-626-5991
       </P>
     </>
   );
@@ -206,9 +207,10 @@ function TermsTh() {
 
       <H2>ติดต่อ</H2>
       <P>
-        NinjaGym Samui<br />
+        Rick Tew&apos;s NinjaGym ดำเนินงานโดย <strong>บริษัท ริค ทิว จำกัด (Rick Tew Co., Ltd.)</strong><br />
+        ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
         อีเมล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        โทรศัพท์: 086-294-4374
+        โทรศัพท์: 082-626-5991
       </P>
     </>
   );

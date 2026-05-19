@@ -1,5 +1,5 @@
 -- ============================================================
--- Migration 005: Fix techniques — correct list, correct categories
+-- Migration 005: Fix techniques, correct list, correct categories
 -- Run in Supabase SQL Editor
 -- ============================================================
 

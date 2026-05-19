@@ -196,7 +196,7 @@ export default function JoinPage() {
           )}
         </div>
 
-        {/* Email — same duplicate check as phone, since a chunk of returning
+        {/* Email, same duplicate check as phone, since a chunk of returning
             parents type a new number but remember their email. */}
         <div className="bg-white rounded-2xl p-4 shadow">
           <label className="block text-sm font-bold text-gray-700 mb-1">{t.emailLabel}</label>

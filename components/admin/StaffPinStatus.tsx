@@ -7,11 +7,11 @@ import { useStaffPin } from "@/components/admin/StaffPinProvider";
  * Header chip showing whose PIN is currently authorising dashboard writes
  * and how much time is left before the next write re-prompts the modal.
  *
- *   🔐 Naing · 12 min       (active window — click to renew or swap)
- *   🔒 Sign in PIN          (no active window — click to start one)
+ *   🔐 Naing · 12 min       (active window, click to renew or swap)
+ *   🔒 Sign in PIN          (no active window, click to start one)
  *
  * Hidden on tiny screens (sm:) to keep mobile header tight. Admin/owner
- * sessions bypass PIN entirely and so writeStatus stays null for them —
+ * sessions bypass PIN entirely and so writeStatus stays null for them ,
  * for them the chip shows 'Sign in PIN' but tapping it just opens the
  * modal which their session can still use to act as a non-admin staff
  * actor (useful when admin is at the centre and wants attribution to

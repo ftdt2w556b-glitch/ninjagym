@@ -349,7 +349,7 @@ export default async function MembersPage({
 
   return (
     <div>
-      {/* Sub-tab switcher removed — Members / Check-ins / Timers are now
+      {/* Sub-tab switcher removed, Members / Check-ins / Timers are now
           top-level links in the main admin nav, so the inner pill row was
           duplicating the same controls one click away. */}
 
@@ -366,7 +366,7 @@ export default async function MembersPage({
             </span>
           </div>
 
-          {/* Debounced as-you-type search — replaces the old form-submit
+          {/* Debounced as-you-type search, replaces the old form-submit
               + page-reload flow so staff can find a parent live while a
               queue is forming at the desk. */}
           <MembersSearchBox initialQ={q ?? ""} initialStatus={status ?? ""} />

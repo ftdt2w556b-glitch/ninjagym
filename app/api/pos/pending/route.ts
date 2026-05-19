@@ -24,7 +24,7 @@ async function isPosUnlocked() {
  *   source='shop'   → build cart lines from order.items so inventory
  *                     decrement + slip flip run for each line
  *
- * Mirrors the merge done at page load in /app/pos/page.tsx — without this
+ * Mirrors the merge done at page load in /app/pos/page.tsx, without this
  * the live poll wipes shop orders off the queue every refresh.
  */
 export async function GET() {
