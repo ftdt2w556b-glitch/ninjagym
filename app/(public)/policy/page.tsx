@@ -68,7 +68,9 @@ function PrivacyEn() {
       <H2>Who we are</H2>
       <P>
         Rick Tew&apos;s NinjaGym, operated by <strong>Rick Tew Co., Ltd.</strong>, located at Big C Mall, Bophut, Koh Samui, Thailand.<br />
-        Contact for data inquiries: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>
+        For data inquiries, please reach us through our{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Contact page</Link>{" "}
+        (select &quot;Data / Privacy Inquiry&quot;).
       </P>
 
       <H2>What we collect</H2>
@@ -119,9 +121,9 @@ function PrivacyEn() {
         <li>Complaint: lodge a complaint with the Thai Personal Data Protection Committee</li>
       </Ul>
       <P>
-        To exercise any of these rights, email{" "}
-        <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>{" "}
-        with your registration name and phone number. We respond within 30 days.
+        To exercise any of these rights, send us a message through our{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Contact page</Link>{" "}
+        with subject &quot;Data / Privacy Inquiry&quot; and include your registration name and phone number. We respond within 30 days.
       </P>
 
       <H2>Children&apos;s data</H2>
@@ -135,8 +137,8 @@ function PrivacyEn() {
       <P>
         During sessions we may take photos or video for marketing materials (website,
         social media, brochures). By registering, you consent to this use. You may
-        withdraw consent at any time by emailing us; we will stop using your child&apos;s
-        image going forward.
+        withdraw consent at any time through our{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Contact page</Link>; we will stop using your child&apos;s image going forward.
       </P>
 
       <H2>Cookies and tracking</H2>
@@ -158,9 +160,9 @@ function PrivacyEn() {
 
       <H2>Contact</H2>
       <P>
-        Rick Tew&apos;s NinjaGym<br />
-        Email: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        Phone: 082-626-5991
+        Rick Tew&apos;s NinjaGym, operated by Rick Tew Co., Ltd.<br />
+        Big C Mall, Bophut, Koh Samui, Thailand<br />
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Send us a message</Link>
       </P>
     </>
   );
@@ -184,7 +186,9 @@ function PrivacyTh() {
       <H2>เกี่ยวกับเรา</H2>
       <P>
         Rick Tew&apos;s NinjaGym ดำเนินงานโดย <strong>บริษัท ริค ทิว จำกัด (Rick Tew Co., Ltd.)</strong> ตั้งอยู่ที่ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
-        ติดต่อเรื่องข้อมูลส่วนบุคคล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>
+        สำหรับคำถามเกี่ยวกับข้อมูลส่วนบุคคล กรุณาติดต่อผ่าน{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">หน้าติดต่อ</Link>{" "}
+        ของเรา (เลือกหัวข้อ &quot;Data / Privacy Inquiry&quot;)
       </P>
 
       <H2>ข้อมูลที่เราเก็บ</H2>
@@ -235,16 +239,20 @@ function PrivacyTh() {
         <li>ร้องเรียนต่อคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลของประเทศไทย</li>
       </Ul>
       <P>
-        ใช้สิทธิเหล่านี้ได้โดยส่งอีเมลมาที่{" "}
-        <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>{" "}
-        พร้อมระบุชื่อและเบอร์โทรที่ใช้ลงทะเบียน เราจะตอบกลับภายใน 30 วัน
+        ใช้สิทธิเหล่านี้ได้โดยส่งข้อความผ่าน{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">หน้าติดต่อ</Link>{" "}
+        เลือกหัวข้อ &quot;Data / Privacy Inquiry&quot; พร้อมระบุชื่อและเบอร์โทรที่ใช้ลงทะเบียน เราจะตอบกลับภายใน 30 วัน
       </P>
 
       <H2>ข้อมูลของเด็ก</H2>
       <P>เราเก็บข้อมูลเด็กเท่าที่จำเป็น คือ ชื่อต้นและอายุเท่านั้น ผู้ปกครองเป็นผู้ลงทะเบียนและให้ความยินยอมแทน เราไม่ทำการตลาดถึงเด็กโดยตรง</P>
 
       <H2>ภาพถ่ายและวิดีโอ</H2>
-      <P>ในช่วงเซสชันเราอาจถ่ายภาพหรือวิดีโอเพื่อใช้ในการตลาด (เว็บไซต์ โซเชียลมีเดีย โบรชัวร์) เมื่อลงทะเบียนคุณยินยอมการใช้งานนี้ คุณสามารถถอนความยินยอมได้ทุกเมื่อโดยส่งอีเมลถึงเรา เราจะหยุดใช้ภาพของลูกคุณตั้งแต่นั้นเป็นต้นไป</P>
+      <P>
+        ในช่วงเซสชันเราอาจถ่ายภาพหรือวิดีโอเพื่อใช้ในการตลาด (เว็บไซต์ โซเชียลมีเดีย โบรชัวร์) เมื่อลงทะเบียนคุณยินยอมการใช้งานนี้ คุณสามารถถอนความยินยอมได้ทุกเมื่อผ่าน{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">หน้าติดต่อ</Link>{" "}
+        ของเรา เราจะหยุดใช้ภาพของลูกคุณตั้งแต่นั้นเป็นต้นไป
+      </P>
 
       <H2>คุกกี้และการติดตาม</H2>
       <P>แอปใช้คุกกี้เฉพาะที่จำเป็น ได้แก่ การยืนยันตัวตน เซสชันรหัส PIN ของเจ้าหน้าที่ และค่าภาษา เราไม่ใช้ระบบวิเคราะห์ของบุคคลที่สาม โฆษณาติดตาม หรือ pixel โซเชียลมีเดีย</P>
@@ -262,9 +270,9 @@ function PrivacyTh() {
 
       <H2>ติดต่อ</H2>
       <P>
-        Rick Tew&apos;s NinjaGym<br />
-        อีเมล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        โทรศัพท์: 082-626-5991
+        Rick Tew&apos;s NinjaGym ดำเนินงานโดย บริษัท ริค ทิว จำกัด (Rick Tew Co., Ltd.)<br />
+        ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
+        <Link href="/contact" className="text-[#1a56db] hover:underline">ส่งข้อความถึงเรา</Link>
       </P>
     </>
   );

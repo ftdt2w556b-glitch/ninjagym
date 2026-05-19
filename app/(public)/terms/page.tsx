@@ -113,7 +113,9 @@ function TermsEn() {
       <P>NinjaGym is not liable for injuries sustained during regular participation in activities. Parents and guardians acknowledge the inherent physical risk of climbing, jumping, and similar activities. Our liability is limited to gross negligence or willful misconduct on our part.</P>
 
       <H2>7. Photos and video</H2>
-      <P>By registering, you consent to NinjaGym using photos or video taken at the centre in marketing materials (website, social media, brochures). You may withdraw consent at any time by emailing <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a>.</P>
+      <P>By registering, you consent to NinjaGym using photos or video taken at the centre in marketing materials (website, social media, brochures). You may withdraw consent at any time through our{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Contact page</Link>.
+      </P>
 
       <H2>8. Member PIN</H2>
       <P>Your 4-digit PIN is private. Sharing it allows others to check in under your account; we are not responsible for usage by anyone you share the PIN with.</P>
@@ -128,8 +130,7 @@ function TermsEn() {
       <P>
         Rick Tew&apos;s NinjaGym, operated by <strong>Rick Tew Co., Ltd.</strong><br />
         Big C Mall, Bophut, Koh Samui, Thailand<br />
-        Email: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        Phone: 082-626-5991
+        <Link href="/contact" className="text-[#1a56db] hover:underline">Send us a message</Link>
       </P>
     </>
   );
@@ -194,7 +195,11 @@ function TermsTh() {
       <P>NinjaGym ไม่รับผิดชอบต่อการบาดเจ็บที่เกิดขึ้นระหว่างการเข้าร่วมกิจกรรมปกติ ผู้ปกครองยอมรับความเสี่ยงทางกายภาพในการปีน กระโดด และกิจกรรมที่คล้ายคลึงกัน ความรับผิดของเราจำกัดเฉพาะกรณีที่เราประมาทเลินเล่ออย่างร้ายแรงหรือกระทำโดยจงใจ</P>
 
       <H2>7. ภาพถ่ายและวิดีโอ</H2>
-      <P>เมื่อลงทะเบียน คุณยินยอมให้ NinjaGym ใช้ภาพถ่ายหรือวิดีโอจากที่ศูนย์ในสื่อการตลาด (เว็บไซต์ โซเชียลมีเดีย โบรชัวร์) คุณสามารถถอนความยินยอมได้ทุกเมื่อ โดยส่งอีเมลถึง <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a></P>
+      <P>
+        เมื่อลงทะเบียน คุณยินยอมให้ NinjaGym ใช้ภาพถ่ายหรือวิดีโอจากที่ศูนย์ในสื่อการตลาด (เว็บไซต์ โซเชียลมีเดีย โบรชัวร์) คุณสามารถถอนความยินยอมได้ทุกเมื่อผ่าน{" "}
+        <Link href="/contact" className="text-[#1a56db] hover:underline">หน้าติดต่อ</Link>{" "}
+        ของเรา
+      </P>
 
       <H2>8. รหัส PIN สมาชิก</H2>
       <P>PIN 4 หลักของคุณเป็นข้อมูลส่วนตัว การแบ่งปันจะทำให้ผู้อื่นสามารถเช็คอินด้วยบัญชีของคุณ เราไม่รับผิดชอบต่อการใช้งานของผู้ที่คุณแบ่งปัน PIN ด้วย</P>
@@ -209,8 +214,7 @@ function TermsTh() {
       <P>
         Rick Tew&apos;s NinjaGym ดำเนินงานโดย <strong>บริษัท ริค ทิว จำกัด (Rick Tew Co., Ltd.)</strong><br />
         ห้าง Big C โบ๊ผุด เกาะสมุย ประเทศไทย<br />
-        อีเมล: <a className="text-[#1a56db] hover:underline" href="mailto:info@ricktew.com">info@ricktew.com</a><br />
-        โทรศัพท์: 082-626-5991
+        <Link href="/contact" className="text-[#1a56db] hover:underline">ส่งข้อความถึงเรา</Link>
       </P>
     </>
   );

@@ -8,6 +8,7 @@ import { useLanguage } from "@/lib/i18n/useLanguage";
 
 const SUBJECTS = [
   "Question or Tip",
+  "Data / Privacy Inquiry",
   "Birthday / Event",
   "Business / Partnership",
   "School Group Discount",
