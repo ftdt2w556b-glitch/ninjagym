@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
+import LegalFooter from "@/components/public/LegalFooter";
 import { translations, Lang } from "@/lib/i18n/translations";
 
 const WAIVER_RULES = [
@@ -317,6 +318,8 @@ export default function JoinPage() {
           </div>
         </div>
       )}
+
+      <LegalFooter />
     </div>
   );
 }

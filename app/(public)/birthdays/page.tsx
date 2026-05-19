@@ -9,6 +9,7 @@ import { translations, Lang } from "@/lib/i18n/translations";
 import { getBirthdayAmount, formatTHB, BirthdayTimeSlot } from "@/lib/pricing";
 import { compressImage, safeJson } from "@/lib/compress-image";
 import MemberPinLookup, { type LinkedMember } from "@/components/public/MemberPinLookup";
+import LegalFooter from "@/components/public/LegalFooter";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -568,6 +569,8 @@ export default function BirthdaysPage() {
           50% { transform: translateY(-14px); }
         }
       `}</style>
+
+      <LegalFooter />
     </div>
   );
 }

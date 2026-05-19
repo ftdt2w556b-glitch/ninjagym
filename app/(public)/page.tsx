@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import LanguageSwitcher from "@/components/public/LanguageSwitcher";
+import LegalFooter from "@/components/public/LegalFooter";
 import { translations, Lang } from "@/lib/i18n/translations";
 
 // Fixed star positions so they don't re-randomise on re-render
@@ -221,6 +222,7 @@ export default function HomePage() {
           ✉️ {t.homeContactUs}
         </Link>
 
+        <LegalFooter />
       </div>
 
 

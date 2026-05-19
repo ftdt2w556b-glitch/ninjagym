@@ -21,6 +21,7 @@ const SHOP_I18N: Record<string, { name: TranslationKey; desc?: TranslationKey; o
 import { formatTHB } from "@/lib/pricing";
 import { compressImage, safeJson } from "@/lib/compress-image";
 import MemberPinLookup, { type LinkedMember } from "@/components/public/MemberPinLookup";
+import LegalFooter from "@/components/public/LegalFooter";
 
 const StripePayment = lazy(() => import("@/components/public/StripePayment"));
 
@@ -477,6 +478,8 @@ export default function ShopPage() {
             : t.checkout}
         </button>
       </form>
+
+      <LegalFooter />
     </div>
   );
 }
