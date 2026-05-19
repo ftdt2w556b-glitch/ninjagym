@@ -39,16 +39,37 @@ export async function POST(request: NextRequest) {
     // If this is a brand-new top-level registration (no parent_member_id),
     // and the phone or email matches an existing approved parent row,
     // refuse the insert and bounce them at /my-membership. Closes the
-    // 'parent forgot they already have a card → registers again' path
-    // that produced ~25 dupes between April and May 2026.
+    // 'parent forgot they already have a card and registers again' path
+    // that produced ~25 duplicates between April and May 2026.
     //
     // Top-ups (parent_member_id set) bypass this, they're meant to attach
     // to an existing family.
+    //
+    // Matching strategy is shared with /api/check-phone; see the comments
+    // there for the canonicalisation logic. The old endsWith() approach
+    // was too loose and matched unrelated parents whose phones shared a
+    // 7-digit suffix (Diana #407 / +660990708073 case, May 19 2026).
     if (!parent_member_id) {
       const phoneDigits = (phone ?? "").replace(/[^0-9]/g, "");
       const emailNorm   = (email ?? "").trim().toLowerCase();
 
-      if (phoneDigits.length >= 7 || (emailNorm.length >= 5 && emailNorm.includes("@"))) {
+      const canonicalThai = (digits: string): string | null => {
+        if (!digits || digits.length < 8) return null;
+        let core = digits;
+        if (core.startsWith("0066"))    core = core.slice(4);
+        else if (core.startsWith("66")) core = core.slice(2);
+        if (core.startsWith("0"))       core = core.slice(1);
+        return core.length >= 8 ? core : null;
+      };
+      const phonesMatch = (a: string, b: string): boolean => {
+        if (!a || !b) return false;
+        const ca = canonicalThai(a);
+        const cb = canonicalThai(b);
+        if (ca && cb && ca === cb) return true;
+        return a.length >= 8 && b.length >= 8 && a.slice(-8) === b.slice(-8);
+      };
+
+      if (phoneDigits.length >= 8 || (emailNorm.length >= 5 && emailNorm.includes("@"))) {
         const { data: existing } = await admin
           .from("member_registrations")
           .select("id, name, phone, email, kids_names, pin")
@@ -56,13 +77,9 @@ export async function POST(request: NextRequest) {
           .is("parent_member_id", null);
 
         const match = (existing ?? []).find((row) => {
-          if (phoneDigits.length >= 7 && row.phone) {
+          if (phoneDigits.length >= 8 && row.phone) {
             const stored = String(row.phone).replace(/[^0-9]/g, "");
-            if (stored.length >= 6 && (
-              stored === phoneDigits
-              || stored.endsWith(phoneDigits)
-              || phoneDigits.endsWith(stored)
-            )) return true;
+            if (phonesMatch(stored, phoneDigits)) return true;
           }
           if (emailNorm.length >= 5 && row.email) {
             if (String(row.email).trim().toLowerCase() === emailNorm) return true;
