@@ -96,16 +96,17 @@ function PrivacyEn() {
       <H2>Who has access</H2>
       <Ul>
         <li>Centre staff at the gym, gated by a per-staff PIN with audit logging</li>
-        <li>Database hosted on Supabase (Singapore region) under their data processing terms</li>
-        <li>Email delivery provider for sending confirmations</li>
-        <li>Payment slip images stored in private storage</li>
+        <li>Our database is hosted by a cloud service provider in Singapore under contractual data processing terms</li>
+        <li>An email delivery service used to send booking and registration confirmations</li>
+        <li>Payment slip images kept in private storage with restricted access</li>
       </Ul>
 
       <H2>Data retention</H2>
       <Ul>
-        <li>Active member registrations: while you remain an active member</li>
+        <li>Active member registrations: kept while you remain an active member</li>
         <li>Payment slip images: 180 days, then automatically deleted</li>
-        <li>Attendance logs: 7 years (Thai tax requirement)</li>
+        <li>Tax invoices and cash sale records: 5 years, as required by the Thai Revenue Code</li>
+        <li>Attendance logs: kept while you are an active member and for a reasonable period after your last visit for service continuity, then deleted on request or in routine cleanup</li>
         <li>Encrypted backups: 30 days</li>
       </Ul>
 
@@ -211,16 +212,17 @@ function PrivacyTh() {
       <H2>ใครเข้าถึงข้อมูลได้บ้าง</H2>
       <Ul>
         <li>เจ้าหน้าที่ของศูนย์ จำกัดด้วยรหัส PIN รายบุคคลและมีบันทึกการใช้งาน</li>
-        <li>ฐานข้อมูลโฮสต์อยู่บน Supabase (โซนสิงคโปร์) ภายใต้ข้อตกลงการประมวลผลข้อมูลของพวกเขา</li>
-        <li>ผู้ให้บริการส่งอีเมลสำหรับยืนยันการลงทะเบียน</li>
-        <li>ภาพสลิปเก็บในที่จัดเก็บแบบส่วนตัว</li>
+        <li>ฐานข้อมูลของเราโฮสต์โดยผู้ให้บริการคลาวด์ในประเทศสิงคโปร์ ภายใต้สัญญาการประมวลผลข้อมูล</li>
+        <li>ผู้ให้บริการส่งอีเมลสำหรับการยืนยันการจองและการลงทะเบียน</li>
+        <li>ภาพสลิปเก็บในที่จัดเก็บแบบส่วนตัวพร้อมการจำกัดสิทธิ์การเข้าถึง</li>
       </Ul>
 
       <H2>ระยะเวลาเก็บรักษา</H2>
       <Ul>
-        <li>สมาชิกที่ยังใช้งาน: ตราบเท่าที่คุณยังเป็นสมาชิก</li>
+        <li>สมาชิกที่ยังใช้งาน: เก็บไว้ตราบเท่าที่คุณยังเป็นสมาชิก</li>
         <li>ภาพสลิป: 180 วัน หลังจากนั้นลบอัตโนมัติ</li>
-        <li>บันทึกการเข้าเรียน: 7 ปี (ตามข้อกำหนดภาษีไทย)</li>
+        <li>ใบกำกับภาษีและบันทึกการขายเงินสด: 5 ปี ตามที่ประมวลรัษฎากรของไทยกำหนด</li>
+        <li>บันทึกการเข้าเรียน: เก็บไว้ตราบเท่าที่คุณยังเป็นสมาชิก และระยะเวลาที่เหมาะสมหลังการเยือนครั้งสุดท้ายเพื่อความต่อเนื่องของบริการ จากนั้นลบเมื่อมีการร้องขอหรือในการทำความสะอาดข้อมูลตามปกติ</li>
         <li>สำเนาสำรองที่เข้ารหัส: 30 วัน</li>
       </Ul>
 
