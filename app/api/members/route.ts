@@ -35,23 +35,22 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    // ── Duplicate hard-block ────────────────────────────────────────────
-    // If this is a brand-new top-level registration (no parent_member_id),
-    // and the phone or email matches an existing approved parent row,
-    // refuse the insert and bounce them at /my-membership. Closes the
-    // 'parent forgot they already have a card and registers again' path
-    // that produced ~25 duplicates between April and May 2026.
+    // ── Duplicate hard-block (2-of-3 rule) ─────────────────────────────
+    // Refuse a new parent-row insert only when the submitted name,
+    // phone, and email align with an existing approved parent on at
+    // least TWO of the three signals. A single-field collision (e.g.
+    // shared phone from a typo, or a fuzzy phone match against a stored
+    // typo'd number) is not enough; we lost three families on
+    // 2026-05-19 when the matcher was too aggressive on phone alone.
     //
-    // Top-ups (parent_member_id set) bypass this, they're meant to attach
-    // to an existing family.
-    //
-    // Matching strategy is shared with /api/check-phone; see the comments
-    // there for the canonicalisation logic. The old endsWith() approach
-    // was too loose and matched unrelated parents whose phones shared a
-    // 7-digit suffix (Diana #407 / +660990708073 case, May 19 2026).
+    // Top-ups (parent_member_id set) bypass this, they're meant to
+    // attach to an existing family card.
     if (!parent_member_id) {
       const phoneDigits = (phone ?? "").replace(/[^0-9]/g, "");
-      const emailNorm   = (email ?? "").trim().toLowerCase();
+      const phoneReady  = phoneDigits.length >= 8;
+      const emailReady  = (email ?? "").includes("@") && (email ?? "").trim().length >= 5;
+      const nameNorm    = (name ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+      const nameReady   = nameNorm.length >= 3;
 
       const canonicalThai = (digits: string): string | null => {
         if (!digits || digits.length < 8) return null;
@@ -68,35 +67,45 @@ export async function POST(request: NextRequest) {
         if (ca && cb && ca === cb) return true;
         return a.length >= 8 && b.length >= 8 && a.slice(-8) === b.slice(-8);
       };
+      const normName = (s: string) =>
+        (s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+      const emailLow = (email ?? "").trim().toLowerCase();
 
-      if (phoneDigits.length >= 8 || (emailNorm.length >= 5 && emailNorm.includes("@"))) {
+      // Need at least 2 populated signals to even attempt a 2-of-3 match.
+      const populated = (phoneReady ? 1 : 0) + (emailReady ? 1 : 0) + (nameReady ? 1 : 0);
+      if (populated >= 2) {
         const { data: existing } = await admin
           .from("member_registrations")
           .select("id, name, phone, email, kids_names, pin")
           .eq("slip_status", "approved")
           .is("parent_member_id", null);
 
-        const match = (existing ?? []).find((row) => {
-          if (phoneDigits.length >= 8 && row.phone) {
-            const stored = String(row.phone).replace(/[^0-9]/g, "");
-            if (phonesMatch(stored, phoneDigits)) return true;
+        type ExistingRow = { id: number; name: string | null; phone: string | null; email: string | null; kids_names: string | null; pin: number | null };
+        let match: ExistingRow | null = null;
+        let matchedFields: string[] = [];
+        for (const row of (existing ?? []) as ExistingRow[]) {
+          const fields: string[] = [];
+          if (nameReady  && normName(String(row.name ?? "")) === nameNorm)                                fields.push("name");
+          if (phoneReady && phonesMatch(phoneDigits, String(row.phone ?? "").replace(/[^0-9]/g, "")))     fields.push("phone");
+          if (emailReady && String(row.email ?? "").trim().toLowerCase() === emailLow && emailLow !== "") fields.push("email");
+          if (fields.length >= 2) {
+            match = row;
+            matchedFields = fields;
+            break;
           }
-          if (emailNorm.length >= 5 && row.email) {
-            if (String(row.email).trim().toLowerCase() === emailNorm) return true;
-          }
-          return false;
-        });
+        }
 
         if (match) {
           return NextResponse.json(
             {
-              error: "An approved member already exists with this phone or email. Open My Membership to find your card.",
+              error: "An approved member already matches this name, phone, and email. Open My Membership to find your card.",
               code:  "duplicate_member",
               existing: {
                 id:         match.id,
                 name:       match.name,
                 kids_names: match.kids_names,
               },
+              matched_fields: matchedFields,
             },
             { status: 409 },
           );

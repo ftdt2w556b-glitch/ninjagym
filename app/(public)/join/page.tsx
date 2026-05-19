@@ -151,9 +151,20 @@ export default function JoinPage() {
               const phone = e.target.value.trim();
               setFieldError("phone", validatePhone(phone));
               if (phone.length < 6) return;
-              const res = await fetch(`/api/check-phone?phone=${encodeURIComponent(phone)}`);
-              const data = await res.json();
-              if (data.found) setExistingMember({ id: data.id, name: data.name, token: data.token });
+              // Pass all 3 signals so the server can apply the 2-of-3 rule.
+              // A single field is never enough — we lost three families on
+              // 2026-05-19 when fuzzy phone alone misrouted parents to
+              // someone else's card.
+              const qs = new URLSearchParams({
+                name:  form.name.trim(),
+                phone,
+                email: form.email.trim(),
+              }).toString();
+              try {
+                const res = await fetch(`/api/check-phone?${qs}`);
+                const data = await res.json();
+                if (data.found) setExistingMember({ id: data.id, name: data.name, token: data.token });
+              } catch {}
             }}
             className={`w-full border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db] ${fieldErrors.phone ? "border-red-300 bg-red-50" : "border-gray-200"}`}
             placeholder="+66 80 000 0000"
@@ -191,8 +202,14 @@ export default function JoinPage() {
             onBlur={async (e) => {
               const em = e.target.value.trim();
               if (em.length < 5 || !em.includes("@")) return;
+              // Pass all 3 signals so the server can apply the 2-of-3 rule.
+              const qs = new URLSearchParams({
+                name:  form.name.trim(),
+                phone: form.phone.trim(),
+                email: em,
+              }).toString();
               try {
-                const res = await fetch(`/api/check-phone?email=${encodeURIComponent(em)}`);
+                const res = await fetch(`/api/check-phone?${qs}`);
                 const data = await res.json();
                 if (data.found) setExistingMember({ id: data.id, name: data.name });
               } catch {}
