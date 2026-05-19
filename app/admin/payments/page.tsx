@@ -436,53 +436,71 @@ export default async function PaymentsPage({
             </div>
           )}
 
-          {/* Today's approved session-use check-ins (only on Approved tab) */}
-          {showCheckIns && (approvedCheckIns?.length ?? 0) > 0 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-base">✅</span>
-                <h2 className="font-bold text-emerald-900 text-sm">
-                  Check-Ins Approved
-                  {approvedRange === "today" ? ", Today" :
-                   approvedRange === "week"  ? ", This Week" :
-                   approvedRange === "month" ? ", This Month" :
-                                                ", All"}
-                </h2>
-                <span className="text-xs text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 font-semibold">
-                  {approvedCheckIns?.length ?? 0}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2">
-                {approvedCheckIns?.map((c) => {
-                  const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
-                  const handledStr = handledAt
-                    ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
-                    : "-";
-                  const isPayment = !!c.payment_method;
-                  const pinInfo   = checkInPinMap.get(Number(c.member_id));
-                  const canEdit   = ["admin", "owner", "manager"].includes(userRole);
-                  return (
-                    <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
-                          {pinInfo?.pin != null && (
-                            <span className="text-[10px] font-mono bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
-                              PIN {pinInfo.pin}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-emerald-800 font-semibold mt-0.5">
-                          {(c.membership_label as string | null) ?? (c.membership_type as string)}
-                          {c.kids_count ? ` · ${c.kids_count} kid${c.kids_count !== 1 ? "s" : ""}` : ""}
-                        </p>
-                        {c.kids_names && (
-                          <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {c.kids_names as string}</p>
-                        )}
-                        {isPayment && (
-                          <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">PromptPay payment + check-in</p>
-                        )}
-                      </div>
+          {/* Today's approved pending_checkins, split into two visually
+              distinct groups so staff can tell apart 'kid actually used a
+              session today' from 'parent paid for a bulk pack and no kid
+              has set foot on the mat yet'. The Check-ins tab on
+              /admin/members reads attendance_logs which excludes the latter,
+              which is why the counts used to disagree. */}
+          {showCheckIns && (() => {
+            const rangeLabel =
+              approvedRange === "today" ? ", Today"      :
+              approvedRange === "week"  ? ", This Week"  :
+              approvedRange === "month" ? ", This Month" :
+                                          ", All";
+            const sessions = (approvedCheckIns ?? []).filter((c) => {
+              const t = (c.membership_type as string | null) ?? "";
+              const isBulkBuy = t.endsWith("_bulk") && !!c.payment_method;
+              return !isBulkBuy;
+            });
+            const purchases = (approvedCheckIns ?? []).filter((c) => {
+              const t = (c.membership_type as string | null) ?? "";
+              return t.endsWith("_bulk") && !!c.payment_method;
+            });
+            return (
+              <>
+                {sessions.length > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-base">✅</span>
+                      <h2 className="font-bold text-emerald-900 text-sm">
+                        Sessions Used{rangeLabel}
+                      </h2>
+                      <span className="text-xs text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5 font-semibold">
+                        {sessions.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {sessions.map((c) => {
+                        const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
+                        const handledStr = handledAt
+                          ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
+                          : "-";
+                        const isPayment = !!c.payment_method;
+                        const pinInfo   = checkInPinMap.get(Number(c.member_id));
+                        const canEdit   = ["admin", "owner", "manager"].includes(userRole);
+                        return (
+                          <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-emerald-100">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
+                                {pinInfo?.pin != null && (
+                                  <span className="text-[10px] font-mono bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
+                                    PIN {pinInfo.pin}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-emerald-800 font-semibold mt-0.5">
+                                {(c.membership_label as string | null) ?? (c.membership_type as string)}
+                                {c.kids_count ? ` · ${c.kids_count} kid${c.kids_count !== 1 ? "s" : ""}` : ""}
+                              </p>
+                              {c.kids_names && (
+                                <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {c.kids_names as string}</p>
+                              )}
+                              {isPayment && (
+                                <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">PromptPay payment + check-in</p>
+                              )}
+                            </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs text-gray-500">{handledStr}</p>
                         {c.handled_by && (
@@ -498,11 +516,79 @@ export default async function PaymentsPage({
                         )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+                          );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {purchases.length > 0 && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-base">📦</span>
+                      <h2 className="font-bold text-blue-900 text-sm">
+                        Packages Purchased{rangeLabel}
+                      </h2>
+                      <span className="text-xs text-blue-700 bg-blue-100 rounded-full px-2 py-0.5 font-semibold">
+                        {purchases.length}
+                      </span>
+                      <span className="text-[10px] text-blue-700/70 ml-auto italic">
+                        Sessions available for future check-ins
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {purchases.map((c) => {
+                        const handledAt = c.handled_at ? new Date(c.handled_at as string) : null;
+                        const handledStr = handledAt
+                          ? handledAt.toLocaleString("en-US", { timeZone: "Asia/Bangkok", hour: "numeric", minute: "2-digit", hour12: true })
+                          : "-";
+                        const pinInfo   = checkInPinMap.get(Number(c.member_id));
+                        const canEdit   = ["admin", "owner", "manager"].includes(userRole);
+                        const payMethod = (c.payment_method as string | null) ?? "";
+                        return (
+                          <div key={c.id} className="bg-white rounded-xl px-4 py-3 flex items-start justify-between gap-3 border border-blue-100">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-gray-900 text-sm">{c.member_name}</p>
+                                {pinInfo?.pin != null && (
+                                  <span className="text-[10px] font-mono bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
+                                    PIN {pinInfo.pin}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-blue-800 font-semibold mt-0.5">
+                                {(c.membership_label as string | null) ?? (c.membership_type as string)}
+                              </p>
+                              {c.kids_names && (
+                                <p className="text-xs font-semibold text-[#1a56db] mt-0.5">👦 {c.kids_names as string}</p>
+                              )}
+                              <p className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">
+                                {payMethod === "cash" ? "Cash purchase" : payMethod ? `${payMethod} purchase` : "Purchase"}, no check-in
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs text-gray-500">{handledStr}</p>
+                              {c.handled_by && (
+                                <p className="text-xs text-gray-400">by {c.handled_by as string}</p>
+                              )}
+                              {canEdit && pinInfo && (
+                                <Link
+                                  href={`/admin/members/${pinInfo.familyId}`}
+                                  className="text-[11px] text-[#1a56db] hover:underline mt-1 inline-block"
+                                >
+                                  Edit ↗
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {["admin", "owner"].includes(userRole) && (
             <form action={cleanupTestRecords} className="self-end">
